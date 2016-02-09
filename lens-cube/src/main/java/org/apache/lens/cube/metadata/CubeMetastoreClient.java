@@ -865,7 +865,7 @@ public class CubeMetastoreClient {
     } else {
       // first update in memory, then add to hive table's partitions. delete is reverse.
       partitionTimelineCache.updateForAddition(factOrDimTable, storageName, updatePeriod,
-        getTimePartSpecs(storagePartitionDescs));
+              getTimePartSpecs(storagePartitionDescs, getStorageTableStartDate(storageTableName, factOrDimTable)));
       // Adding partition in fact table.
       List<Partition> partsAdded =
         getStorage(storageName).addPartitions(getClient(), factOrDimTable, updatePeriod, storagePartitionDescs, null);
@@ -873,6 +873,20 @@ public class CubeMetastoreClient {
       alterTablePartitionCache(getStorageTableName(factOrDimTable, Storage.getPrefix(storageName)));
       return partsAdded;
     }
+  }
+
+  private Date getStorageTableStartDate(String storageTable, String factTableName) throws HiveException, LensException {
+    Date now = new Date();
+    List<Date> startDates = new ArrayList<Date>();
+    String startProperty = this.getTable(storageTable).getProperty(getStoragetableStartTimesKey());
+    if (StringUtils.isNotBlank(startProperty)) {
+      for (String timeStr : startProperty.split("\\s*,\\s*")) {
+        startDates.add(DateUtil.resolveDate(timeStr, now));
+      }
+    } else {
+      startDates.add(getFactTable(factTableName).getStartTime());
+    }
+    return Collections.max(startDates);
   }
 
   private Map<String, TreeSet<Date>> getTimePartSpecs(List<StoragePartitionDesc> storagePartitionDescs) {
@@ -884,6 +898,32 @@ public class CubeMetastoreClient {
         }
         timeSpecs.get(entry.getKey()).add(entry.getValue());
       }
+    }
+    return timeSpecs;
+  }
+
+
+  private Map<String, TreeSet<Date>> getTimePartSpecs(List<StoragePartitionDesc> storagePartitionDescs,
+                                                      Date storageStartDate) throws LensException {
+    Date now = new Date();
+    List<Date> skippedParts = new ArrayList<Date>();
+    Map<String, TreeSet<Date>> timeSpecs = Maps.newHashMap();
+    for (StoragePartitionDesc storagePartitionDesc : storagePartitionDescs) {
+      for (Map.Entry<String, Date> entry : storagePartitionDesc.getTimePartSpec().entrySet()) {
+        if (!timeSpecs.containsKey(entry.getKey())) {
+          timeSpecs.put(entry.getKey(), Sets.<Date>newTreeSet());
+        }
+        // check if partition falls between storage table start time and
+        // d+1. Then add that partition.
+        if (entry.getValue().compareTo(storageStartDate) > 0
+                && entry.getValue().compareTo(DateUtil.resolveRelativeDate("now +1 days", now)) < 0) {
+          timeSpecs.get(entry.getKey()).add(entry.getValue());
+        } else {
+          skippedParts.add(entry.getValue());
+        }
+      }
+      log.info("List of partitions skipped : {}, because they fall before fact start time : {} and after d+1 : {} ",
+              skippedParts, storageStartDate, DateUtil.resolveRelativeDate("now +1 days", now));
     }
     return timeSpecs;
   }
