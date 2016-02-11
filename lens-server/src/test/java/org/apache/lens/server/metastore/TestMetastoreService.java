@@ -2042,7 +2042,7 @@ public class TestMetastoreService extends LensJerseyTest {
 
   @SuppressWarnings("deprecation")
   @Test(dataProvider = "mediaTypeData")
-   public void testFactStoragePartitions(MediaType mediaType) throws Exception {
+  public void testFactStoragePartitions(MediaType mediaType) throws Exception {
     final String table = "testFactStoragePartitions";
     final String DB = dbPFX + "testFactStoragePartitions_DB" + mediaType.getSubtype();
     String prevDb = getCurrentDatabase(mediaType);
