@@ -880,23 +880,16 @@ public class CubeMetastoreClient {
     throws HiveException, LensException {
     List<Date> startDates = getStorageTimes(storageTable,
             getTable(storageTable).getProperty(getStoragetableStartTimesKey()));
-    if (startDates.isEmpty()) {
-      startDates.add(getFactTable(factTableName).getStartTime());
-    }
+    startDates.add(getFactTable(factTableName).getStartTime());
     return Collections.max(startDates);
   }
 
   private Date getStorageTableEndDate(String storageTable, String factTableName)
     throws HiveException, LensException {
-    Date now = new Date();
     List<Date> endDates = getStorageTimes(storageTable,
             getTable(storageTable).getProperty(getStoragetableEndTimesKey()));
-    if (endDates.isEmpty()) {
-      // if enddate is not specified set d+2 as enddate. This is
-      // used to filter out invalid partitions of future date
-      endDates.add(DateUtil.resolveRelativeDate("now +2 days", now));
-    }
-    return Collections.max(endDates);
+    endDates.add(getFactTable(factTableName).getEndTime());
+    return Collections.min(endDates);
   }
 
   private Map<String, TreeSet<Date>> getTimePartSpecs(List<StoragePartitionDesc> storagePartitionDescs) {
@@ -918,16 +911,16 @@ public class CubeMetastoreClient {
     Date now = new Date();
     List<Date> skippedParts = new ArrayList<Date>();
     Map<String, TreeSet<Date>> timeSpecs = Maps.newHashMap();
-    for (StoragePartitionDesc storagePartitionDesc : storagePartitionDescs) {
-      Iterator<Map.Entry<String, Date>> itr = storagePartitionDesc.getTimePartSpec().entrySet().iterator();
-      while (itr.hasNext()) {
-        Map.Entry<String, Date> entry = itr.next();
+    Iterator<StoragePartitionDesc> itr = storagePartitionDescs.iterator();
+    while (itr.hasNext()) {
+      StoragePartitionDesc storageDesc = itr.next();
+      for (Map.Entry<String, Date> entry : storageDesc.getTimePartSpec().entrySet()) {
         if (!timeSpecs.containsKey(entry.getKey())) {
           timeSpecs.put(entry.getKey(), Sets.<Date>newTreeSet());
         }
-        // check if partition falls between storage table start_time  and
-        // end_time, in such case partition is eligible for registration.
-        if (entry.getValue().compareTo(storageStartDate) > 0
+        // check whether partition falls between storage table start_time and
+        // end_time or d+2, in such case partition is eligible for registration.
+        if ((entry.getValue().compareTo(storageStartDate) > 0 && entry.getValue().compareTo(storageEndDate) < 0)
                 && entry.getValue().compareTo(DateUtil.resolveRelativeDate("now +2 days", now)) < 0) {
           timeSpecs.get(entry.getKey()).add(entry.getValue());
         } else {
@@ -936,7 +929,7 @@ public class CubeMetastoreClient {
         }
       }
       log.info("List of partitions skipped : {}, because they fall before fact start time : {} "
-                      + "and after fact end time : {}", skippedParts, storageStartDate, storageEndDate);
+              + "and after fact end time : {}", skippedParts, storageStartDate, storageEndDate);
     }
     return timeSpecs;
   }
