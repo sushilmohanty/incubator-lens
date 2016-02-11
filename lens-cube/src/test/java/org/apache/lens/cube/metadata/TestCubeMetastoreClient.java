@@ -1682,13 +1682,8 @@ public class TestCubeMetastoreClient {
 
 
     CubeFactTable cubeFactWithParts = new CubeFactTable(CUBE_NAME, factNameSkipPart, factColumns, updatePeriods);
-    //add property to cube fact table
-    Map<String, String> props = new HashMap<String, String>();
-    props.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME,
-            dateFormat.format(DateUtil.resolveRelativeDate("now +10 days", now)));
-    cubeFactWithParts.addProperties(props);
     // create cube fact
-    client.createCubeFactTable(CUBE_NAME, factNameSkipPart, factColumns, updatePeriods, 0L, props, storageTables);
+    client.createCubeFactTable(CUBE_NAME, factNameSkipPart, factColumns, updatePeriods, 0L, null, storageTables);
 
     assertTrue(client.tableExists(factNameSkipPart));
     Table cubeTbl = client.getHiveTable(factNameSkipPart);
@@ -1702,11 +1697,13 @@ public class TestCubeMetastoreClient {
       String storageTableName = getFactOrDimtableStorageTableName(factNameSkipPart, entry);
       assertTrue(client.tableExists(storageTableName));
       client.getTable(storageTableName).setProperty(MetastoreUtil.getStoragetableStartTimesKey(),
+              "now -90 days");
+      client.getTable(storageTableName).setProperty(MetastoreUtil.getStoragetableEndTimesKey(),
             "now +10 days");
     }
 
     Map<String, String> partSpec = getHashMap(factPartColumns.get(0).getName(), "APAC");
-    Map<String, Date> timeParts = getTimePartitionByOffsets(getDatePartitionKey(), 0);
+    Map<String, Date> timeParts = getTimePartitionByOffsets(getDatePartitionKey(), 15);
 
     // test partition
     StoragePartitionDesc sPartSpec =

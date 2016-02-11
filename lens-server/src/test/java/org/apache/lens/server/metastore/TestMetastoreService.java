@@ -924,6 +924,11 @@ public class TestMetastoreService extends LensJerseyTest {
 
   private XStorageTableDesc createStorageTableDesc(String name, final String[] timePartColNames) {
     XStorageTableDesc xs1 = cubeObjectFactory.createXStorageTableDesc();
+    XProperties props = cubeObjectFactory.createXProperties();
+    XProperty prop = cubeObjectFactory.createXProperty();
+    prop.setName(MetastoreUtil.getStoragetableStartTimesKey());
+    prop.setValue("now -10 days");
+    props.getProperty().add(prop);
     xs1.setCollectionDelimiter(",");
     xs1.setEscapeChar("\\");
     xs1.setFieldDelimiter("\t");
@@ -932,7 +937,7 @@ public class TestMetastoreService extends LensJerseyTest {
     xs1.setTableLocation(new Path(new File("target").getAbsolutePath(), name).toString());
     xs1.setExternal(true);
     xs1.setPartCols(new XColumns());
-    xs1.setTableParameters(new XProperties());
+    xs1.setTableParameters(props);
     xs1.setSerdeParameters(new XProperties());
 
     for (String timePartColName : timePartColNames) {
@@ -2143,6 +2148,16 @@ public class TestMetastoreService extends LensJerseyTest {
         .queryParam("sessionid", lensSessionId).request(mediaType)
         .post(Entity.entity(new GenericEntity<JAXBElement<XPartitionList>>(
           cubeObjectFactory.createXPartitionList(parts)){}, mediaType), APIResult.class);
+      assertEquals(partAddResult.getStatus(), Status.PARTIAL);
+
+      // skip partitons if it starts after storage start date
+      XPartitionList partList = new XPartitionList();
+      partList.getPartition().add(createPartition(table, DateUtils.addHours(partDate, 1)));
+      partList.getPartition().add(createPartition(table, DateUtils.addHours(partDate, -300)));
+      partAddResult = target().path("metastore/facts/").path(table).path("storages/S2/partitions")
+        .queryParam("sessionid", lensSessionId).request(mediaType)
+        .post(Entity.entity(new GenericEntity<JAXBElement<XPartitionList>>(
+          cubeObjectFactory.createXPartitionList(partList)){}, mediaType), APIResult.class);
       assertEquals(partAddResult.getStatus(), Status.PARTIAL);
 
       // Drop the partitions
