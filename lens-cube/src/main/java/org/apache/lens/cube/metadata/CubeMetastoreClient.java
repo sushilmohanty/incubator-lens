@@ -929,7 +929,8 @@ public class CubeMetastoreClient {
         }
       }
       log.info("List of partitions skipped : {}, because they fall before fact start time : {} "
-              + "and after fact end time : {}", skippedParts, storageStartDate, storageEndDate);
+                      + "and after fact end time : {}, total partitions skipped : {}",
+              skippedParts, storageStartDate, storageEndDate, skippedParts.size());
     }
     return timeSpecs;
   }

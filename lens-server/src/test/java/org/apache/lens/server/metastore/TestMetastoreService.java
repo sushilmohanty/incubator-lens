@@ -2151,6 +2151,8 @@ public class TestMetastoreService extends LensJerseyTest {
       assertEquals(partAddResult.getStatus(), Status.PARTIAL);
 
       // skip partitons if it starts before storage start date
+      // Add two partitions one before storage start time and other one after start time
+      // Add partition status will return partial
       XPartitionList partList = new XPartitionList();
       partList.getPartition().add(createPartition(table, DateUtils.addHours(partDate, 1)));
       partList.getPartition().add(createPartition(table, DateUtils.addHours(partDate, -300)));
