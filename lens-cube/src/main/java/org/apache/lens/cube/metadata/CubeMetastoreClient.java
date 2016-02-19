@@ -910,7 +910,7 @@ public class CubeMetastoreClient {
   private Map<String, TreeSet<Date>> getTimePartSpecs(List<StoragePartitionDesc> storagePartitionDescs,
                                                       Date storageStartDate, Date storageEndDate) throws LensException {
     Date now = new Date();
-    Map<String, TreeSet<Date>> skippedParts = Maps.newHashMap();
+    Map<String, HashSet<Date>> skippedParts = Maps.newHashMap();
     Map<String, TreeSet<Date>> timeSpecs = Maps.newHashMap();
     Iterator<StoragePartitionDesc> itr = storagePartitionDescs.iterator();
     while (itr.hasNext()) {
@@ -926,7 +926,7 @@ public class CubeMetastoreClient {
           timeSpecs.get(entry.getKey()).add(entry.getValue());
         } else {
           if (!skippedParts.containsKey(entry.getKey())) {
-            skippedParts.put(entry.getKey(), Sets.<Date>newTreeSet());
+            skippedParts.put(entry.getKey(), Sets.<Date>newHashSet(entry.getValue()));
           } else {
             skippedParts.get(entry.getKey()).add(entry.getValue());
           }
