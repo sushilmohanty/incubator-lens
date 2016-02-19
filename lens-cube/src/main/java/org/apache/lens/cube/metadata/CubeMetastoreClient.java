@@ -863,13 +863,16 @@ public class CubeMetastoreClient {
       latestLookupCache.add(storageTableName);
       return partsAdded;
     } else {
+      List<Partition> partsAdded = new ArrayList<>();
       // first update in memory, then add to hive table's partitions. delete is reverse.
       partitionTimelineCache.updateForAddition(factOrDimTable, storageName, updatePeriod,
               getTimePartSpecs(storagePartitionDescs, getStorageTableStartDate(storageTableName, factOrDimTable),
                       getStorageTableEndDate(storageTableName, factOrDimTable)));
       // Adding partition in fact table.
-      List<Partition> partsAdded =
-        getStorage(storageName).addPartitions(getClient(), factOrDimTable, updatePeriod, storagePartitionDescs, null);
+      if (storagePartitionDescs.size() > 0) {
+        partsAdded = getStorage(storageName).addPartitions(getClient(), factOrDimTable, updatePeriod,
+                storagePartitionDescs, null);
+      }
       // update hive table
       alterTablePartitionCache(getStorageTableName(factOrDimTable, Storage.getPrefix(storageName)));
       return partsAdded;
@@ -878,16 +881,14 @@ public class CubeMetastoreClient {
 
   private Date getStorageTableStartDate(String storageTable, String factTableName)
     throws HiveException, LensException {
-    List<Date> startDates = getStorageTimes(storageTable,
-            getTable(storageTable).getProperty(getStoragetableStartTimesKey()));
+    List<Date> startDates = getStorageTimes(storageTable, MetastoreUtil.getStoragetableStartTimesKey());
     startDates.add(getFactTable(factTableName).getStartTime());
     return Collections.max(startDates);
   }
 
   private Date getStorageTableEndDate(String storageTable, String factTableName)
     throws HiveException, LensException {
-    List<Date> endDates = getStorageTimes(storageTable,
-            getTable(storageTable).getProperty(getStoragetableEndTimesKey()));
+    List<Date> endDates = getStorageTimes(storageTable, MetastoreUtil.getStoragetableEndTimesKey());
     endDates.add(getFactTable(factTableName).getEndTime());
     return Collections.min(endDates);
   }
@@ -909,7 +910,7 @@ public class CubeMetastoreClient {
   private Map<String, TreeSet<Date>> getTimePartSpecs(List<StoragePartitionDesc> storagePartitionDescs,
                                                       Date storageStartDate, Date storageEndDate) throws LensException {
     Date now = new Date();
-    List<Date> skippedParts = new ArrayList<Date>();
+    Map<String, TreeSet<Date>> skippedParts = Maps.newHashMap();
     Map<String, TreeSet<Date>> timeSpecs = Maps.newHashMap();
     Iterator<StoragePartitionDesc> itr = storagePartitionDescs.iterator();
     while (itr.hasNext()) {
@@ -920,18 +921,23 @@ public class CubeMetastoreClient {
         }
         // check whether partition falls between storage table start_time and
         // end_time or d+2, in such case partition is eligible for registration.
-        if ((entry.getValue().compareTo(storageStartDate) > 0 && entry.getValue().compareTo(storageEndDate) < 0)
+        if ((entry.getValue().compareTo(storageStartDate) >= 0 && entry.getValue().compareTo(storageEndDate) < 0)
                 && entry.getValue().compareTo(DateUtil.resolveRelativeDate("now +2 days", now)) < 0) {
           timeSpecs.get(entry.getKey()).add(entry.getValue());
         } else {
-          skippedParts.add(entry.getValue());
+          if (!skippedParts.containsKey(entry.getKey())) {
+            skippedParts.put(entry.getKey(), Sets.<Date>newTreeSet());
+          } else {
+            skippedParts.get(entry.getKey()).add(entry.getValue());
+          }
           itr.remove();
+          break;
         }
       }
-      log.info("List of partitions skipped : {}, because they fall before fact start time : {} "
-                      + "and after fact end time : {}, total partitions skipped : {}",
-              skippedParts, storageStartDate, storageEndDate, skippedParts.size());
     }
+    log.info("List of partitions skipped : {}, because they fall before fact start time : {} "
+                    + "and after fact end time : {}",
+            skippedParts, storageStartDate, storageEndDate);
     return timeSpecs;
   }
 
@@ -1209,7 +1215,8 @@ public class CubeMetastoreClient {
   }
 
   public boolean factPartitionExists(String factName, String storageName, UpdatePeriod updatePeriod,
-    Map<String, Date> partitionTimestamp, Map<String, String> partSpec) throws HiveException {
+                                     Map<String, Date> partitionTimestamp,
+                                     Map<String, String> partSpec) throws HiveException {
     String storageTableName = getFactOrDimtableStorageTableName(factName, storageName);
     return partitionExists(storageTableName, updatePeriod, partitionTimestamp, partSpec);
   }
@@ -1282,7 +1289,7 @@ public class CubeMetastoreClient {
     throws HiveException {
     String storageTableName = getFactOrDimtableStorageTableName(dimTblName, storageName);
     return partitionExists(storageTableName, getDimensionTable(dimTblName).getSnapshotDumpPeriods().get(storageName),
-      partitionTimestamps);
+            partitionTimestamps);
   }
 
   boolean latestPartitionExists(String factOrDimTblName, String storageName, String latestPartCol)
@@ -2234,7 +2241,7 @@ public class CubeMetastoreClient {
 
   public boolean isStorageTableCandidateForRange(String storageTableName, Date fromDate, Date toDate) throws
     HiveException, LensException {
-    List<Date> storageStartDates = getStorageTimes(storageTableName, getStoragetableStartTimesKey());
+    List<Date> storageStartDates = getStorageTimes(storageTableName, MetastoreUtil.getStoragetableStartTimesKey());
     for(Date startDate : storageStartDates) {
       if (fromDate.before(startDate)) {
         log.info("from date {} is before validity start time: {}, hence discarding {}",
@@ -2243,7 +2250,7 @@ public class CubeMetastoreClient {
       }
     }
 
-    List<Date> storageEndDates = getStorageTimes(storageTableName, getStoragetableEndTimesKey());
+    List<Date> storageEndDates = getStorageTimes(storageTableName, MetastoreUtil.getStoragetableEndTimesKey());
     for(Date endDate : storageEndDates) {
       if (toDate.after(endDate)) {
         log.info("to date {} is after validity end time: {}, hence discarding {}",
