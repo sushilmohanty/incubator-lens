@@ -29,6 +29,7 @@ import static org.testng.Assert.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import org.apache.commons.collections.map.HashedMap;
 import org.apache.lens.cube.error.LensCubeErrorCode;
 import org.apache.lens.cube.metadata.ExprColumn.ExprSpec;
 import org.apache.lens.cube.metadata.ReferencedDimAttribute.ChainRefCol;
@@ -58,6 +59,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
+import javax.validation.constraints.AssertTrue;
 
 public class TestCubeMetastoreClient {
 
@@ -978,6 +981,36 @@ public class TestCubeMetastoreClient {
     assertFalse(client.factPartitionExists(cubeFact.getName(), c1, HOURLY, timeParts, emptyHashMap));
     assertFalse(client.factPartitionExists(cubeFact.getName(), c1, HOURLY, timeParts2, emptyHashMap));
     assertFalse(client.latestPartitionExists(cubeFact.getName(), c1, getDatePartitionKey()));
+  }
+
+  @Test(priority = 1)
+  public void testCubeSegmentation() throws Exception {
+    String segmentName = "testMetastoreCubeSegmentation";
+
+    Table cubeTbl = client.getHiveTable(CUBE_NAME);
+    assertTrue(client.isCube(cubeTbl));
+    Set<String> candCubes = Sets.newHashSet("cube2", "cube3", "cube4");
+
+    //create cube segmentation
+    client.createCubeSegmentation(CUBE_NAME, segmentName, candCubes, 0L, null);
+    assertNotNull(client.getCubeSegmentation(segmentName));
+    assertEquals(client.getCubeSegmentation(segmentName).getCandidateCubes().size(),3);
+
+    // add candidate cube to segmentation
+    client.getCubeSegmentation(segmentName).addCandidateCube("cube5");
+    assertEquals(client.getCubeSegmentation(segmentName).getCandidateCubes().size(),4);
+
+    //drop candidate cube from segmentation
+    client.getCubeSegmentation(segmentName).dropCandidateCube("cube2");
+    assertEquals(client.getCubeSegmentation(segmentName).getCandidateCubes().size(),3);
+
+    //alter cube segmentation
+    client.alterCubeSegmentation(segmentName,Sets.newHashSet("cube1", "cube2", "cube33"));
+    assertTrue(client.getCubeSegmentation(segmentName).getCandidateCubes().contains("cube33"));
+
+    //drop segmentation
+    client.dropCubeSegmentation(segmentName);
+    assertFalse(client.tableExists(segmentName));
   }
 
   private void assertRangeValidityForStorageTable(String storageTable) throws HiveException, LensException {

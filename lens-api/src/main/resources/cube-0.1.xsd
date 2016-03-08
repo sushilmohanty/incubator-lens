@@ -1010,6 +1010,28 @@
     </xs:sequence>
   </xs:complexType>
 
+  <xs:complexType name="x_candidate_cube">
+    <xs:annotation>
+      <xs:documentation>
+        candidate cubes
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="cube_name" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="x_candidate_cubes">
+    <xs:annotation>
+      <xs:documentation>
+        candidate cubes belong to segmentation
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="candaidate_cube" minOccurs="0" maxOccurs="unbounded" type="x_candidate_cube"/>
+    </xs:sequence>
+  </xs:complexType>
+
   <xs:element name="x_partition_list" type="x_partition_list"/>
   <xs:complexType name="x_partition_list">
     <xs:annotation>
@@ -1214,6 +1236,55 @@
       <xs:annotation>
         <xs:documentation>
           The weight of the fact table. LENS will use this attribute to decide the lightest table to
+          query when there are more than one eligible tables.
+        </xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:double">
+          <xs:minInclusive value="0"></xs:minInclusive>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:element name="x_cube_segmentation" type="x_cube_segmentation"/>
+
+  <xs:complexType name="x_cube_segmentation">
+    <xs:annotation>
+      <xs:documentation>
+        Cube segmentation is associated to a base cube and it consists of one or more child cubes. All child cubes
+        together will make the cube complete
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element type="x_properties" name="properties" maxOccurs="1" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Properties that can be set for segmentaiton are
+            ...
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="candidatecubes" type="x_candidate_cubes" maxOccurs="1" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          Name of cube segmentation
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="base_cube_name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          The base cube's name to which the cube segmentation is associated.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="weight" use="required" >
+      <xs:annotation>
+        <xs:documentation>
+          The weight of the cube segmentation. LENS will use this attribute to decide the lightest table to
           query when there are more than one eligible tables.
         </xs:documentation>
       </xs:annotation>

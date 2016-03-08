@@ -490,6 +490,19 @@ public final class JAXBUtils {
     return xpList;
   }
 
+  public static Set<XCandidateCube> xCandidateCubesFromSet(Set<String> candSet) {
+    Set<XCandidateCube> cubes = new HashSet<XCandidateCube>();
+    if (candSet != null && !candSet.isEmpty()) {
+      for (String cube : candSet) {
+        XCandidateCube canCube = XCF.createXCandidateCube();
+        canCube.setCubeName(cube);
+        cubes.add(canCube);
+      }
+    }
+    return cubes;
+  }
+
+
   public static FieldSchema fieldSchemaFromColumn(XColumn c) {
     if (c == null) {
       return null;
@@ -673,6 +686,18 @@ public final class JAXBUtils {
     return fact;
   }
 
+  public static XCubeSegmentation segmentationFromCubeSegmentation(CubeSegmentation cseg) {
+    XCubeSegmentation seg = XCF.createXCubeSegmentation();
+    seg.setName(cseg.getName());
+    seg.setProperties(new XProperties());
+    seg.setWeight(cseg.weight());
+    seg.setBaseCubeName(cseg.getBaseCube());
+
+    seg.getProperties().getProperty().addAll(xPropertiesFromMap(cseg.getProperties()));
+     seg.getCandidatecubes().getCandaidateCube().addAll(xCandidateCubesFromSet(cseg.getCandidateCubes()));
+    return seg;
+  }
+
   public static StorageTableDesc storageTableDescFromXStorageTableDesc(
     XStorageTableDesc xtableDesc) {
     StorageTableDesc tblDesc = new StorageTableDesc();
@@ -768,6 +793,14 @@ public final class JAXBUtils {
       }
     }
     return storageTableMap;
+  }
+
+  public static Set<String> candCubeFromXCandidateCubes(XCandidateCubes xcubes) {
+    Set<String> candCubes = new HashSet<>();
+    for (XCandidateCube xcube : xcubes.getCandaidateCube()){
+      candCubes.add(xcube.getCubeName());
+    }
+    return candCubes;
   }
 
   public static Map<String, Date> timePartSpecfromXTimePartSpec(

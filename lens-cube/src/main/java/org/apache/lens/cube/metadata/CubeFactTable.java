@@ -102,10 +102,6 @@ public class CubeFactTable extends AbstractCubeTable {
     return storageUpdatePeriods;
   }
 
-  static String getCubeName(String factName, Map<String, String> props) {
-    return props.get(MetastoreUtil.getFactCubeNameKey(factName));
-  }
-
   public Map<String, Set<UpdatePeriod>> getUpdatePeriods() {
     return storageUpdatePeriods;
   }
@@ -304,15 +300,6 @@ public class CubeFactTable extends AbstractCubeTable {
     super.addColumns(columns);
   }
 
-  /**
-   * Alter the cubeName to which this fact belongs
-   *
-   * @param cubeName
-   */
-  public void alterCubeName(String cubeName) {
-    this.cubeName = cubeName;
-    addCubeNames(getName(), getProperties(), cubeName);
-  }
 
   public boolean isAggregated() {
     // It's aggregate table unless explicitly set to false
@@ -321,22 +308,6 @@ public class CubeFactTable extends AbstractCubeTable {
 
   public void setAggregated(boolean isAggregated) {
     getProperties().put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, Boolean.toString(isAggregated));
-  }
-
-  public Date getDateFromProperty(String propKey, boolean relative, boolean start) {
-    String prop = getProperties().get(propKey);
-    try {
-      if (StringUtils.isNotBlank(prop)) {
-        if (relative) {
-          return DateUtil.resolveRelativeDate(prop, now());
-        } else {
-          return DateUtil.resolveAbsoluteDate(prop);
-        }
-      }
-    } catch (LensException e) {
-      log.error("unable to parse {} {} date: {}", relative ? "relative" : "absolute", start ? "start" : "end", prop);
-    }
-    return start ? DateUtil.MIN_DATE : DateUtil.MAX_DATE;
   }
 
   public Date getAbsoluteStartTime() {
@@ -363,7 +334,4 @@ public class CubeFactTable extends AbstractCubeTable {
     return Collections.min(Lists.newArrayList(getRelativeEndTime(), getAbsoluteEndTime()));
   }
 
-  public Date now() {
-    return new Date();
-  }
 }

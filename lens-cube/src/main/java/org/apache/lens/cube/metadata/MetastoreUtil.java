@@ -359,6 +359,22 @@ public class MetastoreUtil {
   }
 
   // //////////////////////////
+  // Segmentation propertes ///
+  // /////////////////////////
+
+  public static String getSegmentationKeyPrefix(String SegName) {
+    return SEGMENTATION_KEY_PFX + SegName.toLowerCase();
+  }
+
+  public static String getSegmentationCubeNameKey(String name) {
+    return getSegmentationKeyPrefix(name) + CUBE_NAME_SFX;
+  }
+
+  public static String getSegmentationCubesListKey(String name) {
+    return getSegmentationKeyPrefix(name) + SEGMENTATION_CANDAIDATE_CUBES_SFX;
+  }
+
+  // //////////////////////////
   // Utils ///
   // /////////////////////////
   public static <E extends Named> String getNamedStr(Collection<E> set) {
