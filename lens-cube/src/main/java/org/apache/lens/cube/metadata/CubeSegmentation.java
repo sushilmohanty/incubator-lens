@@ -19,15 +19,15 @@
 
 package org.apache.lens.cube.metadata;
 
-import com.google.common.collect.Lists;
-import lombok.Getter;
+import java.util.*;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.Table;
-import org.apache.lens.server.api.error.LensException;
 
-import java.util.*;
+import com.google.common.collect.Lists;
+
+import lombok.Getter;
 
 public class CubeSegmentation extends AbstractCubeTable {
 
@@ -54,10 +54,10 @@ public class CubeSegmentation extends AbstractCubeTable {
     this(cubeName, segmentName, candidateCubeNames, weight, new HashMap<String, String>());
   }
 
-  public CubeSegmentation(String baseCubeName, String segmentName, Set<String> candidateCubeNames,
+  public CubeSegmentation(String baseCube, String segmentName, Set<String> candidateCubeNames,
                           double weight, Map<String, String> properties) {
     super(segmentName, COLUMNS, properties, weight);
-    this.baseCube = baseCubeName;
+    this.baseCube = baseCube;
     this.candidateCubes = candidateCubeNames;
     addProperties();
   }
@@ -75,7 +75,7 @@ public class CubeSegmentation extends AbstractCubeTable {
 
   private static void addCandidateCubeProperties(String name, Map<String, String> props,
                                                 Set<String> candidateCubeNames){
-    if(candidateCubeNames != null){
+    if (candidateCubeNames != null){
       props.put(MetastoreUtil.getSegmentationCubesListKey(name), MetastoreUtil.getStr(candidateCubeNames));
     }
   }
@@ -155,6 +155,10 @@ public class CubeSegmentation extends AbstractCubeTable {
 
   public Date getEndTime() {
     return Collections.min(Lists.newArrayList(getRelativeEndTime(), getAbsoluteEndTime()));
+  }
+
+  static String getCubeName(String segName, Map<String, String> props) {
+    return props.get(MetastoreUtil.getSegmentationCubeNameKey(segName));
   }
 
 }

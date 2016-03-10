@@ -1260,8 +1260,22 @@
       <xs:element type="x_properties" name="properties" maxOccurs="1" minOccurs="0">
         <xs:annotation>
           <xs:documentation>
-            Properties that can be set for segmentaiton are
-            ...
+            Properties that can be set for cubesegmentation are
+
+            1. cube.segmentation.{segmentation-name}.candidatecubes: List of cubes belong to cube
+            segmentation. All these cubes will make the cube segmentation complete. This can be specified as comma
+            separated list. i.e cube1,cube2,cube3 etc.
+            2. cube.segmentation.absolute.start.time: start time of the cube segmentation.
+            For queries that ask for time before this, this cubesegmentation is not a candidate. Time format
+            can be as you would specify in the time_range_in clause.
+            i.e. yyyy[-mm[-dd[-hh[:MM[:ss[,SSS]]]]]]
+            3. cube.segmentation.relative.start.time: Here you can specify cubesegmentations's relative validity
+            relative to current time. Useful if you want to specify e.g. this cubesegmentation is valid
+            for today - 90 days. Can be specified as just a time difference e.g. "-90 days".
+            Or can be specified in relative syntax.
+            e.g. now.year or now.day - 6 hour etc.
+            4. cube.segmentation.absolute.end.time: If you're deprecating a cubesegmentation, put the final date till
+            which the data of the cubesegmentation will be valid here. Format same as absolute start time.
           </xs:documentation>
         </xs:annotation>
       </xs:element>

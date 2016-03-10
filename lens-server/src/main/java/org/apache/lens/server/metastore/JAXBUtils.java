@@ -672,6 +672,20 @@ public final class JAXBUtils {
       mapFromXProperties(fact.getProperties()));
   }
 
+  public static CubeSegmentation cubeSegmentationFromSegmentation(XCubeSegmentation seg) throws LensException {
+
+    Set<String> candCubes = new HashSet<>();
+    for (XCandidateCube  cube : seg.getCandidatecubes().getCandaidateCube()) {
+      candCubes.add(cube.getCubeName());
+    }
+    return new CubeSegmentation(seg.getBaseCubeName(),
+            seg.getName(),
+            candCubes,
+            seg.getWeight(),
+            mapFromXProperties(seg.getProperties()));
+  }
+
+
   public static XFactTable factTableFromCubeFactTable(CubeFactTable cFact) {
     XFactTable fact = XCF.createXFactTable();
     fact.setName(cFact.getName());
@@ -686,15 +700,16 @@ public final class JAXBUtils {
     return fact;
   }
 
-  public static XCubeSegmentation segmentationFromCubeSegmentation(CubeSegmentation cseg) {
+  public static XCubeSegmentation segmentationFromCubeSegmentation(CubeSegmentation cSeg) {
     XCubeSegmentation seg = XCF.createXCubeSegmentation();
-    seg.setName(cseg.getName());
+    seg.setName(cSeg.getName());
     seg.setProperties(new XProperties());
-    seg.setWeight(cseg.weight());
-    seg.setBaseCubeName(cseg.getBaseCube());
+    seg.setCandidatecubes(new XCandidateCubes());
+    seg.setWeight(cSeg.weight());
+    seg.setBaseCubeName(cSeg.getBaseCube());
 
-    seg.getProperties().getProperty().addAll(xPropertiesFromMap(cseg.getProperties()));
-     seg.getCandidatecubes().getCandaidateCube().addAll(xCandidateCubesFromSet(cseg.getCandidateCubes()));
+    seg.getProperties().getProperty().addAll(xPropertiesFromMap(cSeg.getProperties()));
+    seg.getCandidatecubes().getCandaidateCube().addAll(xCandidateCubesFromSet(cSeg.getCandidateCubes()));
     return seg;
   }
 

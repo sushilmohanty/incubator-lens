@@ -801,9 +801,9 @@ public class CubeMetastoreClient {
   }
 
   public void createCubeSegmentation(AbstractCubeTable cubeTable)
-          throws HiveException {
+    throws HiveException {
     // create virtual cube table in metastore
-   createCubeHiveTable(cubeTable);
+    createCubeHiveTable(cubeTable);
   }
 
   /**
@@ -2319,11 +2319,11 @@ public class CubeMetastoreClient {
   }
 
   public void alterCubeSegmentation(String segName, Set<String> candidateCubes)
-          throws HiveException {
+    throws HiveException {
     Table segTbl = getTable(segName);
     CubeSegmentation seg = getCubeSegmentation(segName);
     if (isCubeSegmentation(segTbl)) {
-      if(!getCubeSegmentation(segName).getCandidateCubes().equals(candidateCubes)){
+      if (!getCubeSegmentation(segName).getCandidateCubes().equals(candidateCubes)) {
         seg.alterCandidateCube(candidateCubes);
         dropCubeSegmentation(segName);
         createCubeSegmentation(seg);
@@ -2335,7 +2335,7 @@ public class CubeMetastoreClient {
   }
 
   private void updateSegmentationCache(String segmentName) throws HiveException {
-    if(enableCaching){
+    if (enableCaching) {
       allCubeSegmentations.put(segmentName.trim().toLowerCase(), getCubeSegmentationTable(refreshTable(segmentName)));
     }
   }

@@ -102,6 +102,10 @@ public class CubeFactTable extends AbstractCubeTable {
     return storageUpdatePeriods;
   }
 
+  static String getCubeName(String factName, Map<String, String> props) {
+    return props.get(MetastoreUtil.getFactCubeNameKey(factName));
+  }
+
   public Map<String, Set<UpdatePeriod>> getUpdatePeriods() {
     return storageUpdatePeriods;
   }
@@ -300,6 +304,15 @@ public class CubeFactTable extends AbstractCubeTable {
     super.addColumns(columns);
   }
 
+  /**
+   * Alter the cubeName to which this fact belongs
+   *
+   * @param cubeName
+   */
+  public void alterCubeName(String cubeName) {
+    this.cubeName = cubeName;
+    addCubeNames(getName(), getProperties(), cubeName);
+  }
 
   public boolean isAggregated() {
     // It's aggregate table unless explicitly set to false

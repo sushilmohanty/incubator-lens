@@ -20,10 +20,11 @@ package org.apache.lens.cube.metadata;
 
 import java.util.*;
 
+import org.apache.lens.server.api.error.LensException;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.metadata.Table;
-import org.apache.lens.server.api.error.LensException;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -36,9 +37,9 @@ public abstract class AbstractCubeTable implements Named {
   private double weight;
 
   protected AbstractCubeTable(String name, List<FieldSchema> columns, Map<String, String> props, double weight) {
-    this.name = name;
-    this.weight = weight;
+    this.name = name.toLowerCase();
     this.columns = columns;
+    this.weight = weight;
     if (props != null) {
       this.properties.putAll(props);
     }
@@ -224,9 +225,5 @@ public abstract class AbstractCubeTable implements Named {
     return new Date();
   }
 
-
-  static String getCubeName(String factName, Map<String, String> props) {
-    return props.get(MetastoreUtil.getFactCubeNameKey(factName));
-  }
 
 }
