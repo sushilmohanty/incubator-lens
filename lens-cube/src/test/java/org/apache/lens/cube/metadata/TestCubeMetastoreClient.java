@@ -986,24 +986,25 @@ public class TestCubeMetastoreClient {
 
     Table cubeTbl = client.getHiveTable(CUBE_NAME);
     assertTrue(client.isCube(cubeTbl));
-    Set<String> candCubes = Sets.newHashSet("cube2", "cube3", "cube4");
+    Set<String> cubeSegs = Sets.newHashSet("cube2", "cube3", "cube4");
 
     //create cube segmentation
-    client.createCubeSegmentation(CUBE_NAME, segmentName, candCubes, 0L, null);
+    client.createCubeSegmentation(CUBE_NAME, segmentName, cubeSegs, 0L, null);
     assertNotNull(client.getCubeSegmentation(segmentName));
-    assertEquals(client.getCubeSegmentation(segmentName).getCandidateCubes().size(), 3);
+    assertEquals(client.getCubeSegmentation(segmentName).getCubeSegments().size(), 3);
 
-    // add candidate cube to segmentation
-    client.getCubeSegmentation(segmentName).addCandidateCube("cube5");
-    assertEquals(client.getCubeSegmentation(segmentName).getCandidateCubes().size(), 4);
+    // add cubesegment to segmentation
+    client.getCubeSegmentation(segmentName).addCubeSegment("cube5");
+    assertEquals(client.getCubeSegmentation(segmentName).getCubeSegments().size(), 4);
 
-    //drop candidate cube from segmentation
-    client.getCubeSegmentation(segmentName).dropCandidateCube("cube2");
-    assertEquals(client.getCubeSegmentation(segmentName).getCandidateCubes().size(), 3);
+    //drop cubesegment to segmentation
+    client.getCubeSegmentation(segmentName).dropCubeSegment("cube2");
+    assertEquals(client.getCubeSegmentation(segmentName).getCubeSegments().size(), 3);
 
     //alter cube segmentation
-    client.alterCubeSegmentation(segmentName, Sets.newHashSet("cube1", "cube2", "cube33"));
-    assertTrue(client.getCubeSegmentation(segmentName).getCandidateCubes().contains("cube33"));
+    Set<String> cubeSegsAlter = Sets.newHashSet("cube2", "cube3", "cube33");
+    client.alterCubeSegmentation(segmentName, new CubeSegmentation(CUBE_NAME, segmentName, cubeSegsAlter, 0L, null));
+    assertTrue(client.getCubeSegmentation(segmentName).getCubeSegments().contains("cube33"));
 
     //drop segmentation
     client.dropCubeSegmentation(segmentName);

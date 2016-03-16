@@ -580,6 +580,7 @@ public interface CubeMetastoreService extends LensService {
   void createCubeSegmentation(LensSessionHandle sessionid, XCubeSegmentation cubeSeg) throws LensException;
 
   /**
+   * Create cube segmentation
    *
    * @param sessionid                    The session id
    * @param segName                      Cube segmentation name
@@ -589,6 +590,7 @@ public interface CubeMetastoreService extends LensService {
   XCubeSegmentation getCubeSegmentation(LensSessionHandle sessionid, String segName) throws LensException;
 
   /**
+   * Get cube segmentation given by name
    *
    * @param sessionid        The session id
    * @param cubeSeg          The cube segmentation
@@ -598,6 +600,7 @@ public interface CubeMetastoreService extends LensService {
   void updateCubeSegmentation(LensSessionHandle sessionid, XCubeSegmentation cubeSeg) throws LensException;
 
   /**
+   * Update cube segmentation
    *
    * @param sessionid      The session id
    * @param cubeSegName    Cube segmentation name
@@ -606,6 +609,7 @@ public interface CubeMetastoreService extends LensService {
   void dropCubeSegmentation(LensSessionHandle sessionid, String cubeSegName) throws LensException;
 
   /**
+   * Get all cube segmentations belong to Cube
    *
    * @param sessionid    The session id
    * @param cubeName     The cube Name

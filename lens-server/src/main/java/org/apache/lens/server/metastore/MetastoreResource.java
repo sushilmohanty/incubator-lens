@@ -814,7 +814,7 @@ public class MetastoreResource {
    * @return List of {@link XFactTable} objects
    */
   @GET
-  @Path("/cubes/{cubeName}/segmentations")
+  @Path("/cubes/{cubeName}/cubesegmentations")
   public StringList getAllCubeSegmentationsOfCube(
     @QueryParam("sessionid") LensSessionHandle sessionid, @PathParam("cubeName") String cubeName)
     throws LensException {
@@ -877,16 +877,13 @@ public class MetastoreResource {
    * Delete all cube segmentations
    *
    * @param sessionid The sessionid in which user is working
-   * @param cascade   if set to true, all the underlying tables will be dropped, if set to false, only the fact table
-   *                  will be dropped
    * @return APIResult with state {@link Status#SUCCEEDED} in case of successful delete. APIResult with state {@link
    * Status#FAILED} in case of delete failure. APIResult with state {@link Status#PARTIAL} in case of partial delete.
    */
   @DELETE
-  @Path("segmentations")
-  public APIResult deleteAllCubeSegmentations(@QueryParam("sessionid") LensSessionHandle sessionid,
-                                  @DefaultValue("false") @QueryParam("cascade") boolean cascade) {
-    return Entity.SEGMENTATION.deleteAll(sessionid, cascade);
+  @Path("cubesegmentations")
+  public APIResult deleteAllCubeSegmentations(@QueryParam("sessionid") LensSessionHandle sessionid) {
+    return Entity.SEGMENTATION.deleteAll(sessionid, null);
   }
 
   /**

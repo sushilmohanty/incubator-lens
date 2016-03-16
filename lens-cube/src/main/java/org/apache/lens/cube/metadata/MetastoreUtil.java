@@ -371,7 +371,7 @@ public class MetastoreUtil {
   }
 
   public static String getSegmentationCubesListKey(String name) {
-    return getSegmentationKeyPrefix(name) + SEGMENTATION_CANDAIDATE_CUBES_SFX;
+    return getSegmentationKeyPrefix(name) + SEGMENTATION_CUBE_SEGMENT_SFX;
   }
 
   // //////////////////////////

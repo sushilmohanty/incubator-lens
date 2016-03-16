@@ -27,13 +27,10 @@ import org.apache.hadoop.hive.ql.metadata.Table;
 
 import com.google.common.collect.Lists;
 
-import lombok.Getter;
-
 public class CubeSegmentation extends AbstractCubeTable {
 
-  @Getter
-  private String baseCube;
-  private Set<String> candidateCubes;
+  private String cubeName;
+  private Set<String> cubeSegments;
   private static final List<FieldSchema> COLUMNS = new ArrayList<>();
 
   static {
@@ -42,85 +39,95 @@ public class CubeSegmentation extends AbstractCubeTable {
 
   public CubeSegmentation(Table hiveTable) {
     super(hiveTable);
-    this.candidateCubes = getCandidateCubes(getName(), getProperties());
-    this.baseCube = getCubeName(getName(), getProperties());
+    this.cubeSegments = getCubeSegments(getName(), getProperties());
+    this.cubeName = getCubeName(getName(), getProperties());
   }
 
-  public CubeSegmentation(String cubeName, String segmentName, Set<String> candidateCubeNames) {
-    this(cubeName, segmentName, candidateCubeNames, 0L);
+  public CubeSegmentation(String cubeName, String segmentName, Set<String> cubeSegments) {
+    this(cubeName, segmentName, cubeSegments, 0L);
   }
 
-  public CubeSegmentation(String cubeName, String segmentName, Set<String> candidateCubeNames, double weight) {
-    this(cubeName, segmentName, candidateCubeNames, weight, new HashMap<String, String>());
+  public CubeSegmentation(String cubeName, String segmentName, Set<String> cubeSegments, double weight) {
+    this(cubeName, segmentName, cubeSegments, weight, new HashMap<String, String>());
   }
 
-  public CubeSegmentation(String baseCube, String segmentName, Set<String> candidateCubeNames,
+  public CubeSegmentation(String baseCube, String segmentName, Set<String> cubeSegments,
                           double weight, Map<String, String> properties) {
     super(segmentName, COLUMNS, properties, weight);
-    this.baseCube = baseCube;
-    this.candidateCubes = candidateCubeNames;
+    this.cubeName = baseCube;
+    this.cubeSegments = cubeSegments;
     addProperties();
+    updateCubeSegmentsProperties();
+  }
+
+  public void updateCubeSegmentsProperties() {
+    MetastoreUtil.addNameStrings(getProperties(), MetastoreUtil.getSegmentationCubesListKey(getName()),
+            MetastoreUtil.getNamedSetFromStringSet(cubeSegments));
   }
 
   @Override
   protected void addProperties() {
     super.addProperties();
-    addBaseCubeName(getName(), getProperties(), baseCube);
-    addCandidateCubeProperties(getName(), getProperties(), candidateCubes);
+    addCubeName(getName(), getProperties(), cubeName);
+    addCubeSegmentProperties(getName(), getProperties(), cubeSegments);
   }
 
-  private static void addBaseCubeName(String segName, Map<String, String> props, String cubeName) {
+  private static void addCubeName(String segName, Map<String, String> props, String cubeName) {
     props.put(MetastoreUtil.getSegmentationCubeNameKey(segName), cubeName);
   }
 
-  private static void addCandidateCubeProperties(String name, Map<String, String> props,
-                                                Set<String> candidateCubeNames){
-    if (candidateCubeNames != null){
-      props.put(MetastoreUtil.getSegmentationCubesListKey(name), MetastoreUtil.getStr(candidateCubeNames));
+  private static void addCubeSegmentProperties(String name, Map<String, String> props,
+                                                Set<String> cubeSegments){
+    if (cubeSegments != null){
+      props.put(MetastoreUtil.getSegmentationCubesListKey(name), MetastoreUtil.getStr(cubeSegments));
     }
   }
 
-  private static Set<String> getCandidateCubes(String name, Map<String, String> props) {
-    Set<String> candidateCubes = new HashSet<>();
+  private static Set<String> getCubeSegments(String name, Map<String, String> props) {
+    Set<String> patricipatingCubes = new HashSet<>();
     String cubesString = props.get(MetastoreUtil.getSegmentationCubesListKey(name));
     if (!StringUtils.isBlank(cubesString)) {
       String[] cubes = cubesString.split(",");
       for (String cube : cubes) {
-        candidateCubes.add(cube);
+        patricipatingCubes.add(cube);
       }
     }
-    return candidateCubes;
+    return patricipatingCubes;
   }
 
-  public Set<String> getCandidateCubes() {
-    return candidateCubes;
+  public Set<String> getCubeSegments() {
+    return cubeSegments;
   }
 
-  public void addCandidateCube(String candidateCube) {
-    if (!candidateCubes.contains(candidateCube)) {
-      candidateCubes.add(candidateCube);
-      addCandidateCubeProperties(getName(), getProperties(), candidateCubes);
+  public void addCubeSegment(String cubeSeg) {
+    if (!cubeSegments.contains(cubeSeg)) {
+      cubeSegments.add(cubeSeg);
+      addCubeSegmentProperties(getName(), getProperties(), cubeSegments);
     }
   }
 
-  public void dropCandidateCube(String candidateCube) {
-    if (candidateCubes.contains(candidateCube)) {
-      candidateCubes.remove(candidateCube);
-      addCandidateCubeProperties(getName(), getProperties(), candidateCubes);
+  public void dropCubeSegment(String cubeSeg) {
+    if (cubeSegments.contains(cubeSeg)) {
+      cubeSegments.remove(cubeSeg);
+      addCubeSegmentProperties(getName(), getProperties(), cubeSegments);
     }
   }
 
-  public void alterCandidateCube(Set<String> candCubes) {
-    if (!candidateCubes.equals(candCubes)) {
-      candidateCubes.clear();
-      candidateCubes.addAll(candCubes);
-      addCandidateCubeProperties(getName(), getProperties(), candidateCubes);
+  public void alterCubeSegment(Set<String> cubeSegs) {
+    if (!cubeSegments.equals(cubeSegs)) {
+      cubeSegments.clear();
+      cubeSegments.addAll(cubeSegs);
+      addCubeSegmentProperties(getName(), getProperties(), cubeSegments);
     }
   }
 
   public void alterBaseCubeName(String cubeName) {
-    this.baseCube = cubeName;
-    addBaseCubeName(getName(), getProperties(), cubeName);
+    this.cubeName = cubeName;
+    addCubeName(getName(), getProperties(), cubeName);
+  }
+
+  public String getBaseCube() {
+    return cubeName;
   }
 
   @Override
@@ -132,6 +139,7 @@ public class CubeSegmentation extends AbstractCubeTable {
   public Set<String> getStorages() {
     return null;
   }
+
 
   public Date getAbsoluteStartTime() {
     return getDateFromProperty(MetastoreConstants.SEGMENTATION_ABSOLUTE_START_TIME, false, true);
@@ -156,9 +164,9 @@ public class CubeSegmentation extends AbstractCubeTable {
   public Date getEndTime() {
     return Collections.min(Lists.newArrayList(getRelativeEndTime(), getAbsoluteEndTime()));
   }
-
   static String getCubeName(String segName, Map<String, String> props) {
     return props.get(MetastoreUtil.getSegmentationCubeNameKey(segName));
   }
+
 
 }

@@ -1639,19 +1639,19 @@ public class TestMetastoreService extends LensJerseyTest {
   private XCubeSegmentation createCubeSegmentation(String segName, String baseCubeName) {
     XCubeSegmentation seg = cubeObjectFactory.createXCubeSegmentation();
 
-    XCandidateCubes cubes =  new XCandidateCubes();
-    XCandidateCube c1 = cubeObjectFactory.createXCandidateCube();
+    XCubeSegments cubes =  new XCubeSegments();
+    XCubeSegment c1 = cubeObjectFactory.createXCubeSegment();
     c1.setCubeName("cube1");
-    XCandidateCube c2 = cubeObjectFactory.createXCandidateCube();
+    XCubeSegment c2 = cubeObjectFactory.createXCubeSegment();
     c2.setCubeName("cube2");
-    cubes.getCandaidateCube().add(c1);
-    cubes.getCandaidateCube().add(c2);
+    cubes.getCubeSegment().add(c1);
+    cubes.getCubeSegment().add(c2);
 
     seg.setProperties(new XProperties());
     seg.setName(segName);
     seg.setWeight(10.0);
-    seg.setBaseCubeName(baseCubeName);
-    seg.setCandidatecubes(cubes);
+    seg.setCubeName(baseCubeName);
+    seg.setCubeSegements(cubes);
     Map<String, String> properties = LensUtil.getHashMap("foo", "bar");
     seg.getProperties().getProperty().addAll(JAXBUtils.xPropertiesFromMap(properties));
 
@@ -1694,9 +1694,9 @@ public class TestMetastoreService extends LensJerseyTest {
       assertEquals(gotSeg.getWeight(), 10.0);
       CubeSegmentation cs = JAXBUtils.cubeSegmentationFromSegmentation(seg);
 
-      // Check for candidate cubes
+      // Check for cube segemnts
       boolean foundCube1 = false;
-      for (String cube : cs.getCandidateCubes()) {
+      for (String cube : cs.getCubeSegments()) {
         if (cube.equalsIgnoreCase("cube1")) {
           foundCube1 = true;
           break;
@@ -1707,16 +1707,16 @@ public class TestMetastoreService extends LensJerseyTest {
 
       // update cube segmentation
       XCubeSegmentation update = JAXBUtils.segmentationFromCubeSegmentation(cs);
-      XCandidateCubes cubes =  new XCandidateCubes();
-      XCandidateCube c1 = cubeObjectFactory.createXCandidateCube();
+      XCubeSegments cubes =  new XCubeSegments();
+      XCubeSegment c1 = cubeObjectFactory.createXCubeSegment();
       c1.setCubeName("cube11");
-      XCandidateCube c2 = cubeObjectFactory.createXCandidateCube();
+      XCubeSegment c2 = cubeObjectFactory.createXCubeSegment();
       c2.setCubeName("cube22");
-      cubes.getCandaidateCube().add(c1);
-      cubes.getCandaidateCube().add(c2);
+      cubes.getCubeSegment().add(c1);
+      cubes.getCubeSegment().add(c2);
 
       update.setWeight(20.0);
-      update.setCandidatecubes(cubes);
+      update.setCubeSegements(cubes);
 
       result = target().path("metastore").path("cubesegmentations").path(segname)
               .queryParam("sessionid", lensSessionId).request(mediaType)
@@ -1732,9 +1732,9 @@ public class TestMetastoreService extends LensJerseyTest {
       XCubeSegmentation gotUpSeg = gotUpdatedCubeSeg.getValue();
       CubeSegmentation usg = JAXBUtils.cubeSegmentationFromSegmentation(gotUpSeg);
 
-      assertEquals(usg.getCandidateCubes().size(), 2);
-      assertTrue(usg.getCandidateCubes().contains("cube11"));
-      assertTrue(usg.getCandidateCubes().contains("cube22"));
+      assertEquals(usg.getCubeSegments().size(), 2);
+      assertTrue(usg.getCubeSegments().contains("cube11"));
+      assertTrue(usg.getCubeSegments().contains("cube22"));
 
       // Finally, drop the cube segmentation
       result = target().path("metastore").path("cubesegmentations").path(segname)

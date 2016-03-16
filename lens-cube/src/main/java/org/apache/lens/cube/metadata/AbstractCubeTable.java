@@ -225,5 +225,4 @@ public abstract class AbstractCubeTable implements Named {
     return new Date();
   }
 
-
 }

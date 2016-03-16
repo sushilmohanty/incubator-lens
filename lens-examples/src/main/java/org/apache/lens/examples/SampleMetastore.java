@@ -166,6 +166,9 @@ public class SampleMetastore {
     createFact("sales-aggr-continuous-fact.xml");
   }
 
+  private void createCubeSegmentations() throws JAXBException, IOException {
+
+  }
   public static void main(String[] args) throws Exception {
     SampleMetastore metastore = null;
     try {

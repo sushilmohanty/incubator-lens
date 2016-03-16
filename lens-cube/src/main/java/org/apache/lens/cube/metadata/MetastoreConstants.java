@@ -57,12 +57,12 @@ public final class MetastoreConstants {
   public static final String FACT_RELATIVE_END_TIME = "cube.fact.relative.end.time";
 
   // cube segmentation constants
-  public static final String SEGMENTATION_KEY_PFX = "cube.segmentation.";
+  public static final String SEGMENTATION_KEY_PFX = "cube.segmentation.internal.";
   public static final String SEGMENTATION_ABSOLUTE_START_TIME = "cube.segmentation.absolute.start.time";
   public static final String SEGMENTATION_RELATIVE_START_TIME = "cube.segmentation.relative.start.time";
   public static final String SEGMENTATION_ABSOLUTE_END_TIME = "cube.segmentation.absolute.end.time";
   public static final String SEGMENTATION_RELATIVE_END_TIME = "cube.segmentation.relative.end.time";
-  public static final String SEGMENTATION_CANDAIDATE_CUBES_SFX = ".candidatecubes";
+  public static final String SEGMENTATION_CUBE_SEGMENT_SFX = ".cubesegments";
 
 
   // dim table constants

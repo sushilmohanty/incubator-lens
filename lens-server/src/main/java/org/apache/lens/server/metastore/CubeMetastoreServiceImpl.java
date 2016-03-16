@@ -545,9 +545,9 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
     try {
       acquire(sessionid);
       getClient(sessionid).createCubeSegmentation(
-              cubeSeg.getBaseCubeName(),
+              cubeSeg.getCubeName(),
               cubeSeg.getName(),
-              JAXBUtils.candCubeFromXCandidateCubes(cubeSeg.getCandidatecubes()),
+              JAXBUtils.cubeSegmentFromXCubeSegments(cubeSeg.getCubeSegements()),
               cubeSeg.getWeight(),
               JAXBUtils.mapFromXProperties(cubeSeg.getProperties()));
       log.info("Created cube segmentation " + cubeSeg.getName());
@@ -577,8 +577,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
   public void updateCubeSegmentation(LensSessionHandle sessionid, XCubeSegmentation cubeSeg) throws LensException {
     try {
       acquire(sessionid);
-      getClient(sessionid).alterCubeSegmentation(cubeSeg.getName(),
-              JAXBUtils.candCubeFromXCandidateCubes(cubeSeg.getCandidatecubes()));
+      getClient(sessionid).alterCubeSegmentation(cubeSeg.getName(), cubeSegmentationFromSegmentation(cubeSeg));
       log.info("Updated cube segmentation " + cubeSeg.getName());
     } catch (HiveException e) {
       throw new LensException(e);

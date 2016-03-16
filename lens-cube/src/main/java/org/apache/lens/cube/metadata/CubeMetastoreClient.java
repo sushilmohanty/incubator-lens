@@ -73,8 +73,6 @@ public class CubeMetastoreClient {
   private volatile boolean allDimensionsPopulated = false;
   // map from cube name to Cube
   private final Map<String, CubeInterface> allCubes = Maps.newConcurrentMap();
-  // map from segment name to segment
-  private final Map<String, CubeSegmentation> allSegments = Maps.newConcurrentMap();
   private volatile boolean allCubesPopulated = false;
   // map from dimtable name to CubeDimensionTable
   private final Map<String, CubeDimensionTable> allDimTables = Maps.newConcurrentMap();
@@ -723,15 +721,15 @@ public class CubeMetastoreClient {
    *
    * @param baseCubeName             The cube name ot which segmentation belong to
    * @param segmentationName         The segmentation name
-   * @param candidateCubeNames       Candidate cubes belong to segmentation
+   * @param cubeSegments             Participating cube segements
    * @param weight                   Weight of segmentation
    * @param properties               Properties of segmentation
    * @throws HiveException
    */
-  public void createCubeSegmentation(String baseCubeName, String segmentationName, Set<String> candidateCubeNames,
+  public void createCubeSegmentation(String baseCubeName, String segmentationName, Set<String> cubeSegments,
                                      double weight, Map<String, String> properties) throws HiveException {
     CubeSegmentation cubeSeg =
-            new CubeSegmentation(baseCubeName, segmentationName, candidateCubeNames, weight, properties);
+            new CubeSegmentation(baseCubeName, segmentationName, cubeSegments, weight, properties);
     createCubeSegmentation(cubeSeg);
     // do a get to update cache
     getCubeSegmentation(segmentationName);
@@ -2318,13 +2316,11 @@ public class CubeMetastoreClient {
     }
   }
 
-  public void alterCubeSegmentation(String segName, Set<String> candidateCubes)
+  public void alterCubeSegmentation(String segName, CubeSegmentation seg)
     throws HiveException {
     Table segTbl = getTable(segName);
-    CubeSegmentation seg = getCubeSegmentation(segName);
     if (isCubeSegmentation(segTbl)) {
-      if (!getCubeSegmentation(segName).getCandidateCubes().equals(candidateCubes)) {
-        seg.alterCandidateCube(candidateCubes);
+      if (!(getCubeSegmentation(segName) == seg)) {
         dropCubeSegmentation(segName);
         createCubeSegmentation(seg);
         updateSegmentationCache(segName);
