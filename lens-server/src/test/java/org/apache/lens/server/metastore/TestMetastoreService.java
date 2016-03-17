@@ -1636,7 +1636,7 @@ public class TestMetastoreService extends LensJerseyTest {
     return createCubeSegmentation(segName, "testCube");
   }
 
-  private XCubeSegmentation createCubeSegmentation(String segName, String baseCubeName) {
+  private XCubeSegmentation createCubeSegmentation(String segName, String cubeName) {
     XCubeSegmentation seg = cubeObjectFactory.createXCubeSegmentation();
 
     XCubeSegments cubes =  new XCubeSegments();
@@ -1650,7 +1650,7 @@ public class TestMetastoreService extends LensJerseyTest {
     seg.setProperties(new XProperties());
     seg.setName(segName);
     seg.setWeight(10.0);
-    seg.setCubeName(baseCubeName);
+    seg.setCubeName(cubeName);
     seg.setCubeSegements(cubes);
     Map<String, String> properties = LensUtil.getHashMap("foo", "bar");
     seg.getProperties().getProperty().addAll(JAXBUtils.xPropertiesFromMap(properties));

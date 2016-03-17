@@ -1017,12 +1017,12 @@
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="segment_parameters" type="x_properties">
+      <xs:element name="segment_parameters" type="x_properties" minOccurs="0" maxOccurs="1">
         <xs:annotation>
           <xs:documentation>
             Segment properties.
             The following properties can be specified at a cube segment level :
-            1. lens.metastore.native.table.column.mapping : The column mapping for columns of cube segment if they are
+            1. lens.metastore.cube.column.mapping : The column mapping for columns of cube segment if they are
             different in underlying cubes. The value is speciified with comma separated map entries specified with
             key-values separated by equalto. Example value: id=id1,name=name1
           </xs:documentation>
