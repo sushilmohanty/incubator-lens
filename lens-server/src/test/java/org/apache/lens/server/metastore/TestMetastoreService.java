@@ -1745,7 +1745,7 @@ public class TestMetastoreService extends LensJerseyTest {
 
       // Drop again, this time it should give a 404
       try {
-        target().path("metastore").path("facts").path(segname)
+        target().path("metastore").path("cubesegmentations").path(segname)
                 .queryParam("cascade", "true")
                 .queryParam("sessionid", lensSessionId).request(mediaType)
                 .delete(APIResult.class);

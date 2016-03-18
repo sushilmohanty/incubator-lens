@@ -798,10 +798,10 @@ public class CubeMetastoreClient {
     }
   }
 
-  public void createCubeSegmentation(AbstractCubeTable cubeTable)
+  public void createCubeSegmentation(CubeSegmentation cubeSeg)
     throws HiveException {
     // create virtual cube table in metastore
-    createCubeHiveTable(cubeTable);
+    createCubeHiveTable(cubeSeg);
   }
 
   /**
