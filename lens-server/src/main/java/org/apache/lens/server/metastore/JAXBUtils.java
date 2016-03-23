@@ -726,8 +726,9 @@ public final class JAXBUtils {
     seg.setCubeSegements(new XCubeSegments());
     seg.setWeight(cSeg.weight());
     seg.setCubeName(cSeg.getBaseCube());
-
-    seg.getProperties().getProperty().addAll(xPropertiesFromMap(cSeg.getProperties()));
+    if (xPropertiesFromMap(cSeg.getProperties()) != null) {
+      seg.getProperties().getProperty().addAll(xPropertiesFromMap(cSeg.getProperties()));
+    }
     seg.getCubeSegements().getCubeSegment().
             addAll(xCubeSegmentsFromCubeSegments(cSeg.getCubeSegments()));
     return seg;
