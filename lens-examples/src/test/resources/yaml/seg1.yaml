@@ -28,6 +28,6 @@ cubeSegements:
     segmentParameters:
       lens.metastore.cube.column.mapping: foo2=bar2
     cubeName: cube33
-name: cube-segmentation1
+name: seg1
 cubeName: sample_cube
 weight: 100.0
