@@ -28,17 +28,17 @@
     <cube_segements>
         <cube_segment cube_name="cube11">
             <segment_parameters>
-                <property name="lens.metastore.native.table.column.mapping" value="foo=bar"/>
+                <property name="lens.metastore.cube.column.mapping" value="foo=bar"/>
             </segment_parameters>
         </cube_segment>
         <cube_segment cube_name="cube22">
             <segment_parameters>
-                <property name="lens.metastore.native.table.column.mapping" value="foo=bar"/>
+                <property name="lens.metastore.cube.column.mapping" value="foo1=bar1"/>
             </segment_parameters>
         </cube_segment>
         <cube_segment cube_name="cube33">
             <segment_parameters>
-                <property name="lens.metastore.native.table.column.mapping" value="foo=bar"/>
+                <property name="lens.metastore.cube.column.mapping" value="foo2=bar2"/>
             </segment_parameters>
         </cube_segment>
     </cube_segements>

@@ -18,15 +18,15 @@ properties:
 cubeSegements:
   -
     segmentParameters:
-      lens.metastore.native.table.column.mapping: foo=bar
+      lens.metastore.cube.column.mapping: foo=bar
     cubeName: cube11
   -
     segmentParameters:
-      lens.metastore.native.table.column.mapping: foo=bar
+      lens.metastore.cube.column.mapping: foo1=bar1
     cubeName: cube22
   -
     segmentParameters:
-      lens.metastore.native.table.column.mapping: foo=bar
+      lens.metastore.cube.column.mapping: foo2=bar2
     cubeName: cube33
 name: cube-segmentation1
 cubeName: sample_cube

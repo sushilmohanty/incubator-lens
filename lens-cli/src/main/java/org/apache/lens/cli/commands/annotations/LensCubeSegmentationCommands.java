@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.apache.lens.api.APIResult;
 import org.apache.lens.api.metastore.XCubeSegmentation;
-import org.apache.lens.cli.commands.IrrationalTableCrudCommand;
+import org.apache.lens.cli.commands.BaseTableCrudCommand;
 
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -35,7 +35,7 @@ import lombok.NonNull;
 @Component
 @UserDocumentation(title = "Commands for CubeSegmentation Management",
         description = "These command provide CRUD for CubeSegmentation")
-public class LensCubeSegmentationCommands extends IrrationalTableCrudCommand<XCubeSegmentation> {
+public class LensCubeSegmentationCommands extends BaseTableCrudCommand<XCubeSegmentation> {
 
   /**
    * Show cube segmentation

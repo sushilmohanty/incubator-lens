@@ -726,7 +726,7 @@ public class CubeMetastoreClient {
    * @param properties               Properties of segmentation
    * @throws HiveException
    */
-  public void createCubeSegmentation(String baseCubeName, String segmentationName, Set<String> cubeSegments,
+  public void createCubeSegmentation(String baseCubeName, String segmentationName, Set<CubeSegment> cubeSegments,
                                      double weight, Map<String, String> properties) throws HiveException {
     CubeSegmentation cubeSeg =
             new CubeSegmentation(baseCubeName, segmentationName, cubeSegments, weight, properties);

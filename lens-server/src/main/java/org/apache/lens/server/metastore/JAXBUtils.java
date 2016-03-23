@@ -490,16 +490,31 @@ public final class JAXBUtils {
     return xpList;
   }
 
-  public static Set<XCubeSegment> xCubeSegmentFromSet(Set<String> segs) {
-    Set<XCubeSegment> cubes = new HashSet<XCubeSegment>();
+  public static Set<XCubeSegment> xCubeSegmentsFromCubeSegments(Set<CubeSegment> segs) {
+    Set<XCubeSegment> xsegs = new HashSet<XCubeSegment>();
     if (segs != null && !segs.isEmpty()) {
-      for (String cube : segs) {
-        XCubeSegment cubeSeg = XCF.createXCubeSegment();
-        cubeSeg.setCubeName(cube);
-        cubes.add(cubeSeg);
+      for (CubeSegment seg : segs) {
+        XCubeSegment xcubeSeg = XCF.createXCubeSegment();
+        xcubeSeg.setCubeName(seg.getName());
+        xcubeSeg.setSegmentParameters(getXpropertiesFromCubeSegment(seg));
+        xsegs.add(xcubeSeg);
       }
     }
-    return cubes;
+    return xsegs;
+  }
+
+  public static XProperties getXpropertiesFromCubeSegment(CubeSegment  cseg) {
+    XProperties xproperties = XCF.createXProperties();
+    for (String prop : cseg.getProperties().keySet()) {
+      String segPrefix = MetastoreUtil.getSegmentPropertyKey(cseg.getName());
+      if (prop.startsWith(segPrefix)){
+        XProperty xprop = XCF.createXProperty();
+        xprop.setName(prop.replace(segPrefix, ""));
+        xprop.setValue(cseg.getProperties().get(prop));
+        xproperties.getProperty().add(xprop);
+      }
+    }
+    return xproperties;
   }
 
 
@@ -672,23 +687,19 @@ public final class JAXBUtils {
       mapFromXProperties(fact.getProperties()));
   }
 
-  public static CubeSegmentation cubeSegmentationFromSegmentation(XCubeSegmentation seg) throws LensException {
+  public static CubeSegmentation cubeSegmentationFromXCubeSegmentation(XCubeSegmentation seg) throws LensException {
 
-    Set<String> cubeSegs = new HashSet<>();
-    for (XCubeSegment  cube : seg.getCubeSegements().getCubeSegment()) {
-      cubeSegs.add(cube.getCubeName());
-    }
+    Map<String, String> props = new HashMap<>();
     // Skip properties with keyword internal. These properties are internal to lens
     // and users are not supposed to see them.
-    Map<String, String> props = new HashMap<>();
     for(String prop : mapFromXProperties(seg.getProperties()).keySet()) {
-      if (!prop.toLowerCase().contains("internal")){
+      if (!(prop.toLowerCase().startsWith(MetastoreConstants.SEGMENTATION_KEY_PFX))) {
         props.put(prop, mapFromXProperties(seg.getProperties()).get(prop));
       }
     }
     return new CubeSegmentation(seg.getCubeName(),
             seg.getName(),
-            cubeSegs,
+            cubeSegmentsFromXCubeSegments(seg.getCubeSegements()),
             seg.getWeight(),
             props);
   }
@@ -708,7 +719,7 @@ public final class JAXBUtils {
     return fact;
   }
 
-  public static XCubeSegmentation segmentationFromCubeSegmentation(CubeSegmentation cSeg) {
+  public static XCubeSegmentation xsegmentationFromCubeSegmentation(CubeSegmentation cSeg) {
     XCubeSegmentation seg = XCF.createXCubeSegmentation();
     seg.setName(cSeg.getName());
     seg.setProperties(new XProperties());
@@ -718,7 +729,7 @@ public final class JAXBUtils {
 
     seg.getProperties().getProperty().addAll(xPropertiesFromMap(cSeg.getProperties()));
     seg.getCubeSegements().getCubeSegment().
-            addAll(xCubeSegmentFromSet(cSeg.getCubeSegments()));
+            addAll(xCubeSegmentsFromCubeSegments(cSeg.getCubeSegments()));
     return seg;
   }
 
@@ -819,10 +830,16 @@ public final class JAXBUtils {
     return storageTableMap;
   }
 
-  public static Set<String> cubeSegmentFromXCubeSegments(XCubeSegments segs) {
-    Set<String> cubeSegs = new HashSet<>();
+  public static Set<CubeSegment> cubeSegmentsFromXCubeSegments(XCubeSegments segs) {
+    Set<CubeSegment> cubeSegs = new HashSet<>();
     for (XCubeSegment xcube : segs.getCubeSegment()){
-      cubeSegs.add(xcube.getCubeName());
+      Map<String, String> segProp = new HashMap<>();
+      if (xcube.getSegmentParameters() != null) {
+        for (XProperty prop : xcube.getSegmentParameters().getProperty()) {
+          segProp.put(prop.getName(), prop.getValue());
+        }
+      }
+      cubeSegs.add(new CubeSegment(xcube.getCubeName(), segProp));
     }
     return cubeSegs;
   }

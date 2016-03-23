@@ -1023,7 +1023,7 @@
             Segment properties.
             The following properties can be specified at a cube segment level :
             1. lens.metastore.cube.column.mapping : The column mapping for columns of cube segment if they are
-            different in underlying cubes. The value is speciified with comma separated map entries specified with
+            different in underlying cube. The value is speciified with comma separated map entries specified with
             key-values separated by equalto. Example value: id=id1,name=name1
           </xs:documentation>
         </xs:annotation>
@@ -1224,6 +1224,9 @@
             e.g. now.year or now.day - 6 hour etc.
             7. cube.fact.absolute.end.time: If you're deprecating this fact, put the final date till which the data of
             the fact will be valid here. Format same as absolute start time.
+            8. cube.fact.relative.end.time: You can specify the end date for fact table
+            relative to current date e.g. fact table is valid for next 90days starting from today.
+            This can be specified as just a time difference e.g. "+90 days"
           </xs:documentation>
         </xs:annotation>
       </xs:element>
@@ -1282,6 +1285,9 @@
             e.g. now.year or now.day - 6 hour etc.
             3. cube.segmentation.absolute.end.time: If you're deprecating a cubesegmentation, put the final date till
             which the data of the cubesegmentation will be valid here. Format same as absolute start time.
+            4. cube.segmentation.relative.end.time: You can specify the end date for cubesegmentation
+            relative to current date e.g. cubesegmentationas is valid for next 90 days starting from today.
+            This can be specified as just a time difference e.g. "+90 days".
           </xs:documentation>
         </xs:annotation>
       </xs:element>

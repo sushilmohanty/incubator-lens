@@ -23,7 +23,7 @@ import java.util.List;
 import com.google.common.base.Joiner;
 
 
-public abstract class IrrationalTableCrudCommand<T> extends LensCRUDCommand<T> {
+public abstract class BaseTableCrudCommand<T> extends LensCRUDCommand<T> {
   public String showAll(String filter) {
     List<String> all = getAll(filter);
     if (all == null || all.isEmpty()) {
