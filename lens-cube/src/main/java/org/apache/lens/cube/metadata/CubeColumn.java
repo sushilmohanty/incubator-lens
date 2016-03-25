@@ -21,6 +21,7 @@ package org.apache.lens.cube.metadata;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -38,6 +39,7 @@ public abstract class CubeColumn implements Named {
   private final Double cost;
   private final String description;
   private final String displayString;
+  private final ColumnTag tag;
 
   static final ThreadLocal<DateFormat> COLUMN_TIME_FORMAT =
     new ThreadLocal<DateFormat>() {
@@ -49,7 +51,8 @@ public abstract class CubeColumn implements Named {
       }
     };
 
-  public CubeColumn(String name, String description, String displayString, Date startTime, Date endTime, Double cost) {
+  public CubeColumn(String name, String description, String displayString,
+                    Date startTime, Date endTime, Double cost, ColumnTag tag) {
     assert (name != null);
     this.name = name.toLowerCase();
     this.startTime = startTime;
@@ -57,6 +60,7 @@ public abstract class CubeColumn implements Named {
     this.cost = cost;
     this.description = description;
     this.displayString = displayString;
+    this.tag = tag;
   }
 
   private Date getDate(String propKey, Map<String, String> props) {
@@ -89,6 +93,23 @@ public abstract class CubeColumn implements Named {
     return null;
   }
 
+  public static void addTag(String name, Map<String, String> props, ColumnTag tag) {
+    String colName = MetastoreUtil.getCubeColTagKey(name);
+    for (Map.Entry<String, String> entry : tag.getProperties().entrySet()) {
+      props.put(colName.concat(entry.getKey()), colName.concat(entry.getKey()));
+    }
+  }
+
+  public static ColumnTag getTag(String propKey, Map<String, String> props) {
+    Map<String, String> tagProp = new HashMap<>();
+    for (String key : props.keySet()) {
+      if (key.startsWith(propKey)) {
+        tagProp.put(key, props.get(key));
+      }
+    }
+    return new ColumnTag(propKey, tagProp);
+  }
+
   public CubeColumn(String name, Map<String, String> props) {
     this.name = name;
     this.startTime = getDate(MetastoreUtil.getCubeColStartTimePropertyKey(name), props);
@@ -96,6 +117,7 @@ public abstract class CubeColumn implements Named {
     this.cost = getDouble(MetastoreUtil.getCubeColCostPropertyKey(name), props);
     this.description = props.get(MetastoreUtil.getCubeColDescriptionKey(name));
     this.displayString = props.get(MetastoreUtil.getCubeColDisplayKey(name));
+    this.tag = getTag(MetastoreUtil.getCubeColTagKey(name), props);
   }
 
   public String getName() {

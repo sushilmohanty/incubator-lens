@@ -40,6 +40,9 @@
         some documentation
       </xs:documentation>
     </xs:annotation>
+    <xs:sequence>
+    <xs:element type="x_tags" name="tags" maxOccurs="1" minOccurs="1"/>
+    </xs:sequence>
     <xs:attribute type="xs:string" name="name" use="required"/>
     <xs:attribute type="xs:string" name="display_string">
       <xs:annotation>
@@ -51,6 +54,21 @@
     </xs:attribute>
     <xs:attribute type="xs:string" name="description"/>
   </xs:complexType>
+
+  <xs:element name="x_tags" type="x_tags"/>
+
+  <xs:complexType name="x_tags">
+    <xs:annotation>
+      <xs:documentation>
+       Tags associated with field
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element type="x_properties" name="properties" maxOccurs="unbounded" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="name" use="required"/>
+  </xs:complexType>
+
 
   <xs:element name="x_fields" type="x_fields"/>
 
