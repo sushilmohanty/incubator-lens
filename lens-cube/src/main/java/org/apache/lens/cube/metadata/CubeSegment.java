@@ -22,7 +22,7 @@ import java.util.Map;
 
 import lombok.Getter;
 
-public class CubeSegment {
+public class CubeSegment implements Named {
   @Getter
   private String name;
   @Getter
