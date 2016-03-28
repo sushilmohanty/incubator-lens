@@ -82,18 +82,18 @@ public class QueryCollectUtil {
     return new DefaultQueryCollection(mockQueries);
   }
 
-  public static QueryCollection createQueriesTreeSetWithQueryHandleAndCostStubbing(Priority[]  priorities,
+  public static QueryCollection createQueriesTreeSetWithQueryHandleAndPriorityStubbing(Priority[]  priorities,
                                                                                     final String handlePrefix) {
     TreeSet<QueryContext> mockQueries = new TreeSet<>(new QueryContextPriorityComparator());
 
     for (int index = 1; index <=  priorities.length; ++index) {
-      mockQueries.add(createQueryInstanceWithQueryHandleAndCostStubbing(handlePrefix, index,
+      mockQueries.add(createQueryInstanceWithQueryHandleAndPriorityStubbing(handlePrefix, index,
           priorities[index -1]));
     }
     return new DefaultQueryCollection(mockQueries);
   }
 
-  public static QueryContext createQueryInstanceWithQueryHandleAndCostStubbing(String handlePrefix, int index,
+  public static QueryContext createQueryInstanceWithQueryHandleAndPriorityStubbing(String handlePrefix, int index,
                                                                                Priority priority) {
     QueryContext mockQuery = mock(QueryContext.class);
     when(mockQuery.getQueryHandle()).thenReturn(QueryHandle.fromString(handlePrefix + index));

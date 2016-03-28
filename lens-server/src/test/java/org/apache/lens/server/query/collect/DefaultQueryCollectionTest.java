@@ -91,7 +91,7 @@ public class DefaultQueryCollectionTest {
 
     /* Initialization */
     int numberOfQueries = priorities.length;
-    QueryCollection collection = createQueriesTreeSetWithQueryHandleAndCostStubbing(priorities, MOCK_HANDLE);
+    QueryCollection collection = createQueriesTreeSetWithQueryHandleAndPriorityStubbing(priorities, MOCK_HANDLE);
 
     QueryContext completedQuery = getMockedQueryFromQueries(collection.getQueries(), MOCK_HANDLE, 1);
     QueryContext queuedQuery = getMockedQueryFromQueries(collection.getQueries(), MOCK_HANDLE, 5);

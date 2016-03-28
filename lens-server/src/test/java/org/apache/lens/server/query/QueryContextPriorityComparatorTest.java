@@ -39,10 +39,10 @@ public class QueryContextPriorityComparatorTest {
   public void testCompareOnQueryCost() {
 
     QueryContext query1 = mock(QueryContext.class);
-    when(query1.getPriority()).thenReturn(Priority.HIGH);
+    when(query1.getPriority()).thenReturn(Priority.HIGH); // Ordinal = 1
 
     QueryContext query2 = mock(QueryContext.class);
-    when(query2.getPriority()).thenReturn(Priority.LOW);
+    when(query2.getPriority()).thenReturn(Priority.LOW); // Ordinal = 3
 
     assertEquals(pqComparator.compare(query1, query2), -2);
   }
