@@ -21,8 +21,8 @@ package org.apache.lens.server.query;
 
 import java.util.Comparator;
 
+import org.apache.lens.api.Priority;
 import org.apache.lens.server.api.query.QueryContext;
-import org.apache.lens.server.api.query.cost.QueryCost;
 
 public class QueryContextPriorityComparator implements Comparator<QueryContext> {
 
@@ -31,10 +31,10 @@ public class QueryContextPriorityComparator implements Comparator<QueryContext> 
 
     /* Lowest Query Cost First */
 
-    QueryCost qcO1 = o1.getSelectedDriverQueryCost();
-    QueryCost qcO2 = o2.getSelectedDriverQueryCost();
+    Priority pO1 = o1.getPriority();
+    Priority pO2 = o2.getPriority();
 
-    int result = qcO1.compareTo(qcO2);
+    int result = pO1.compareTo(pO2);
     if (result != 0) {
       return result;
     }

@@ -27,6 +27,7 @@ import static org.testng.Assert.assertEquals;
 
 import java.util.Set;
 
+import org.apache.lens.api.Priority;
 import org.apache.lens.server.api.query.QueryContext;
 
 import org.testng.annotations.DataProvider;
@@ -83,12 +84,14 @@ public class DefaultQueryCollectionTest {
     assertEquals(queries.getQueries(MOCK_USER).size(), 0);
   }
 
-  @Test(dataProvider = "dpQueryCosts")
-  public void testRemoveMethodMustChangeQueryIndices(final double[] queryCosts) {
+  @Test
+  public void testRemoveMethodMustChangeQueryIndices() {
+
+    Priority[] priorities = Priority.values();
 
     /* Initialization */
-    int numberOfQueries = queryCosts.length;
-    QueryCollection collection = createQueriesTreeSetWithQueryHandleAndCostStubbing(queryCosts, MOCK_HANDLE);
+    int numberOfQueries = priorities.length;
+    QueryCollection collection = createQueriesTreeSetWithQueryHandleAndCostStubbing(priorities, MOCK_HANDLE);
 
     QueryContext completedQuery = getMockedQueryFromQueries(collection.getQueries(), MOCK_HANDLE, 1);
     QueryContext queuedQuery = getMockedQueryFromQueries(collection.getQueries(), MOCK_HANDLE, 5);
@@ -104,7 +107,7 @@ public class DefaultQueryCollectionTest {
 
     /* Verification 3: Verifies that query index is decreased after removal of queries which were present before
      them in the queries list */
-    assertEquals(collection.getQueryIndex(queuedQuery).intValue(), 2);
+    assertEquals(collection.getQueryIndex(queuedQuery).intValue(), 4);
   }
 
   @Test

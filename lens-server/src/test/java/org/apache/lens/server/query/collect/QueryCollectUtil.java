@@ -22,9 +22,9 @@ package org.apache.lens.server.query.collect;
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isSynchronized;
 
+import org.apache.lens.api.Priority;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.server.api.query.QueryContext;
-import org.apache.lens.server.api.query.cost.FactPartitionBasedQueryCost;
 import org.apache.lens.server.query.QueryContextPriorityComparator;
 
 import static org.mockito.Mockito.mock;
@@ -82,22 +82,22 @@ public class QueryCollectUtil {
     return new DefaultQueryCollection(mockQueries);
   }
 
-  public static QueryCollection createQueriesTreeSetWithQueryHandleAndCostStubbing(final double[] queryCosts,
-                                                                                   final String handlePrefix) {
-
+  public static QueryCollection createQueriesTreeSetWithQueryHandleAndCostStubbing(Priority[]  priorities,
+                                                                                    final String handlePrefix) {
     TreeSet<QueryContext> mockQueries = new TreeSet<>(new QueryContextPriorityComparator());
 
-    for (int index = 1; index <= queryCosts.length; ++index) {
-      mockQueries.add(createQueryInstanceWithQueryHandleAndCostStubbing(handlePrefix, index, queryCosts[index - 1]));
+    for (int index = 1; index <=  priorities.length; ++index) {
+      mockQueries.add(createQueryInstanceWithQueryHandleAndCostStubbing(handlePrefix, index,
+          priorities[index -1]));
     }
     return new DefaultQueryCollection(mockQueries);
   }
 
   public static QueryContext createQueryInstanceWithQueryHandleAndCostStubbing(String handlePrefix, int index,
-                                                                               double queryCost) {
+                                                                               Priority priority) {
     QueryContext mockQuery = mock(QueryContext.class);
     when(mockQuery.getQueryHandle()).thenReturn(QueryHandle.fromString(handlePrefix + index));
-    when(mockQuery.getSelectedDriverQueryCost()).thenReturn(new FactPartitionBasedQueryCost(queryCost));
+    when(mockQuery.getPriority()).thenReturn(priority);
     return mockQuery;
   }
 
