@@ -84,8 +84,32 @@ public class DefaultQueryCollectionTest {
     assertEquals(queries.getQueries(MOCK_USER).size(), 0);
   }
 
+  @Test(dataProvider = "dpQueryCosts")
+  public void testRemoveMethodMustChangeQueryCostIndices(final double[] queryCosts) {
+
+    /* Initialization */
+    int numberOfQueries = queryCosts.length;
+    QueryCollection collection = createQueriesTreeSetWithQueryHandleAndCostStubbing(queryCosts, MOCK_HANDLE);
+
+    QueryContext completedQuery = getMockedQueryFromQueries(collection.getQueries(), MOCK_HANDLE, 1);
+    QueryContext queuedQuery = getMockedQueryFromQueries(collection.getQueries(), MOCK_HANDLE, 5);
+
+     /* Verification 1: Verifies that all queries were added into the collection*/
+    assertEquals(collection.getQueriesCount(), numberOfQueries);
+
+    /* Execution */
+    collection.remove(completedQuery);
+
+     /* Verification 2: Verifies that queries were removed from the collection */
+    assertEquals(collection.getQueriesCount(), numberOfQueries - 1);
+
+    /* Verification 3: Verifies that query index is decreased after removal of queries which were present before
+     them in the queries list */
+    assertEquals(collection.getQueryIndex(queuedQuery).intValue(), 2);
+  }
+
   @Test
-  public void testRemoveMethodMustChangeQueryIndices() {
+  public void testRemoveMethodMustChangeQueryPriorityIndices() {
 
     Priority[] priorities = Priority.values();
 
@@ -108,6 +132,11 @@ public class DefaultQueryCollectionTest {
     /* Verification 3: Verifies that query index is decreased after removal of queries which were present before
      them in the queries list */
     assertEquals(collection.getQueryIndex(queuedQuery).intValue(), 4);
+
+    /* Verification 4: Verifies that query index is increasing when query with existing priority added to list */
+    completedQuery.setPriority(Priority.NORMAL);
+    collection.add(completedQuery);
+    assertEquals(collection.getQueryIndex(queuedQuery).intValue(), 5);
   }
 
   @Test

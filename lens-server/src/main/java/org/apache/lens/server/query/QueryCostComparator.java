@@ -16,33 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.lens.server.query;
 
-import java.util.Comparator;
-
-import org.apache.lens.api.Priority;
 import org.apache.lens.server.api.query.QueryContext;
+import org.apache.lens.server.api.query.cost.QueryCost;
 
-public class QueryContextPriorityComparator implements Comparator<QueryContext> {
+public class QueryCostComparator extends FIFOQueryComparator {
 
   @Override
   public int compare(final QueryContext o1, final QueryContext o2) {
 
-    /* Lowest Query Priority First */
+    QueryCost qcO1 = o1.getSelectedDriverQueryCost();
+    QueryCost qcO2 = o2.getSelectedDriverQueryCost();
 
-    Priority pO1 = o1.getPriority();
-    Priority pO2 = o2.getPriority();
-
-    int result = pO1.compareTo(pO2);
-    if (result != 0) {
-      return result;
+    int result = qcO1.compareTo(qcO2);
+    if (result == 0) {
+      return super.compare(o1, o2);
     }
-
-    /* FIFO on submissionTime when query priority is same */
-
-    Long submitTimeO1 = new Long(o1.getSubmissionTime());
-    Long submitTimeO2 = new Long(o2.getSubmissionTime());
-    return submitTimeO1.compareTo(submitTimeO2);
+    return result;
   }
 }
+

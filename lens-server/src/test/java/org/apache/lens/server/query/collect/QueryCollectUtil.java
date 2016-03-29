@@ -25,7 +25,9 @@ import static java.lang.reflect.Modifier.isSynchronized;
 import org.apache.lens.api.Priority;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.server.api.query.QueryContext;
-import org.apache.lens.server.query.QueryContextPriorityComparator;
+import org.apache.lens.server.api.query.cost.FactPartitionBasedQueryCost;
+import org.apache.lens.server.query.QueryCostComparator;
+import org.apache.lens.server.query.QueryPriorityComparator;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -82,9 +84,28 @@ public class QueryCollectUtil {
     return new DefaultQueryCollection(mockQueries);
   }
 
+  public static QueryCollection createQueriesTreeSetWithQueryHandleAndCostStubbing(final double[] queryCosts,
+                                                                                   final String handlePrefix) {
+
+    TreeSet<QueryContext> mockQueries = new TreeSet<>(new QueryCostComparator());
+
+    for (int index = 1; index <= queryCosts.length; ++index) {
+      mockQueries.add(createQueryInstanceWithQueryHandleAndCostStubbing(handlePrefix, index, queryCosts[index - 1]));
+    }
+    return new DefaultQueryCollection(mockQueries);
+  }
+
+  public static QueryContext createQueryInstanceWithQueryHandleAndCostStubbing(String handlePrefix, int index,
+                                                                               double queryCost) {
+    QueryContext mockQuery = mock(QueryContext.class);
+    when(mockQuery.getQueryHandle()).thenReturn(QueryHandle.fromString(handlePrefix + index));
+    when(mockQuery.getSelectedDriverQueryCost()).thenReturn(new FactPartitionBasedQueryCost(queryCost));
+    return mockQuery;
+  }
+
   public static QueryCollection createQueriesTreeSetWithQueryHandleAndPriorityStubbing(Priority[]  priorities,
                                                                                     final String handlePrefix) {
-    TreeSet<QueryContext> mockQueries = new TreeSet<>(new QueryContextPriorityComparator());
+    TreeSet<QueryContext> mockQueries = new TreeSet<>(new QueryPriorityComparator());
 
     for (int index = 1; index <=  priorities.length; ++index) {
       mockQueries.add(createQueryInstanceWithQueryHandleAndPriorityStubbing(handlePrefix, index,
