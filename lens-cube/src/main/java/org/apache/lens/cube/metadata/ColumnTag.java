@@ -19,10 +19,12 @@
 package org.apache.lens.cube.metadata;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@NoArgsConstructor
 public class ColumnTag {
 
   @Getter

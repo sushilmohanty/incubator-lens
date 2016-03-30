@@ -39,7 +39,7 @@ public abstract class CubeColumn implements Named {
   private final Double cost;
   private final String description;
   private final String displayString;
-  private final ColumnTag tag;
+  private final Map<String, String> tags;
 
   static final ThreadLocal<DateFormat> COLUMN_TIME_FORMAT =
     new ThreadLocal<DateFormat>() {
@@ -52,7 +52,7 @@ public abstract class CubeColumn implements Named {
     };
 
   public CubeColumn(String name, String description, String displayString,
-                    Date startTime, Date endTime, Double cost, ColumnTag tag) {
+                    Date startTime, Date endTime, Double cost, HashMap<String, String> tags) {
     assert (name != null);
     this.name = name.toLowerCase();
     this.startTime = startTime;
@@ -60,7 +60,7 @@ public abstract class CubeColumn implements Named {
     this.cost = cost;
     this.description = description;
     this.displayString = displayString;
-    this.tag = tag;
+    this.tags = tags;
   }
 
   private Date getDate(String propKey, Map<String, String> props) {
@@ -93,21 +93,23 @@ public abstract class CubeColumn implements Named {
     return null;
   }
 
-  public static void addTag(String name, Map<String, String> props, ColumnTag tag) {
+  public static void addTagProperties(String name, Map<String, String> props, Map<String, String> tags) {
     String colName = MetastoreUtil.getCubeColTagKey(name);
-    for (Map.Entry<String, String> entry : tag.getProperties().entrySet()) {
-      props.put(colName.concat(entry.getKey()), colName.concat(entry.getKey()));
+    if (tags != null) {
+      for (Map.Entry<String, String> entry : tags.entrySet()) {
+        props.put(colName.concat(entry.getKey()), colName.concat(entry.getValue()));
+      }
     }
   }
 
-  public static ColumnTag getTag(String propKey, Map<String, String> props) {
+  public static Map<String, String> getColumnTags(String propKey, Map<String, String> props) {
     Map<String, String> tagProp = new HashMap<>();
     for (String key : props.keySet()) {
       if (key.startsWith(propKey)) {
         tagProp.put(key, props.get(key));
       }
     }
-    return new ColumnTag(propKey, tagProp);
+    return tagProp;
   }
 
   public CubeColumn(String name, Map<String, String> props) {
@@ -117,8 +119,10 @@ public abstract class CubeColumn implements Named {
     this.cost = getDouble(MetastoreUtil.getCubeColCostPropertyKey(name), props);
     this.description = props.get(MetastoreUtil.getCubeColDescriptionKey(name));
     this.displayString = props.get(MetastoreUtil.getCubeColDisplayKey(name));
-    this.tag = getTag(MetastoreUtil.getCubeColTagKey(name), props);
+    this.tags = getColumnTags(MetastoreUtil.getCubeColTagKey(name), props);
   }
+
+  public  Map<String, String> getColumntag() {return tags; }
 
   public String getName() {
     return name;
@@ -311,6 +315,9 @@ public abstract class CubeColumn implements Named {
     }
     if (cost != null) {
       props.put(MetastoreUtil.getCubeColCostPropertyKey(getName()), cost.toString());
+    }
+    if (tags != null) {
+      addTagProperties(name, props, tags);
     }
   }
 }
