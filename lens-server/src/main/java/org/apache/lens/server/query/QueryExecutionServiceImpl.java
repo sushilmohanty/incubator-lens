@@ -135,8 +135,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   /**
    * The accepted queries.
    */
-  private FairPriorityBlockingQueue<QueryContext> queuedQueries
-    = new FairPriorityBlockingQueue<QueryContext>(new FIFOQueryComparator());
+  private FairPriorityBlockingQueue<QueryContext> queuedQueries;
 
   /**
    * The launched queries.
@@ -220,7 +219,10 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   private DriverSelector driverSelector;
 
-  private FIFOQueryComparator queryComparator;
+  /**
+   *  The query comparator
+   */
+  private QueryComparator queryComparator;
   /**
    * The result sets.
    */
@@ -365,8 +367,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   }
   private void loadQueryComparator() throws LensException {
     try {
-      Class<? extends FIFOQueryComparator> queryComparatorClass = conf.getClass(QUERY_COMPARATOR_CLASS,
-          QueryPriorityComparator.class, FIFOQueryComparator.class);
+      Class<? extends QueryComparator> queryComparatorClass = conf.getClass(QUERY_COMPARATOR_CLASS,
+          QueryPriorityComparator.class, QueryComparator.class);
       log.info("Using query comparator class: {}", queryComparatorClass.getCanonicalName());
       queryComparator = queryComparatorClass.newInstance();
     } catch (Exception e) {

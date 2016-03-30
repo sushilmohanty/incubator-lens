@@ -18,17 +18,15 @@
  */
 package org.apache.lens.server.query;
 
-import java.util.Comparator;
-
 import org.apache.lens.server.api.query.QueryContext;
 
-public class FIFOQueryComparator implements Comparator<QueryContext> {
+public class FIFOQueryComparator implements QueryComparator {
 
   @Override
   public int compare(QueryContext o1, QueryContext o2) {
 
-    Long submitTimeO1 = new Long(o1.getSubmissionTime());
-    Long submitTimeO2 = new Long(o2.getSubmissionTime());
+    Long submitTimeO1 = o1.getSubmissionTime();
+    Long submitTimeO2 = o2.getSubmissionTime();
 
     return submitTimeO1.compareTo(submitTimeO2);
   }
