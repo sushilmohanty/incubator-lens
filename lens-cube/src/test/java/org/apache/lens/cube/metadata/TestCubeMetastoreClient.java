@@ -785,7 +785,7 @@ public class TestCubeMetastoreClient {
 
   @Test(priority = 1)
   public void testColumnTags() throws Exception {
-    String cube_name = "cubetags";
+    String cubename = "cubetags";
     Map<String, String> tag1 = new HashMap<>();
     tag1.put("category", "test");
     Map<String, String> tag2 = new HashMap<>();
@@ -811,9 +811,9 @@ public class TestCubeMetastoreClient {
     cubeExpressions.add(new ExprColumn(new FieldSchema("expr_measure", "double", "expression measure"),
         "expr with tag", tag2, expr1, expr2));
 
-    client.createCube(cube_name,
+    client.createCube(cubename,
         cubeMeasures, cubeDimensions, cubeExpressions, null, null);
-    Table cubeTbl = client.getHiveTable(cube_name);
+    Table cubeTbl = client.getHiveTable(cubename);
     assertTrue(client.isCube(cubeTbl));
     Cube cube2 = new Cube(cubeTbl);
 
@@ -840,7 +840,7 @@ public class TestCubeMetastoreClient {
     cube2.getProperties().get("cube.col.msr2.tags.is_ui_visible").equals("cube.col.msr2.tags.true");
     cube2.getProperties().get("cube.col.dim1.tags.category").equals("cube.col.dim1.tags.test");
 
-    client.dropCube(cube_name);
+    client.dropCube(cubename);
   }
 
   @Test(priority = 1)
