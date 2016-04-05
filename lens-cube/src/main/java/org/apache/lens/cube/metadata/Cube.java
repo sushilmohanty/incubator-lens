@@ -127,12 +127,14 @@ public class Cube extends AbstractBaseTable implements CubeInterface {
   private static void setMeasureProperties(Map<String, String> props, Set<CubeMeasure> measures) {
     for (CubeMeasure measure : measures) {
       measure.addProperties(props);
+      //measure.addProperties(measure.getColumntag());
     }
   }
 
   private static void setDimensionProperties(Map<String, String> props, Set<CubeDimAttribute> dimensions) {
     for (CubeDimAttribute dimension : dimensions) {
       dimension.addProperties(props);
+      //dimension.addProperties(dimension.getColumntag());
     }
   }
 

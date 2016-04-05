@@ -41,7 +41,14 @@
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element type="x_properties" name="tags" maxOccurs="1" minOccurs="0"/>
+      <xs:element name="tags" type="x_properties" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Tags can be key value pairs associated with a field so that similar
+            fields can be categorized into certain group.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:sequence>
     <xs:attribute type="xs:string" name="name" use="required"/>
     <xs:attribute type="xs:string" name="display_string">

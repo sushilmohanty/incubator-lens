@@ -51,8 +51,13 @@ public abstract class CubeColumn implements Named {
       }
     };
 
+  public CubeColumn(String name , String description, String displayString,
+                    Date startTime, Date endTime, Double cost) {
+    this(name, description, displayString, startTime, endTime, cost, new HashMap<String, String>());
+  }
+
   public CubeColumn(String name, String description, String displayString,
-                    Date startTime, Date endTime, Double cost, HashMap<String, String> tags) {
+                    Date startTime, Date endTime, Double cost, Map<String, String> tags) {
     assert (name != null);
     this.name = name.toLowerCase();
     this.startTime = startTime;
@@ -93,7 +98,7 @@ public abstract class CubeColumn implements Named {
     return null;
   }
 
-  public static void addTagProperties(String name, Map<String, String> props, Map<String, String> tags) {
+  public static synchronized void addTagProperties(String name, Map<String, String> props, Map<String, String> tags) {
     String colName = MetastoreUtil.getCubeColTagKey(name);
     if (tags != null) {
       for (Map.Entry<String, String> entry : tags.entrySet()) {
@@ -106,7 +111,7 @@ public abstract class CubeColumn implements Named {
     Map<String, String> tagProp = new HashMap<>();
     for (String key : props.keySet()) {
       if (key.startsWith(propKey)) {
-        tagProp.put(key, props.get(key));
+        tagProp.put(key.replace(propKey, ""), props.get(key).replace(propKey, ""));
       }
     }
     return tagProp;
