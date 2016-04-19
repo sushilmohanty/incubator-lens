@@ -266,7 +266,7 @@ public final class JAXBUtils {
     xm.setEndTime(getXMLGregorianCalendar(cm.getEndTime()));
     xm.setMin(cm.getMin());
     xm.setMax(cm.getMax());
-    xm.setTags(getXProperties(xPropertiesFromMap(cm.getColumntag())));
+    xm.setTags(getXProperties(xPropertiesFromMap(cm.getTags())));
     return xm;
   }
 
@@ -290,7 +290,7 @@ public final class JAXBUtils {
     xe.setDescription(ec.getDescription());
     xe.setDisplayString(ec.getDisplayString());
     xe.getExprSpec().addAll(xExprSpecFromExprColumn(ec.getExpressionSpecs()));
-    xe.setTags(getXProperties(xPropertiesFromMap(ec.getColumntag())));
+    xe.setTags(getXProperties(xPropertiesFromMap(ec.getTags())));
     return xe;
   }
 
@@ -324,7 +324,7 @@ public final class JAXBUtils {
     xd.setDisplayString(cd.getDisplayString());
     xd.setStartTime(getXMLGregorianCalendar(cd.getStartTime()));
     xd.setEndTime(getXMLGregorianCalendar(cd.getEndTime()));
-    xd.setTags(getXProperties(xPropertiesFromMap(cd.getColumntag())));
+    xd.setTags(getXProperties(xPropertiesFromMap(cd.getTags())));
     if (cd instanceof ReferencedDimAttribute) {
       ReferencedDimAttribute rd = (ReferencedDimAttribute) cd;
       if (!rd.getChainRefColumns().isEmpty()) {

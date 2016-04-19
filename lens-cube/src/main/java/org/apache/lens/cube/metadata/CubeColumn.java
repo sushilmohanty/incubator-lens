@@ -27,6 +27,7 @@ import java.util.TimeZone;
 
 import com.google.common.base.Optional;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,6 +40,7 @@ public abstract class CubeColumn implements Named {
   private final Double cost;
   private final String description;
   private final String displayString;
+  @Getter
   private final Map<String, String> tags;
 
   static final ThreadLocal<DateFormat> COLUMN_TIME_FORMAT =
@@ -98,16 +100,16 @@ public abstract class CubeColumn implements Named {
     return null;
   }
 
-  public static synchronized void addTagProperties(String name, Map<String, String> props, Map<String, String> tags) {
+  private static synchronized void addTagProperties(String name, Map<String, String> props, Map<String, String> tags) {
     String colName = MetastoreUtil.getCubeColTagKey(name);
     if (tags != null) {
       for (Map.Entry<String, String> entry : tags.entrySet()) {
-        props.put(colName.concat(entry.getKey()), colName.concat(entry.getValue()));
+        props.put(colName.concat(entry.getKey()), entry.getValue());
       }
     }
   }
 
-  public static Map<String, String> getColumnTags(String propKey, Map<String, String> props) {
+  private static Map<String, String> getColumnTags(String propKey, Map<String, String> props) {
     Map<String, String> tagProp = new HashMap<>();
     for (String key : props.keySet()) {
       if (key.startsWith(propKey)) {
@@ -126,8 +128,6 @@ public abstract class CubeColumn implements Named {
     this.displayString = props.get(MetastoreUtil.getCubeColDisplayKey(name));
     this.tags = getColumnTags(MetastoreUtil.getCubeColTagKey(name), props);
   }
-
-  public  Map<String, String> getColumntag() {return tags; }
 
   public String getName() {
     return name;

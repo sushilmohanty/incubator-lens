@@ -819,22 +819,22 @@ public class TestCubeMetastoreClient {
 
     // measures with tag
     assertNotNull(cube2.getMeasureByName("msr1"));
-    assertTrue(cube2.getMeasureByName("msr1").getColumntag().keySet().contains("category"));
-    assertTrue(cube2.getMeasureByName("msr1").getColumntag().values().contains("test"));
+    assertTrue(cube2.getMeasureByName("msr1").getTags().keySet().contains("category"));
+    assertTrue(cube2.getMeasureByName("msr1").getTags().values().contains("test"));
 
     assertNotNull(cube2.getMeasureByName("msr2"));
-    assertTrue(cube2.getMeasureByName("msr2").getColumntag().keySet().contains("is_ui_visible"));
-    assertTrue(cube2.getMeasureByName("msr2").getColumntag().values().contains("true"));
+    assertTrue(cube2.getMeasureByName("msr2").getTags().keySet().contains("is_ui_visible"));
+    assertTrue(cube2.getMeasureByName("msr2").getTags().values().contains("true"));
 
     // dim with tag
     assertNotNull(cube2.getDimAttributeByName("dim1"));
-    assertTrue(cube2.getDimAttributeByName("dim1").getColumntag().keySet().contains("category"));
-    assertTrue(cube2.getDimAttributeByName("dim1").getColumntag().values().contains("test"));
+    assertTrue(cube2.getDimAttributeByName("dim1").getTags().keySet().contains("category"));
+    assertTrue(cube2.getDimAttributeByName("dim1").getTags().values().contains("test"));
 
     // expr with tag
     assertNotNull(cube2.getExpressionByName("expr_measure"));
-    assertTrue(cube2.getExpressionByName("expr_measure").getColumntag().keySet().contains("is_ui_visible"));
-    assertTrue(cube2.getExpressionByName("expr_measure").getColumntag().values().contains("true"));
+    assertTrue(cube2.getExpressionByName("expr_measure").getTags().keySet().contains("is_ui_visible"));
+    assertTrue(cube2.getExpressionByName("expr_measure").getTags().values().contains("true"));
 
     // check  properties
     cube2.getProperties().get("cube.col.msr2.tags.is_ui_visible").equals("cube.col.msr2.tags.true");
