@@ -644,7 +644,7 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
   public String getSelectTree() {
     return HQLParser.getString(selectAST);
   }
-  
+
   public String getWhereString() {
     if (whereAST != null) {
       return HQLParser.getString(whereAST);
