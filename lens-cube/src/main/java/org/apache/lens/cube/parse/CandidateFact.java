@@ -76,11 +76,15 @@ public class CandidateFact implements CandidateTable, QueryAST {
   private Integer limitValue;
   @Getter
   private String fromString;
+  @Getter
+  private String whereString;
   private final List<Integer> selectIndices = Lists.newArrayList();
   private final List<Integer> dimFieldIndices = Lists.newArrayList();
   private Collection<String> columns;
   @Getter
   private final Map<String, ASTNode> storgeWhereClauseMap = new HashMap<>();
+  @Getter
+  private final Map<String, String> storgeWhereStringMap = new HashMap<>();
   @Getter
   private final Map<TimeRange, Map<String, LinkedHashSet<FactPartition>>> rangeToStoragePartMap = new HashMap<>();
   @Getter
@@ -163,6 +167,9 @@ public class CandidateFact implements CandidateTable, QueryAST {
 
   public ASTNode getStorageWhereClause(String storageTable) {
     return storgeWhereClauseMap.get(storageTable);
+  }
+  public String getStorageWhereString(String storageTable) {
+    return storgeWhereStringMap.get(storageTable);
   }
 
   public boolean isExpressionAnswerable(ASTNode node, CubeQueryContext context) throws LensException {

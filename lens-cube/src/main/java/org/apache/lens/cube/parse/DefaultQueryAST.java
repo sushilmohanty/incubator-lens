@@ -31,16 +31,11 @@ public class DefaultQueryAST implements QueryAST {
   private ASTNode selectAST, whereAST, groupByAST, havingAST, joinAST, orderByAST;
   private Integer limitValue;
   private String fromString;
+  private String whereString;
+
 
   public String getSelectTree() {
     return HQLParser.getString(selectAST);
-  }
-
-  public String getWhereTree() {
-    if (whereAST != null) {
-      return HQLParser.getString(whereAST);
-    }
-    return null;
   }
 
   public String getGroupByTree() {
@@ -70,6 +65,7 @@ public class DefaultQueryAST implements QueryAST {
     return new DefaultQueryAST(ast.getSelectAST(),
       fact.getStorageWhereClause(storageTable.substring(storageTable.indexOf(".") + 1)),
       ast.getGroupByAST(), ast.getHavingAST(), ast.getJoinAST(), ast.getOrderByAST(), ast.getLimitValue(),
-      ast.getFromString());
+      ast.getFromString(),
+      fact.getStorageWhereString(storageTable.substring(storageTable.indexOf(".") + 1)));
   }
 }

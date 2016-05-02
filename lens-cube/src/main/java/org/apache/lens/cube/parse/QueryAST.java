@@ -26,7 +26,7 @@ public interface QueryAST {
 
   String getFromString();
 
-  String getWhereTree();
+  String getWhereString();
 
   String getHavingTree();
 
