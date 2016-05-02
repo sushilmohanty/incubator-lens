@@ -67,10 +67,14 @@ public class QueryHelper extends ServiceManagerHelper {
     formData.add("sessionid", sessionHandleString);
     formData.add("query", queryString);
     formData.add("operation", "EXECUTE");
-    formData.add("conf", conf);
     if (queryName != null) {
       formData.add("queryName", queryName);
     }
+    if (conf == null) {
+      conf = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><conf />";
+    }
+    formData.add("conf", conf);
+
     Response response = this.exec("post", QueryURL.QUERY_URL, servLens, null, null, MediaType.MULTIPART_FORM_DATA_TYPE,
         outputMediaType, formData.getForm());
     LensAPIResult result = response.readEntity(new GenericType<LensAPIResult>(){});
@@ -294,18 +298,16 @@ public class QueryHelper extends ServiceManagerHelper {
    * @param sessionHandleString
    * @return the query Result
    */
+
   public QueryResult getResultSet(QueryHandle queryHandle, String fromIndex, String fetchSize,
       String sessionHandleString) throws  LensException {
 
-    MapBuilder query = new MapBuilder("sessionid", sessionHandleString);
-    query.put("fromindex", fromIndex);
-    query.put("fetchsize", fetchSize);
-
+    MapBuilder query = new MapBuilder("sessionid", sessionHandleString, "fromindex", fromIndex,
+        "fetchsize", fetchSize);
     Response response = this.exec("get", QueryURL.QUERY_URL + "/" + queryHandle.toString() + "/resultset", servLens,
         null, query, MediaType.APPLICATION_XML_TYPE, MediaType.APPLICATION_XML, null);
     AssertUtil.assertSucceededResponse(response);
     QueryResult result = response.readEntity(new GenericType<QueryResult>(){});
-    log.info("QueryResult String:{}", result);
     return result;
   }
 
