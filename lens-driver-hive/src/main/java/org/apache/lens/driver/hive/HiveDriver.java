@@ -559,7 +559,6 @@ public class HiveDriver extends AbstractLensDriver {
       Configuration qdconf = ctx.getDriverConf(this);
       qdconf.set("mapred.job.name", ctx.getQueryHandle().toString());
       decidePriority(ctx);
-      queryHook.preLaunch(ctx);
       SessionHandle sessionHandle = getSession(ctx);
       OperationHandle op = getClient().executeStatementAsync(sessionHandle, ctx.getSelectedDriverQuery(),
         qdconf.getValByRegex(".*"));
@@ -801,12 +800,25 @@ public class HiveDriver extends AbstractLensDriver {
 
   @Override
   public Priority decidePriority(AbstractQueryContext ctx) {
-    if (whetherCalculatePriority && ctx.getDriverConf(this).get("mapred.job.priority") == null) {
+    return decidePriority(ctx, queryPriorityDecider);
+  }
+
+  Priority decidePriority(AbstractQueryContext ctx, QueryPriorityDecider queryPriorityDecider) {
+    if (whetherCalculatePriority && ctx.getPriority() == null) {
       try {
+        // On-demand re-computation of cost, in case it's not alredy set by a previous estimate call.
+        // In driver test cases, estimate doesn't happen. Hence this code path ensures cost is computed and
+        // priority is set based on correct cost.
+        if (ctx.getDriverQueryCost(this) == null) {
+          ctx.setDriverCost(this, this.estimate(ctx));
+        }
         // Inside try since non-data fetching queries can also be executed by async method.
-        Priority priority = ctx.decidePriority(this, queryPriorityDecider);
+        Priority priority = queryPriorityDecider.decidePriority(ctx.getDriverQueryCost(this));
         String priorityStr = priority.toString();
         ctx.getDriverConf(this).set("mapred.job.priority", priorityStr);
+        Map<String, String> confUpdate = new HashMap<>();
+        confUpdate.put("mapred.job.priority", priorityStr);
+        ctx.updateConf(confUpdate);
         log.info("set priority to {}", priority);
         return priority;
       } catch (Exception e) {
@@ -1356,5 +1368,10 @@ public class HiveDriver extends AbstractLensDriver {
    */
   public boolean hasLensSession(LensSessionHandle session) {
     return lensToHiveSession.containsKey(session.getPublicId().toString());
+  }
+
+  @Override
+  public DriverQueryHook getQueryHook() {
+    return queryHook;
   }
 }
