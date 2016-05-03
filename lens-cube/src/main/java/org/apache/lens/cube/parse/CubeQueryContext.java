@@ -990,8 +990,8 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
       updateFromString(cfacts == null? null: cfacts.iterator().next(), dimsToQuery);
     }
     //update dim filter with fact filter
-    if (shouldReplaceDimFilterWithFactFilter()) {
-      if (autoJoinCtx != null && cfacts != null && cfacts.size() > 0) {
+    if (shouldReplaceDimFilterWithFactFilter() && autoJoinCtx != null) {
+      if (cfacts != null && cfacts.size() > 0) {
         for (CandidateFact cfact : cfacts) {
           if (!cfact.getStorageTables().isEmpty()) {
             for (String qualifiedStorageTable : cfact.getStorageTables()) {

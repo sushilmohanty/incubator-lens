@@ -50,11 +50,7 @@ abstract class DimHQLContext extends SimpleHQLContext {
     super(ast.getSelectTree(), ast.getGroupByTree(), ast.getOrderByTree(), ast.getHavingTree(), ast.getLimitValue());
     this.query = query;
     this.dimsToQuery = dimsToQuery;
-    if (ast.getWhereString() != null) {
-      this.where = ast.getWhereString();
-    } else {
-      this.where = HQLParser.getString(ast.getWhereAST());
-    }
+    this.where = ast.getWhereString();
     this.queriedDims = queriedDims;
     this.astFromString = ast.getFromString();
   }
