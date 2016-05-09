@@ -758,6 +758,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.set(DRIVER_SUPPORTED_STORAGES, "C3");
     conf.setBoolean(DISABLE_AUTO_JOINS, false);
     conf.setBoolean(REWRITE_DIM_FILTER_TO_FACT_FILTER, true);
+
+    // filter with =
     String hql = rewrite(
         "select cubecountry.name, msr2 from" + " testCube" + " where cubecountry.region = 'asia' and "
             + TWO_DAYS_RANGE, conf);
@@ -765,6 +767,37 @@ public class TestCubeRewriter extends TestQueryRewrite {
         + "(( cubecountry . region ) = 'asia' ) )";
     assertTrue(hql.contains(filterSubquery));
 
+    // filter with or
+    hql = rewrite(
+        "select cubecountry.name, msr2 from" + " testCube" + " where (cubecountry.region = 'asia' "
+            + "or cubecountry.region = 'europe') and " + TWO_DAYS_RANGE , conf);
+    filterSubquery = "testcube.countryid in ( select id from cubecountry where "
+        + "((( cubecountry . region ) = 'asia' ) or (( cubecountry . region ) = 'europe' )) )";
+    assertTrue(hql.contains(filterSubquery));
+
+    //filter with in
+    hql = rewrite(
+        "select cubecountry.name, msr2 from" + " testCube" + " where cubecountry.region in ('asia','europe') "
+            + "and " + TWO_DAYS_RANGE , conf);
+    filterSubquery = "testcube.countryid in ( select id from cubecountry where ( cubecountry . region ) "
+        + "in ( 'asia' , 'europe' ) )";
+    assertTrue(hql.contains(filterSubquery));
+
+    //filter with not in
+    hql = rewrite(
+        "select cubecountry.name, msr2 from" + " testCube" + " where cubecountry.region not in ('asia','europe') "
+            + "and " + TWO_DAYS_RANGE , conf);
+    filterSubquery = "testcube.countryid in ( select id from cubecountry where ( cubecountry . region ) "
+        + "not in ( 'asia' , 'europe' ) )";
+    assertTrue(hql.contains(filterSubquery));
+
+    //filter with !=
+    hql = rewrite(
+        "select cubecountry.name, msr2 from" + " testCube" + " where cubecountry.region != 'asia' "
+            + "and " + TWO_DAYS_RANGE , conf);
+    filterSubquery = "testcube.countryid in ( select id from cubecountry where "
+        + "(( cubecountry . region ) != 'asia' ) )";
+    assertTrue(hql.contains(filterSubquery));
   }
 
   @Test

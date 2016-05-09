@@ -174,8 +174,6 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
     new HashMap<Dimension, PruneCauses<CubeDimensionTable>>();
   @Getter
   private String fromString;
-  private final String dimFlag = "D";
-  private final String factFlag = "F";
   public CubeQueryContext(ASTNode ast, QB qb, Configuration queryConf, HiveConf metastoreConf)
     throws LensException {
     this.ast = ast;
@@ -987,65 +985,24 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
       }
     }
     if (cfacts == null || cfacts.size() == 1) {
-      updateFromString(cfacts == null? null: cfacts.iterator().next(), dimsToQuery);
+      updateFromString(cfacts == null ? null : cfacts.iterator().next(), dimsToQuery);
     }
     //update dim filter with fact filter
-    if (shouldReplaceDimFilterWithFactFilter() && autoJoinCtx != null) {
-      if (cfacts != null && cfacts.size() > 0) {
-        for (CandidateFact cfact : cfacts) {
-          if (!cfact.getStorageTables().isEmpty()) {
-            for (String qualifiedStorageTable : cfact.getStorageTables()) {
-              String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1);
-              String where = getWhere(cfact, autoJoinCtx,
-                  cfact.getStorageWhereClause(storageTable), cfact.getBaseTable().getName());
-              cfact.getStorgeWhereStringMap().put(storageTable, where);
-            }
-          }
-        }
-      }
-    } else {
-      if (cfacts != null && cfacts.size() > 0) {
-        for (CandidateFact cfact : cfacts) {
-          if (!cfact.getStorageTables().isEmpty()) {
-            for (String qualifiedStorageTable : cfact.getStorageTables()) {
-              String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1);
-              cfact.getStorgeWhereStringMap().put(storageTable,
-                  HQLParser.getString(cfact.getStorageWhereClause(storageTable)));
-            }
+    if (cfacts != null && cfacts.size() > 0) {
+      for (CandidateFact cfact : cfacts) {
+        if (!cfact.getStorageTables().isEmpty()) {
+          for (String qualifiedStorageTable : cfact.getStorageTables()) {
+            String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1);
+            String where = getWhere(cfact, autoJoinCtx,
+                cfact.getStorageWhereClause(storageTable), cfact.getBaseTable().getName(),
+                shouldReplaceDimFilterWithFactFilter(), storageTable);
+            cfact.getStorgeWhereStringMap().put(storageTable, where);
           }
         }
       }
     }
     hqlContext = createHQLContext(cfacts, dimsToQuery, factDimMap);
     return hqlContext.toHQL();
-  }
-
-
-  private String getWhere(CandidateFact cfact, AutoJoinContext autoJoinCtx,
-                          ASTNode node, String cubeAlias) throws LensException {
-    Set<String> allfilters = new HashSet<>();
-
-    Map<ASTNode, String> filterNodeToTypeMap = new HashMap<>();
-    getAllFilters(node, cfact.getBaseTable().getName(), filterNodeToTypeMap);
-
-    Set<ASTNode> dimFilters = getDimFiltes(filterNodeToTypeMap);
-    Map<ASTNode, String> dimFilterToFactFilterMap = buildFactSubqueryFromDimFilter(
-        autoJoinCtx.getJoinClause(cfact), dimFilters);
-
-    if (!dimFilters.isEmpty() && !dimFilterToFactFilterMap.isEmpty()) {
-      for (Map.Entry<ASTNode, String> entry : filterNodeToTypeMap.entrySet()) {
-        if (dimFilters.contains(entry.getKey())) {
-          allfilters.add(dimFilterToFactFilterMap.get(entry.getKey()));
-        } else {
-          allfilters.add(HQLParser.getString(entry.getKey()));
-        }
-      }
-    } else {
-      for (Map.Entry<ASTNode, String> entry : filterNodeToTypeMap.entrySet()) {
-        allfilters.add(HQLParser.getString(entry.getKey()));
-      }
-    }
-    return StringUtils.join(allfilters, " and ");
   }
 
   private HQLContextInterface createHQLContext(Set<CandidateFact> facts, Map<Dimension, CandidateDim> dimsToQuery,
@@ -1354,95 +1311,95 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
     return ImmutableSet.copyOf(this.queriedTimeDimCols);
   }
 
-  private boolean isDimFilter(ASTNode node, String cubeAlias) {
-    boolean isUsed = false;
-    if (!HQLParser.getString((ASTNode) node).contains(cubeAlias)) {
-      return true;
-    }
-    return isUsed;
-  }
-
-  public Set<ASTNode> getDimFiltes(Map<ASTNode, String> filterNodeToTypeMap) throws LensException {
-    Set<ASTNode> dimFilters = new HashSet<>();
-
-    for (Map.Entry<ASTNode, String> entry : filterNodeToTypeMap.entrySet()) {
-      if (entry.getValue().equals(dimFlag)) {
-        dimFilters.add(entry.getKey());
+  private String getWhere(CandidateFact cfact, AutoJoinContext autoJoinCtx,
+                          ASTNode node, String cubeAlias,
+                          boolean shouldReplaceDimFilter, String storageTable) throws LensException {
+    String whereString = null;
+    if (autoJoinCtx != null && shouldReplaceDimFilter) {
+      List<String> allfilters = new ArrayList<>();
+      getAllFilters(node, cfact.getBaseTable().getName(), allfilters, autoJoinCtx.getJoinClause(cfact));
+      if (!allfilters.isEmpty()) {
+        whereString = StringUtils.join(allfilters, " and ");
       }
+    } else {
+      whereString = HQLParser.getString(cfact.getStorageWhereClause(storageTable));
     }
-    return dimFilters;
+    return whereString;
   }
 
-  public Map<ASTNode, String> getAllFilters(ASTNode node, String cubeAlias,
-                                            Map<ASTNode, String> filterNodeToTypeMap)
+  public List<String> getAllFilters(ASTNode node, String cubeAlias, List<String> allFilters,
+                                    JoinClause joinClause)
     throws LensException {
+
     if (node.getToken().getType() == HiveParser.KW_AND) {
+      // left child is and
       if (node.getChild(0).getType() == HiveParser.KW_AND) {
-        if (isDimFilter((ASTNode) node.getChild(1), cubeAlias)) {
-          filterNodeToTypeMap.put((ASTNode) node.getChild(1), dimFlag);
+        // take right corresponding to right
+        String table = getDimTableFromFilterAST((ASTNode) node.getChild(1));
+        if (table != null && !table.equals(cubeAlias)) {
+          allFilters.add(buildFactSubqueryFromDimFilter(joinClause, (ASTNode) node.getChild(1), table));
         } else {
-          filterNodeToTypeMap.put((ASTNode) node.getChild(1), factFlag);
+          allFilters.add(HQLParser.getString((ASTNode) node.getChild(1)));
         }
       } else if (node.getChildCount() > 1) {
         for (int i = 0; i < node.getChildCount(); i++) {
-          if (isDimFilter((ASTNode) node.getChild(i), cubeAlias)) {
-            filterNodeToTypeMap.put((ASTNode) node.getChild(i), dimFlag);
+          String table = getDimTableFromFilterAST((ASTNode) node.getChild(i));
+          if (table != null && !table.equals(cubeAlias)) {
+            allFilters.add(buildFactSubqueryFromDimFilter(joinClause, (ASTNode) node.getChild(i),
+                table));
           } else {
-            filterNodeToTypeMap.put((ASTNode) node.getChild(i), factFlag);
+            allFilters.add(HQLParser.getString((ASTNode) node.getChild(i)));
           }
         }
       }
     }
-
     for (int i = 0; i < node.getChildCount(); i++) {
       ASTNode child = (ASTNode) node.getChild(i);
-      getAllFilters(child, cubeAlias, filterNodeToTypeMap);
+      getAllFilters(child, cubeAlias, allFilters, joinClause);
     }
-    return filterNodeToTypeMap;
+    return allFilters;
   }
 
   private String getDimTableFromFilterAST(ASTNode node) {
-    String dim = null;
-    if (node.getChild(0).getType() == HiveParser.DOT) {
-      dim = HQLParser.findNodeByPath((ASTNode) node.getChild(0),
+
+    if (node.getToken().getType() == HiveParser.DOT) {
+      return HQLParser.findNodeByPath((ASTNode) node,
           TOK_TABLE_OR_COL, Identifier).getText();
-    } else if (node.getChild(0).getChild(1).getType() == HiveParser.DOT) {
-      dim = HQLParser.findNodeByPath((ASTNode) node.getChild(0).getChild(1),
-          TOK_TABLE_OR_COL, Identifier).getText();
-    }
-    return dim;
-  }
-
-
-  public Map<ASTNode, String> buildFactSubqueryFromDimFilter(JoinClause joinClause, Set<ASTNode> dimFilters)
-    throws LensException {
-    Map<ASTNode, String> dimFilterToFactFilterMap = new HashMap<>();
-
-    for (ASTNode node : dimFilters) {
-      StringBuilder builder = new StringBuilder();
-      String dimtable = getDimTableFromFilterAST(node);
-
-      if (joinClause.getJoinTree().getSubtrees().size() == 1) {
-        TableRelationship tabRelation = joinClause.getJoinTree().getSubtrees().
-            values().iterator().next().getParentRelationship();
-        String alias = joinClause.getJoinTree().getSubtrees().values().iterator().next().getAlias();
-        if (alias.equals(dimtable)) {
-          builder.append(joinClause.getJoinTree().getAlias())
-              .append(".")
-              .append(tabRelation.getFromColumn())
-              .append(" in ( ")
-              .append("select ")
-              .append(tabRelation.getToColumn())
-              .append(" from ")
-              .append(dimtable)
-              .append(" where ")
-              .append(HQLParser.getString((ASTNode) node))
-              .append(" )");
+    } else {
+      // recurse down
+      for (int i = 0; i < node.getChildCount(); i++) {
+        ASTNode child = (ASTNode) node.getChild(i);
+        String ret = getDimTableFromFilterAST(child);
+        if (ret != null) {
+          return ret;
         }
       }
-      dimFilterToFactFilterMap.put(node, builder.toString());
     }
-    return dimFilterToFactFilterMap;
+    return null;
+  }
+
+  public String buildFactSubqueryFromDimFilter(JoinClause joinClause, ASTNode dimFilter, String dimTable)
+    throws LensException {
+    StringBuilder builder = new StringBuilder();
+    if (joinClause.getJoinTree().getSubtrees().size() == 1) {
+      TableRelationship tabRelation = joinClause.getJoinTree().getSubtrees().
+          values().iterator().next().getParentRelationship();
+      String alias = joinClause.getJoinTree().getSubtrees().values().iterator().next().getAlias();
+      if (alias.equals(dimTable)) {
+        builder.append(joinClause.getJoinTree().getAlias())
+            .append(".")
+            .append(tabRelation.getFromColumn())
+            .append(" in ( ")
+            .append("select ")
+            .append(tabRelation.getToColumn())
+            .append(" from ")
+            .append(dimTable)
+            .append(" where ")
+            .append(HQLParser.getString((ASTNode) dimFilter))
+            .append(" )");
+      }
+    }
+    return builder.toString();
   }
 
 }
