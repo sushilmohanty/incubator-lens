@@ -72,7 +72,7 @@ class MultiFactHQLContext extends SimpleHQLContext {
   }
 
   private String getOrderbyString() {
-    return query.getOrderByTree();
+    return query.getOrderByString();
   }
 
   private String getHavingString() {

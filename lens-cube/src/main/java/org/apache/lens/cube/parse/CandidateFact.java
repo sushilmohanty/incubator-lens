@@ -76,8 +76,6 @@ public class CandidateFact implements CandidateTable, QueryAST {
   private Integer limitValue;
   @Getter
   private String fromString;
-  @Getter
-  private String whereString;
   private final List<Integer> selectIndices = Lists.newArrayList();
   private final List<Integer> dimFieldIndices = Lists.newArrayList();
   private Collection<String> columns;
@@ -281,18 +279,18 @@ public class CandidateFact implements CandidateTable, QueryAST {
     return result;
   }
 
-  public String getSelectTree() {
+  public String getSelectString() {
     return HQLParser.getString(selectAST);
   }
 
-  public String getWhereTree() {
+  public String getWhereString() {
     if (whereAST != null) {
       return HQLParser.getString(whereAST);
     }
     return null;
   }
 
-  public String getHavingTree() {
+  public String getHavingString() {
     if (havingAST != null) {
       return HQLParser.getString(havingAST);
     }
@@ -300,7 +298,7 @@ public class CandidateFact implements CandidateTable, QueryAST {
   }
 
   @Override
-  public String getOrderByTree() {
+  public String getOrderByString() {
     if (orderByAST != null) {
       return HQLParser.getString(orderByAST);
     }
@@ -321,7 +319,7 @@ public class CandidateFact implements CandidateTable, QueryAST {
     return dimFieldIndices;
   }
 
-  public String getGroupByTree() {
+  public String getGroupByString() {
     if (groupByAST != null) {
       return HQLParser.getString(groupByAST);
     }
