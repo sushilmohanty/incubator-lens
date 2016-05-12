@@ -995,7 +995,7 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
             String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1);
             String where = getWhere(cfact, autoJoinCtx,
                 cfact.getStorageWhereClause(storageTable), getAliasForTableName(cfact.getBaseTable().getName()),
-                shouldReplaceDimFilterWithFactFilter(), storageTable);
+                shouldReplaceDimFilterWithFactFilter(), storageTable, dimsToQuery);
             cfact.getStorgeWhereStringMap().put(storageTable, where);
           }
         }
@@ -1312,11 +1312,12 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
 
   private String getWhere(CandidateFact cfact, AutoJoinContext autoJoinCtx,
                           ASTNode node, String cubeAlias,
-                          boolean shouldReplaceDimFilter, String storageTable) throws LensException {
+                          boolean shouldReplaceDimFilter, String storageTable,
+                          Map<Dimension, CandidateDim> dimToQuery) throws LensException {
     String whereString;
     if (autoJoinCtx != null && shouldReplaceDimFilter) {
       List<String> allfilters = new ArrayList<>();
-      getAllFilters(node, cubeAlias, allfilters, autoJoinCtx.getJoinClause(cfact));
+      getAllFilters(node, cubeAlias, allfilters, autoJoinCtx.getJoinClause(cfact), dimToQuery);
       whereString = StringUtils.join(allfilters, " and ");
     } else {
       whereString = HQLParser.getString(cfact.getStorageWhereClause(storageTable));
@@ -1325,7 +1326,7 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
   }
 
   private List<String> getAllFilters(ASTNode node, String cubeAlias, List<String> allFilters,
-                                    JoinClause joinClause)
+                                    JoinClause joinClause,  Map<Dimension, CandidateDim> dimToQuery)
     throws LensException {
 
     if (node.getToken().getType() == HiveParser.KW_AND) {
@@ -1333,26 +1334,27 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
       if (node.getChild(0).getType() == HiveParser.KW_AND) {
         // take right corresponding to right
         String table = getTableFromFilterAST((ASTNode) node.getChild(1));
-        allFilters.add(getFilter(table, cubeAlias, node, joinClause, 1));
+        allFilters.add(getFilter(table, cubeAlias, node, joinClause, 1, dimToQuery));
       } else if (node.getChildCount() > 1) {
         for (int i = 0; i < node.getChildCount(); i++) {
           String table = getTableFromFilterAST((ASTNode) node.getChild(i));
-          allFilters.add(getFilter(table, cubeAlias, node, joinClause, i));
+          allFilters.add(getFilter(table, cubeAlias, node, joinClause, i, dimToQuery));
         }
       }
     }
     for (int i = 0; i < node.getChildCount(); i++) {
       ASTNode child = (ASTNode) node.getChild(i);
-      getAllFilters(child, cubeAlias, allFilters, joinClause);
+      getAllFilters(child, cubeAlias, allFilters, joinClause, dimToQuery);
     }
     return allFilters;
   }
 
-  private String getFilter(String table, String cubeAlias, ASTNode node,  JoinClause joinClause, int index)
+  private String getFilter(String table, String cubeAlias, ASTNode node,  JoinClause joinClause,
+                           int index,  Map<Dimension, CandidateDim> dimToQuery)
     throws LensException{
     String filter;
     if (table != null && !table.equals(cubeAlias)) {
-      filter = buildFactSubqueryFromDimFilter(joinClause, (ASTNode) node.getChild(index), table);
+      filter = buildFactSubqueryFromDimFilter(joinClause, (ASTNode) node.getChild(index), table, dimToQuery);
     } else {
       filter = HQLParser.getString((ASTNode) node.getChild(index));
     }
@@ -1377,14 +1379,19 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
     return null;
   }
 
-  private String buildFactSubqueryFromDimFilter(JoinClause joinClause, ASTNode dimFilter, String dimTable)
+  private String buildFactSubqueryFromDimFilter(JoinClause joinClause, ASTNode dimFilter,
+                                                String dimAlias, Map<Dimension, CandidateDim> dimToQuery)
     throws LensException {
     StringBuilder builder = new StringBuilder();
     if (joinClause.getJoinTree().getSubtrees().size() == 1) {
       TableRelationship tabRelation = joinClause.getJoinTree().getSubtrees().
           values().iterator().next().getParentRelationship();
+
+      CandidateDim dim = dimToQuery.get(tabRelation.getToTable());
+      String storageClause = String.format(dim.getWhereClause(), dimAlias);
+
       String alias = joinClause.getJoinTree().getSubtrees().values().iterator().next().getAlias();
-      if (alias.equals(dimTable)) {
+      if (alias.equals(dimAlias)) {
         builder.append(joinClause.getJoinTree().getAlias())
             .append(".")
             .append(tabRelation.getFromColumn())
@@ -1392,10 +1399,18 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
             .append("select ")
             .append(tabRelation.getToColumn())
             .append(" from ")
-            .append(dimTable)
+            .append(tabRelation.getToTable())
+            .append(" as ")
+            .append(dimAlias)
             .append(" where ")
-            .append(HQLParser.getString((ASTNode) dimFilter))
-            .append(" )");
+            .append(HQLParser.getString((ASTNode) dimFilter));
+      }
+      if (!storageClause.isEmpty()) {
+        builder.append(" and ")
+            .append(storageClause)
+            .append(" ) ");
+      } else {
+        builder.append(" ) ");
       }
     }
     return builder.toString();

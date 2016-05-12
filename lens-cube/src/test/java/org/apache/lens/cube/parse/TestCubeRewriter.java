@@ -763,48 +763,49 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String hql = rewrite(
         "select cubecountry.name, msr2 from" + " testCube" + " where cubecountry.region = 'asia' and "
             + TWO_DAYS_RANGE, conf);
-    String filterSubquery = "testcube.countryid in ( select id from cubecountry where "
-        + "((cubecountry.region) = 'asia') )";
+    String filterSubquery = "testcube.countryid in ( select id from countrydim as cubecountry "
+        + "where ((cubecountry.region) = 'asia') and (cubecountry.dt = 'latest') )";
     assertTrue(hql.contains(filterSubquery));
 
     // filter with or
     hql = rewrite(
         "select cubecountry.name, msr2 from" + " testCube" + " where (cubecountry.region = 'asia' "
             + "or cubecountry.region = 'europe') and " + TWO_DAYS_RANGE , conf);
-    filterSubquery = "testcube.countryid in ( select id from cubecountry where "
-        + "(((cubecountry.region) = 'asia') or ((cubecountry.region) = 'europe')) )";
+    filterSubquery = "testcube.countryid in ( select id from countrydim as cubecountry "
+        + "where (((cubecountry.region) = 'asia') or ((cubecountry.region) = 'europe')) "
+        + "and (cubecountry.dt = 'latest') )";
     assertTrue(hql.contains(filterSubquery));
 
     //filter with in
     hql = rewrite(
         "select cubecountry.name, msr2 from" + " testCube" + " where cubecountry.region in ('asia','europe') "
             + "and " + TWO_DAYS_RANGE , conf);
-    filterSubquery = "testcube.countryid in ( select id from cubecountry where (cubecountry.region) "
-        + "in ('asia' , 'europe') )";
+    filterSubquery = "testcube.countryid in ( select id from countrydim as cubecountry "
+        + "where (cubecountry.region) in ('asia' , 'europe') and (cubecountry.dt = 'latest') )";
     assertTrue(hql.contains(filterSubquery));
 
     //filter with not in
     hql = rewrite(
         "select cubecountry.name, msr2 from" + " testCube" + " where cubecountry.region not in ('asia','europe') "
             + "and " + TWO_DAYS_RANGE , conf);
-    filterSubquery = "testcube.countryid in ( select id from cubecountry where (cubecountry.region) "
-        + "not  in ('asia' , 'europe') )";
+    filterSubquery = "testcube.countryid in ( select id from countrydim as cubecountry "
+        + "where (cubecountry.region) not  in ('asia' , 'europe') and (cubecountry.dt = 'latest') )";
     assertTrue(hql.contains(filterSubquery));
 
     //filter with !=
     hql = rewrite(
         "select cubecountry.name, msr2 from" + " testCube" + " where cubecountry.region != 'asia' "
             + "and " + TWO_DAYS_RANGE , conf);
-    filterSubquery = "testcube.countryid in ( select id from cubecountry where "
-        + "((cubecountry.region) != 'asia') )";
+    filterSubquery = "testcube.countryid in ( select id from countrydim as cubecountry "
+        + "where ((cubecountry.region) != 'asia') and (cubecountry.dt = 'latest') )";
     assertTrue(hql.contains(filterSubquery));
 
     //filter with cube alias
     hql = rewrite(
         "select cubecountry.name, msr2 from" + " testCube as t" + " where cubecountry.region = 'asia' "
             + "and zipcode = 'x' and " + TWO_DAYS_RANGE , conf);
-    filterSubquery = "t.countryid in ( select id from cubecountry where "
-        + "((cubecountry.region) = 'asia') )";
+    filterSubquery = "t.countryid in ( select id from countrydim as cubecountry "
+        + "where ((cubecountry.region) = 'asia') and (cubecountry.dt = 'latest') ) ";
     assertTrue(hql.contains(filterSubquery));
   }
 
@@ -843,8 +844,10 @@ public class TestCubeRewriter extends TestQueryRewrite {
           + "from testCube where asciicity = 'c' and cityname = 'a' and zipcode = 'b' and "
           + TWO_MONTHS_RANGE_UPTO_HOURS, conf);
 
-      String filter1 = "testcube.cityid in ( select id from cubecity where (ascii((cubecity.name)) = 'c') )";
-      String filter2 = "testcube.cityid in ( select id from cubecity where ((cubecity.name) = 'a') )";
+      String filter1 = "testcube.cityid in ( select id from citydim as cubecity "
+          + "where (ascii((cubecity.name)) = 'c') and (cubecity.dt = 'latest') ) ";
+      String filter2 = "testcube.cityid in ( select id from citydim as cubecity "
+          + "where ((cubecity.name) = 'a') and (cubecity.dt = 'latest') ) ";
 
       assertTrue(hqlQuery.contains(filter1));
       assertTrue(hqlQuery.contains(filter2));
