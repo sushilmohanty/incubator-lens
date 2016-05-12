@@ -198,28 +198,20 @@ public class TestCubeMetastoreClient {
         "dummy_dim" + i, null, null, null, null, regions));
     }
 
-    ExprSpec expr1 = new ExprSpec();
-    expr1.setExpr("avg(msr1 + msr2)");
-    ExprSpec expr2 = new ExprSpec();
-    expr2.setExpr("avg(msr2 + msr1)");
-    ExprSpec expr3 = new ExprSpec();
-    expr3.setExpr("avg(msr1 + msr2 - msr1 + msr1)");
+    ExprSpec expr1 = new ExprSpec("avg(msr1 + msr2)", null, null);
+    ExprSpec expr2 = new ExprSpec("avg(msr2 + msr1)", null, null);
+    ExprSpec expr3 = new ExprSpec("avg(msr1 + msr2 - msr1 + msr1)", null, null);
     cubeExpressions.add(new ExprColumn(new FieldSchema("msr5", "double", "fifth measure"), "Avg msr5",
       expr1, expr2, expr3));
-    expr1 = new ExprSpec();
-    expr1.setExpr("avg(msr1 + msr2)");
+    expr1 = new ExprSpec("avg(msr1 + msr2)", null, null);
     cubeExpressions.add(new ExprColumn(new FieldSchema("msr5start", "double", "expr measure with start and end times"),
       "AVG of SUM", expr1));
-    expr1 = new ExprSpec();
-    expr1.setExpr("dim1 != 'x' AND dim2 != 10 ");
-    expr2 = new ExprSpec();
-    expr2.setExpr("dim1 | dim2 AND dim2 = 'XYZ'");
+    expr1 = new ExprSpec("dim1 != 'x' AND dim2 != 10 ", null, null);
+    expr2 = new ExprSpec("dim1 | dim2 AND dim2 = 'XYZ'", null, null);
     cubeExpressions.add(new ExprColumn(new FieldSchema("booleancut", "boolean", "a boolean expression"), "Boolean Cut",
       expr1, expr2));
-    expr1 = new ExprSpec();
-    expr1.setExpr("substr(dim1, 3)");
-    expr2 = new ExprSpec();
-    expr2.setExpr("substr(dim2, 3)");
+    expr1 = new ExprSpec("substr(dim1, 3)", null, null);
+    expr2 = new ExprSpec("substr(dim2, 3)", null, null);
     cubeExpressions.add(new ExprColumn(new FieldSchema("substrexpr", "string", "a subt string expression"),
       "SUBSTR EXPR", expr1, expr2));
 
@@ -538,14 +530,12 @@ public class TestCubeMetastoreClient {
     ExprColumn stateCountryExpr = new ExprColumn(new FieldSchema("stateAndCountry", "String",
       "state and country together with hiphen as separator"), "State and Country",
       "concat(citystate.name, \"-\", citycountry.name)");
-    ExprSpec expr1 = new ExprSpec();
-    expr1.setExpr("concat(countrydim.name, \"-\", countrydim.name)");
+    ExprSpec expr1 = new ExprSpec("concat(countrydim.name, \"-\", countrydim.name)", null, null);
     stateCountryExpr.addExpression(expr1);
 
     // Assert expression validation
     try {
-      expr1 = new ExprSpec();
-      expr1.setExpr("contact(countrydim.name");
+      expr1 = new ExprSpec("contact(countrydim.name", null , null);
       stateCountryExpr.addExpression(expr1);
       fail("Expected add expression to fail because of syntax error");
     } catch (LensException exc) {
@@ -867,10 +857,8 @@ public class TestCubeMetastoreClient {
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema("dim1", "id", "ref dim"), "dim with tag",
         null, null, null, null, null, tag1));
 
-    ExprSpec expr1 = new ExprSpec();
-    expr1.setExpr("avg(msr1 + msr2)");
-    ExprSpec expr2 = new ExprSpec();
-    expr2.setExpr("avg(msr2 + msr1)");
+    ExprSpec expr1 = new ExprSpec("avg(msr1 + msr2)", null, null);
+    ExprSpec expr2 = new ExprSpec("avg(msr2 + msr1)", null, null);
 
     Set<ExprColumn> cubeExpressions = new HashSet<>();
     cubeExpressions.add(new ExprColumn(new FieldSchema("expr_measure", "double", "expression measure"),
@@ -1187,7 +1175,7 @@ public class TestCubeMetastoreClient {
 
     CubeFactTable factTable = new CubeFactTable(Hive.get(conf).getTable(factName));
     factTable.alterColumn(new FieldSchema("testFactColAdd", "int", "test add column"));
-    factTable.alterColumn(new FieldSchema("msr3", "int", "test alter column"));
+    factTable.alterColumn(new FieldSchema("msr1", "float", "test alter column"));
     factTable.alterWeight(100L);
     Map<String, String> newProp = getHashMap("new.prop", "val");
     factTable.addProperties(newProp);
@@ -1210,13 +1198,18 @@ public class TestCubeMetastoreClient {
     assertTrue(altered.getUpdatePeriods().get(c2).contains(HOURLY));
     assertTrue(altered.getCubeName().equalsIgnoreCase(CUBE_NAME.toLowerCase()));
     boolean contains = false;
+    boolean msr1Altered = false;
     for (FieldSchema column : altered.getColumns()) {
       if (column.getName().equals("testfactcoladd") && column.getType().equals("int")) {
         contains = true;
         break;
       }
+      if (column.getName().equals("msr1") && column.getType().equals("float")) {
+        msr1Altered = true;
+      }
     }
-    assertTrue(contains);
+    assertTrue(contains, "column did not get added");
+    assertTrue(msr1Altered, "measure type did not get altered");
 
     // alter storage table desc
     String c1TableName = getFactOrDimtableStorageTableName(factName, c1);
@@ -2530,7 +2523,7 @@ public class TestCubeMetastoreClient {
     client.createCubeDimensionTable(zipDim.getName(), dimTblName, dimColumns, 100L, dumpPeriods, null, storageTables);
 
     CubeDimensionTable dimTable = client.getDimensionTable(dimTblName);
-    dimTable.alterColumn(new FieldSchema("testAddDim", "string", "test add column"));
+    dimTable.alterColumn(new FieldSchema("testAddDim", "int", "test add column"));
 
     List<CubeDimensionTable> tbls = client.getAllDimensionTables(zipDim);
     boolean found = false;
@@ -2549,7 +2542,7 @@ public class TestCubeMetastoreClient {
     List<FieldSchema> columns = altered.getColumns();
     boolean contains = false;
     for (FieldSchema column : columns) {
-      if (column.getName().equals("testadddim") && column.getType().equals("string")) {
+      if (column.getName().equals("testadddim") && column.getType().equals("int")) {
         contains = true;
         break;
       }
@@ -2557,13 +2550,13 @@ public class TestCubeMetastoreClient {
     assertTrue(contains);
 
     // Test alter column
-    dimTable.alterColumn(new FieldSchema("testAddDim", "int", "change type"));
+    dimTable.alterColumn(new FieldSchema("testAddDim", "float", "change type"));
     client.alterCubeDimensionTable(dimTblName, dimTable, storageTables);
 
     altered = new CubeDimensionTable(Hive.get(conf).getTable(dimTblName));
     boolean typeChanged = false;
     for (FieldSchema column : altered.getColumns()) {
-      if (column.getName().equals("testadddim") && column.getType().equals("int")) {
+      if (column.getName().equals("testadddim") && column.getType().equals("float")) {
         typeChanged = true;
         break;
       }
@@ -2586,7 +2579,7 @@ public class TestCubeMetastoreClient {
     assertEquals(alteredC1Table.getInputFormatClass(), SequenceFileInputFormat.class);
     boolean storageTblColAltered = false;
     for (FieldSchema column : alteredC1Table.getAllCols()) {
-      if (column.getName().equals("testadddim") && column.getType().equals("int")) {
+      if (column.getName().equals("testadddim") && column.getType().equals("float")) {
         storageTblColAltered = true;
         break;
       }
