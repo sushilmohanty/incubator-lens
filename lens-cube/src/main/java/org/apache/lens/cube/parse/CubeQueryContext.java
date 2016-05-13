@@ -1406,9 +1406,7 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
         .append("select ")
         .append(tabRelation.getToColumn())
         .append(" from ")
-        .append(tabRelation.getToTable())
-        .append(" as ")
-        .append(dimAlias)
+        .append(dimToQuery.get(tabRelation.getToTable()).getStorageString(dimAlias))
         .append(" where ")
         .append(HQLParser.getString((ASTNode) dimFilter));
     if (storageClause != null) {
