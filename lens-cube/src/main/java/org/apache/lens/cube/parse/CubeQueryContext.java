@@ -39,6 +39,7 @@ import org.apache.lens.cube.metadata.join.TableRelationship;
 import org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode;
 import org.apache.lens.cube.parse.join.AutoJoinContext;
 import org.apache.lens.cube.parse.join.JoinClause;
+import org.apache.lens.cube.parse.join.JoinTree;
 import org.apache.lens.cube.parse.join.JoinUtils;
 import org.apache.lens.server.api.error.LensException;
 
@@ -1353,12 +1354,24 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
                            int index,  Map<Dimension, CandidateDim> dimToQuery)
     throws LensException{
     String filter;
-    if (table != null && !table.equals(cubeAlias)) {
-      filter = buildFactSubqueryFromDimFilter(joinClause, (ASTNode) node.getChild(index), table, dimToQuery);
+    if (table != null && !table.equals(cubeAlias) && getStarJoin(joinClause, table) != null) {
+      //rewrite dim filter to fact filter if its a star join with fact
+      filter = buildFactSubqueryFromDimFilter(getStarJoin(joinClause, table),
+          (ASTNode) node.getChild(index), table, dimToQuery, cubeAlias);
     } else {
       filter = HQLParser.getString((ASTNode) node.getChild(index));
     }
     return filter;
+  }
+
+  private TableRelationship getStarJoin(JoinClause joinClause, String table) {
+    TableRelationship rel;
+    for (Map.Entry<TableRelationship, JoinTree>  entry : joinClause.getJoinTree().getSubtrees().entrySet()) {
+      if (entry.getValue().getDepthFromRoot() == 1 && table.equals(entry.getValue().getAlias())) {
+        return entry.getKey();
+      }
+    }
+    return null;
   }
 
   private String getTableFromFilterAST(ASTNode node) {
@@ -1379,40 +1392,33 @@ public class CubeQueryContext implements TrackQueriedColumns, QueryAST {
     return null;
   }
 
-  private String buildFactSubqueryFromDimFilter(JoinClause joinClause, ASTNode dimFilter,
-                                                String dimAlias, Map<Dimension, CandidateDim> dimToQuery)
+  private String buildFactSubqueryFromDimFilter(TableRelationship tabRelation, ASTNode dimFilter,
+                                                String dimAlias, Map<Dimension, CandidateDim> dimToQuery,
+                                                String cubeAlias)
     throws LensException {
     StringBuilder builder = new StringBuilder();
-    if (joinClause.getJoinTree().getSubtrees().size() == 1) {
-      TableRelationship tabRelation = joinClause.getJoinTree().getSubtrees().
-          values().iterator().next().getParentRelationship();
+    String storageClause = dimToQuery.get(tabRelation.getToTable()).getWhereClause();
 
-      CandidateDim dim = dimToQuery.get(tabRelation.getToTable());
-      String storageClause = String.format(dim.getWhereClause(), dimAlias);
-
-      String alias = joinClause.getJoinTree().getSubtrees().values().iterator().next().getAlias();
-      if (alias.equals(dimAlias)) {
-        builder.append(joinClause.getJoinTree().getAlias())
-            .append(".")
-            .append(tabRelation.getFromColumn())
-            .append(" in ( ")
-            .append("select ")
-            .append(tabRelation.getToColumn())
-            .append(" from ")
-            .append(tabRelation.getToTable())
-            .append(" as ")
-            .append(dimAlias)
-            .append(" where ")
-            .append(HQLParser.getString((ASTNode) dimFilter));
-      }
-      if (!storageClause.isEmpty()) {
-        builder.append(" and ")
-            .append(storageClause)
-            .append(" ) ");
-      } else {
-        builder.append(" ) ");
-      }
+    builder.append(cubeAlias)
+        .append(".")
+        .append(tabRelation.getFromColumn())
+        .append(" in ( ")
+        .append("select ")
+        .append(tabRelation.getToColumn())
+        .append(" from ")
+        .append(tabRelation.getToTable())
+        .append(" as ")
+        .append(dimAlias)
+        .append(" where ")
+        .append(HQLParser.getString((ASTNode) dimFilter));
+    if (storageClause != null) {
+      builder.append(" and ")
+          .append(String.format(storageClause, dimAlias))
+          .append(" ) ");
+    } else {
+      builder.append(" ) ");
     }
+
     return builder.toString();
   }
 
