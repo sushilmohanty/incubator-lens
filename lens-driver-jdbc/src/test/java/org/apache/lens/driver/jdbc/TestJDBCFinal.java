@@ -54,9 +54,6 @@ public class TestJDBCFinal {
   /** The driver. */
   JDBCDriver driver;
 
- /** The hive conf. */
-  HiveConf hConf;
-
   /**
    * Collection of drivers
    */
@@ -76,8 +73,6 @@ public class TestJDBCFinal {
     baseConf.set(JDBCDriverConfConstants.JDBC_PASSWORD, "");
     baseConf.set(JDBCDriverConfConstants.JDBC_QUERY_REWRITER_CLASS, ColumnarSQLRewriter.class.getName());
     baseConf.set(JDBCDriverConfConstants.JDBC_EXPLAIN_KEYWORD_PARAM, "explain plan for ");
-    hConf = new HiveConf(baseConf, this.getClass());
-
 
     driver = new JDBCDriver();
     driver.configure(baseConf, "jdbc", "jdbc1");
