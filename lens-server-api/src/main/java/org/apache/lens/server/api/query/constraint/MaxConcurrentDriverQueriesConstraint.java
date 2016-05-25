@@ -43,7 +43,7 @@ public class MaxConcurrentDriverQueriesConstraint implements QueryLaunchingConst
     final QueryContext candidateQuery, final EstimatedImmutableQueryCollection launchedQueries) {
 
     final LensDriver selectedDriver = candidateQuery.getSelectedDriver();
-    final boolean canLaunch = (launchedQueries.getQueriesCount(selectedDriver) < maxConcurrentQueries)
+    final boolean canLaunch = (launchedQueries.getQueriesCount(selectedDriver) >= maxConcurrentQueries)
       && canLaunchWithQueueConstraint(candidateQuery, launchedQueries)
       && canLaunchWithPriorityConstraint(candidateQuery, launchedQueries);
     log.debug("canLaunch:{}", canLaunch);

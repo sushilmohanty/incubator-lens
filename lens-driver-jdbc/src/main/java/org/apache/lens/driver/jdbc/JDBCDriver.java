@@ -94,6 +94,7 @@ public class JDBCDriver extends AbstractLensDriver {
   private ExecutorService asyncQueryPool;
 
   /** The query context map. */
+  @Getter
   private ConcurrentHashMap<QueryHandle, JdbcQueryContext> queryContextMap;
 
   /** The conf. */

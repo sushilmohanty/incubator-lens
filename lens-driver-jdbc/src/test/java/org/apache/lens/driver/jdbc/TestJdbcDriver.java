@@ -21,6 +21,7 @@ package org.apache.lens.driver.jdbc;
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.*;
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.ConnectionPoolProperties.*;
 
+import static org.apache.lens.server.api.LensServerAPITestUtil.getConfiguration;
 import static org.testng.Assert.*;
 
 import java.sql.*;
@@ -28,6 +29,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.ResultRow;
@@ -39,6 +41,8 @@ import org.apache.lens.server.api.metrics.LensMetricsRegistry;
 import org.apache.lens.server.api.query.ExplainQueryContext;
 import org.apache.lens.server.api.query.PreparedQueryContext;
 import org.apache.lens.server.api.query.QueryContext;
+import org.apache.lens.server.api.query.constraint.MaxConcurrentDriverQueriesConstraintFactory;
+import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
 import org.apache.lens.server.api.query.cost.QueryCost;
 import org.apache.lens.server.api.util.LensUtil;
 
@@ -56,6 +60,7 @@ import com.google.common.collect.Lists;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import lombok.extern.slf4j.Slf4j;
+
 
 /**
  * The Class TestJdbcDriver.
@@ -410,6 +415,43 @@ public class TestJdbcDriver {
       }
     }
   }
+
+  @Test
+  public void testJDBCMaxConnectionConstraintCheck() throws Exception {
+    close();
+    // Create table execute_test
+    createTable("max_connection_test");
+    // Insert some data into table
+    insertData("max_connection_test");
+
+    MaxJDBCConnectionCheckConstraintFactory factory = new MaxJDBCConnectionCheckConstraintFactory();
+    MaxJDBCConnectionCheckConstraint constraint = factory.create(driver.getConf());
+
+    // check constraint in driver
+    assertTrue(driver.getQueryConstraints().toString().contains("MaxJDBCConnectionCheckConstraint"));
+
+    String query;
+    QueryContext context = createQueryContext("SELECT * FROM max_connection_test");
+
+    for (int i = 1; i <= JDBC_POOL_MAX_SIZE.getDefaultValue(); i++) {
+      query = "SELECT " + i + " FROM max_connection_test";
+      context = createQueryContext(query);
+      driver.executeAsync(context);
+    }
+
+    //pool max size is same as number of query context hold on driver
+    assertEquals(driver.getQueryContextMap().size(), JDBC_POOL_MAX_SIZE.getDefaultValue());
+
+    //new query shouldn't be allowed
+    QueryContext newcontext = createQueryContext("SELECT 123 FROM max_connection_test");
+    assertFalse(constraint.allowsLaunchOf(newcontext, null));
+
+    //close one query and launch the previous query again
+    driver.closeQuery(context.getQueryHandle());
+    assertTrue(constraint.allowsLaunchOf(newcontext, null));
+    close();
+  }
+
 
   /**
    * Data provider for test case {@link #testExecuteWithPreFetch()}
