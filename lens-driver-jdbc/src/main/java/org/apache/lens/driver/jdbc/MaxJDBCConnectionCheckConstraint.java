@@ -18,11 +18,12 @@
  */
 package org.apache.lens.driver.jdbc;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.lens.server.api.driver.LensDriver;
 import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.collect.EstimatedImmutableQueryCollection;
 import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MaxJDBCConnectionCheckConstraint implements QueryLaunchingConstraint {
@@ -32,15 +33,16 @@ public class MaxJDBCConnectionCheckConstraint implements QueryLaunchingConstrain
   public MaxJDBCConnectionCheckConstraint(final int poolMaxSize) {
     this.poolMaxSize = poolMaxSize;
   }
+
   @Override
   public boolean allowsLaunchOf(final QueryContext candidateQuery,
                                 EstimatedImmutableQueryCollection launchedQueries) {
     final LensDriver selectedDriver = candidateQuery.getSelectedDriver();
-    final boolean canLaunch = (selectedDriver instanceof JDBCDriver) &&
-        (((JDBCDriver) selectedDriver).getQueryContextMap().size() < poolMaxSize) ;
+    final boolean canLaunch = (selectedDriver instanceof JDBCDriver)
+        && (((JDBCDriver) selectedDriver).getQueryContextMap().size() < poolMaxSize);
 
     log.debug("canLaunch:{}", canLaunch);
     return canLaunch;
-    }
   }
+}
 

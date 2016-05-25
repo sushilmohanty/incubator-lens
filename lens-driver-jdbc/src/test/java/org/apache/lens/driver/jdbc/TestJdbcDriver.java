@@ -21,7 +21,6 @@ package org.apache.lens.driver.jdbc;
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.*;
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.ConnectionPoolProperties.*;
 
-import static org.apache.lens.server.api.LensServerAPITestUtil.getConfiguration;
 import static org.testng.Assert.*;
 
 import java.sql.*;
@@ -29,7 +28,6 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.ResultRow;
@@ -41,8 +39,6 @@ import org.apache.lens.server.api.metrics.LensMetricsRegistry;
 import org.apache.lens.server.api.query.ExplainQueryContext;
 import org.apache.lens.server.api.query.PreparedQueryContext;
 import org.apache.lens.server.api.query.QueryContext;
-import org.apache.lens.server.api.query.constraint.MaxConcurrentDriverQueriesConstraintFactory;
-import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
 import org.apache.lens.server.api.query.cost.QueryCost;
 import org.apache.lens.server.api.util.LensUtil;
 

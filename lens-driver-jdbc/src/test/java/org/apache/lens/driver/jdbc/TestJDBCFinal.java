@@ -33,8 +33,6 @@ import org.apache.lens.server.api.driver.LensDriver;
 import org.apache.lens.server.api.driver.LensResultSet;
 import org.apache.lens.server.api.driver.LensResultSetMetadata;
 import org.apache.lens.server.api.query.QueryContext;
-import org.apache.lens.server.api.query.constraint.MaxConcurrentDriverQueriesConstraintFactory;
-import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;

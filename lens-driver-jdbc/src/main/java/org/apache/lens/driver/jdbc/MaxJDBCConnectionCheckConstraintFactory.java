@@ -19,12 +19,12 @@
 
 package org.apache.lens.driver.jdbc;
 
-import org.apache.hadoop.conf.Configuration;
+import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.ConnectionPoolProperties.JDBC_POOL_MAX_SIZE;
+
 import org.apache.lens.server.api.common.ConfigBasedObjectCreationFactory;
 import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
 
-import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.ConnectionPoolProperties.JDBC_POOL_MAX_SIZE;
-
+import org.apache.hadoop.conf.Configuration;
 
 public class MaxJDBCConnectionCheckConstraintFactory implements
     ConfigBasedObjectCreationFactory<QueryLaunchingConstraint> {
@@ -35,5 +35,4 @@ public class MaxJDBCConnectionCheckConstraintFactory implements
 
     return new MaxJDBCConnectionCheckConstraint(poolMaxSize);
   }
-
 }
