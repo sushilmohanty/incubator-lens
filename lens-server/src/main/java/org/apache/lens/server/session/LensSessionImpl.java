@@ -65,7 +65,22 @@ public class LensSessionImpl extends HiveSessionImpl {
 
   /** The session timeout. */
   private long sessionTimeout;
-  private int acquireCount = 0;
+  private static class IntegerThreadLocal extends ThreadLocal<Integer> {
+    @Override
+    protected Integer initialValue() {
+      return 0;
+    }
+    public Integer incrementAndGet() {
+      set(get() + 1);
+      return get();
+    }
+    public Integer decrementAndGet() {
+      set(get() - 1);
+      return get();
+    }
+  }
+  private IntegerThreadLocal acquireCount = new IntegerThreadLocal();
+
   /** The conf. */
   private Configuration conf = createDefaultConf();
 
@@ -228,7 +243,7 @@ public class LensSessionImpl extends HiveSessionImpl {
    */
   public synchronized void acquire() {
     super.acquire(true);
-    acquireCount++;
+    acquireCount.incrementAndGet();
     // Update thread's class loader with current DBs class loader
     ClassLoader classLoader = getClassLoader(getCurrentDatabase());
     Thread.currentThread().setContextClassLoader(classLoader);
@@ -242,8 +257,7 @@ public class LensSessionImpl extends HiveSessionImpl {
    */
   public synchronized void release() {
     lastAccessTime = System.currentTimeMillis();
-    acquireCount--;
-    if (acquireCount == 0) {
+    if (acquireCount.decrementAndGet() == 0) {
       super.release(true);
     }
   }
@@ -272,7 +286,7 @@ public class LensSessionImpl extends HiveSessionImpl {
     Iterator<ResourceEntry> itr = persistInfo.getResources().iterator();
     while (itr.hasNext()) {
       ResourceEntry res = itr.next();
-      if (res.getType().equals(type) && res.getLocation().equals(path)) {
+      if (res.getType().equalsIgnoreCase(type) && res.getUri().equals(path)) {
         itr.remove();
       }
     }
@@ -284,9 +298,10 @@ public class LensSessionImpl extends HiveSessionImpl {
    *
    * @param type the type
    * @param path the path
+   * @param finalLocation The final location where resources is downloaded
    */
-  public void addResource(String type, String path) {
-    ResourceEntry resource = new ResourceEntry(type, path);
+  public void addResource(String type, String path, String finalLocation) {
+    ResourceEntry resource = new ResourceEntry(type, path, finalLocation);
     persistInfo.getResources().add(resource);
     synchronized (sessionDbClassLoaders) {
       // Update all DB class loaders
@@ -439,27 +454,35 @@ public class LensSessionImpl extends HiveSessionImpl {
     @Getter
     final String type;
 
-    /** The location. */
     @Getter
-    final String location;
+    final String uri;
+
+    /** The final location. */
+    @Getter
+    String location;
     // For tests
     /** The restore count. */
     transient AtomicInteger restoreCount = new AtomicInteger();
 
     /** Set of databases for which this resource has been added */
-    final transient Set<String> databases = new HashSet<String>();
+    final transient Set<String> databases = new HashSet<>();
 
     /**
      * Instantiates a new resource entry.
      *
      * @param type     the type
-     * @param location the location
+     * @param uri the uri of resource
      */
-    public ResourceEntry(String type, String location) {
-      if (type == null || location == null) {
-        throw new NullPointerException("ResourceEntry type or location cannot be null");
+    public ResourceEntry(String type, String uri) {
+      this(type, uri, uri);
+    }
+
+    public ResourceEntry(String type, String uri, String location) {
+      if (type == null || uri == null || location == null) {
+        throw new NullPointerException("ResourceEntry type or uri or location cannot be null");
       }
-      this.type = type;
+      this.type = type.toUpperCase();
+      this.uri = uri;
       this.location = location;
     }
 
@@ -557,7 +580,7 @@ public class LensSessionImpl extends HiveSessionImpl {
       out.writeInt(resources.size());
       for (ResourceEntry resource : resources) {
         out.writeUTF(resource.getType());
-        out.writeUTF(resource.getLocation());
+        out.writeUTF(resource.getUri());
       }
 
       out.writeInt(config.size());
@@ -584,8 +607,8 @@ public class LensSessionImpl extends HiveSessionImpl {
       resources.clear();
       for (int i = 0; i < resSize; i++) {
         String type = in.readUTF();
-        String location = in.readUTF();
-        resources.add(new ResourceEntry(type, location));
+        String uri = in.readUTF();
+        resources.add(new ResourceEntry(type, uri));
       }
 
       config.clear();
