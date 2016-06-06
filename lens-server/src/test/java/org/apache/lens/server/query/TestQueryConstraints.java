@@ -27,6 +27,7 @@ import java.util.*;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.driver.hive.HiveDriver;
@@ -38,6 +39,7 @@ import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.LensServerAPITestUtil;
 import org.apache.lens.server.api.driver.DriverSelector;
 import org.apache.lens.server.api.driver.LensDriver;
+import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.metrics.MetricsService;
 import org.apache.lens.server.api.query.AbstractQueryContext;
 import org.apache.lens.server.api.query.QueryExecutionService;
@@ -183,7 +185,7 @@ public class TestQueryConstraints extends LensJerseyTest {
   }
 
   @Test(dataProvider = "mediaTypeData")
-  public void testThrottling(MediaType mt) throws InterruptedException {
+  public void testThrottling(MediaType mt) throws InterruptedException, LensException {
     List<QueryHandle> handles = Lists.newArrayList();
     for (int j = 0; j < 5; j++) {
       for (int i = 0; i < 10; i++) {
@@ -203,6 +205,27 @@ public class TestQueryConstraints extends LensJerseyTest {
     }
   }
 
+  @Test(dataProvider = "mediaTypeData")
+  public void testInmemoryQueryThrottling(MediaType mt) throws InterruptedException, LensException {
+    List<QueryHandle> handles = Lists.newArrayList();
+    for (int j = 0; j < 5; j++) {
+      for (int i = 0; i < 10; i++) {
+        handles.add(launchInmemoryQuery(mt));
+        assertValidity();
+      }
+      // No harm in sleeping, the queries will anyway take time.
+      //Thread.sleep(1000);
+    }
+    for (QueryHandle handle : handles) {
+      RestAPITestUtil.waitForQueryToFinish(target(), lensSessionId, handle, mt);
+      queryService.fetchResultSet(lensSessionId, handle, 0, 100);
+      //queryService.closeResultSet(lensSessionId, handle);
+
+      //Thread.sleep(5000);
+      assertValidity();
+    }
+  }
+
   private void assertValidity() {
     QueryExecutionServiceImpl.QueryCount count = queryService.getQueryCountSnapshot();
     assertTrue(count.running <= 4, System.currentTimeMillis() + " " + count.running + " running queries: "
@@ -213,6 +236,16 @@ public class TestQueryConstraints extends LensJerseyTest {
     return RestAPITestUtil.executeAndGetHandle(target(), Optional.of(lensSessionId),
       Optional.of("select ID from " + TEST_TABLE),
       Optional.of(LensServerAPITestUtil.getLensConf(QUERY_METRIC_UNIQUE_ID_CONF_KEY, UUID.randomUUID())), mt);
+  }
+
+  private QueryHandle launchInmemoryQuery(MediaType mt) {
+    LensConf conf = LensServerAPITestUtil.getLensConf(QUERY_METRIC_UNIQUE_ID_CONF_KEY, UUID.randomUUID());
+    conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, "false");
+    conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, "false");
+    conf.addProperty(LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, 500);
+    return RestAPITestUtil.executeAndGetHandle(target(), Optional.of(lensSessionId),
+        Optional.of("select ID from " + TEST_TABLE),
+        Optional.of(conf), mt);
   }
 
   @AfterMethod

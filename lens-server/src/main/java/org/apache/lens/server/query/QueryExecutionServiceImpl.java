@@ -1086,6 +1086,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
                   .getStatus());
               log.info("Query purged: {}", finished.getQueryHandle());
             }
+            processWaitingQueriesAsync(finished.ctx);
           }
           Thread.sleep(purgeInterval);
         } catch (InterruptedException e) {
