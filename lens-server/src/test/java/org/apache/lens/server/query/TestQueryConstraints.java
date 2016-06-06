@@ -30,6 +30,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.query.QueryHandle;
+import org.apache.lens.cube.parse.CubeQueryContext;
 import org.apache.lens.driver.hive.HiveDriver;
 import org.apache.lens.server.LensJerseyTest;
 import org.apache.lens.server.LensServerConf;
@@ -38,10 +39,13 @@ import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.LensServerAPITestUtil;
 import org.apache.lens.server.api.driver.DriverSelector;
+import org.apache.lens.server.api.driver.InMemoryResultSet;
 import org.apache.lens.server.api.driver.LensDriver;
+import org.apache.lens.server.api.driver.LensResultSet;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.metrics.MetricsService;
 import org.apache.lens.server.api.query.AbstractQueryContext;
+import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryExecutionService;
 import org.apache.lens.server.common.RestAPITestUtil;
 import org.apache.lens.server.common.TestResourceFile;
@@ -218,8 +222,10 @@ public class TestQueryConstraints extends LensJerseyTest {
     }
     for (QueryHandle handle : handles) {
       RestAPITestUtil.waitForQueryToFinish(target(), lensSessionId, handle, mt);
-      queryService.fetchResultSet(lensSessionId, handle, 0, 100);
-      //queryService.closeResultSet(lensSessionId, handle);
+      //QueryContext context = queryService.getQueryContext(handle);
+      //LensResultSet rs = context.getSelectedDriver().fetchResultSet(context);
+      //queryService.fetchResultSet(lensSessionId, handle, 0, 0);
+      queryService.closeResultSet(lensSessionId, handle);
 
       //Thread.sleep(5000);
       assertValidity();
@@ -242,7 +248,7 @@ public class TestQueryConstraints extends LensJerseyTest {
     LensConf conf = LensServerAPITestUtil.getLensConf(QUERY_METRIC_UNIQUE_ID_CONF_KEY, UUID.randomUUID());
     conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, "false");
     conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, "false");
-    conf.addProperty(LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, 500);
+    conf.addProperty(LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, 600);
     return RestAPITestUtil.executeAndGetHandle(target(), Optional.of(lensSessionId),
         Optional.of("select ID from " + TEST_TABLE),
         Optional.of(conf), mt);
