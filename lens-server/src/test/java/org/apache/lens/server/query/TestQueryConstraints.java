@@ -185,7 +185,7 @@ public class TestQueryConstraints extends LensJerseyTest {
   }
 
   @Test(dataProvider = "mediaTypeData")
-  public void testThrottling(MediaType mt) throws InterruptedException, LensException {
+  public void testThrottling(MediaType mt) throws InterruptedException {
     List<QueryHandle> handles = Lists.newArrayList();
     for (int j = 0; j < 5; j++) {
       for (int i = 0; i < 10; i++) {
@@ -213,17 +213,10 @@ public class TestQueryConstraints extends LensJerseyTest {
         handles.add(launchInmemoryQuery(mt));
         assertValidity();
       }
-      // No harm in sleeping, the queries will anyway take time.
-      //Thread.sleep(1000);
     }
     for (QueryHandle handle : handles) {
       RestAPITestUtil.waitForQueryToFinish(target(), lensSessionId, handle, mt);
-      //QueryContext context = queryService.getQueryContext(handle);
-      //LensResultSet rs = context.getSelectedDriver().fetchResultSet(context);
-      //queryService.fetchResultSet(lensSessionId, handle, 0, 0);
       queryService.closeResultSet(lensSessionId, handle);
-
-      //Thread.sleep(5000);
       assertValidity();
     }
   }
