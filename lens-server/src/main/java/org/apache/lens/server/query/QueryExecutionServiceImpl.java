@@ -554,8 +554,6 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
 
     private LensResultSet driverRS;
 
-    private transient boolean isClosed;
-
     /**
      * Instantiates a new finished query.
      *
@@ -1049,12 +1047,12 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
                 log.warn("Exception while purging query {}", finished.getQueryHandle(), e);
                 continue;
               } finally {
-                if (!finished.isClosed) {
+                if (!finished.getCtx().isQueryClosedOnDriver()) {
                   try {
-                    finished.isClosed = true;
                     if (finished.getCtx().getSelectedDriver() != null) {
                       finished.getCtx().getSelectedDriver().closeQuery(finished.getQueryHandle());
                     }
+                    finished.getCtx().setQueryClosedOnDriver(true);
                   } catch (Exception e) {
                     log.warn("Exception while closing query with selected driver.", e);
                   }
@@ -1101,7 +1099,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
               finishedQuery.setFileSize(fileSize);
             }
           } catch (Exception e) {
-            log.error("Couldn't obtain result set info for the query: {}. Going ahead with purge",
+            log.error("Couldn't obtain result set info for the query: {}. Going ahead with perstsiting the query",
               finished.getQueryHandle(), e);
           }
         }
@@ -1659,6 +1657,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   LensResultSet getResultset(QueryHandle queryHandle) throws LensException {
     QueryContext ctx = allQueries.get(queryHandle);
+
     if (ctx == null) {
       return getResultsetFromDAO(queryHandle);
     } else {
@@ -1671,7 +1670,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
           if (resultSet == null) {
             if (ctx.isPersistent() && ctx.getQueryOutputFormatter() != null) {
               resultSets.put(queryHandle, new LensPersistentResult(ctx, conf));
-            } else if (allQueries.get(queryHandle).isResultAvailableInDriver()) {
+            } else if (ctx.isResultAvailableInDriver() && !ctx.isQueryClosedOnDriver()) {
+              //InMemory result can not be returned for a closed query
               resultSet = getDriverResultset(queryHandle);
               resultSets.put(queryHandle, resultSet);
             }
