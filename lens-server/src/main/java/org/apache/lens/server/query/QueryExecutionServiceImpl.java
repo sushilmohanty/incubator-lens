@@ -26,6 +26,7 @@ import static org.apache.lens.server.session.LensSessionImpl.ResourceEntry;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -170,7 +171,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   /**
    * The all queries.
    */
-  protected ConcurrentMap<QueryHandle, QueryContext> allQueries = new ConcurrentHashMap<QueryHandle, QueryContext>();
+  protected final ConcurrentMap<QueryHandle, QueryContext> allQueries = new ConcurrentHashMap<>();
 
   /**
    * The conf.
@@ -696,18 +697,12 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
               log.debug("Acquiring lock in QuerySubmitter");
               removalFromLaunchedQueriesLock.lock();
               try {
-
-                boolean isQueryAllowedToLaunch = this.constraintsChecker.canLaunch(query, launchedQueries);
-
-                log.debug("isQueryAllowedToLaunch:{}", isQueryAllowedToLaunch);
-                if (isQueryAllowedToLaunch) {
-
+                if (this.constraintsChecker.canLaunch(query, launchedQueries)) {
                   /* Query is not going to be added to waiting queries. No need to keep the lock.
                   First release lock, then launch query */
                   removalFromLaunchedQueriesLock.unlock();
                   launchQuery(query);
                 } else {
-
                   /* Query is going to be added to waiting queries. Keep holding the lock to avoid any removal from
                   launched queries. First add to waiting queries, then release lock */
                   addToWaitingQueries(query);
@@ -1040,43 +1035,26 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
             finished = iter.next();
             if (finished.canBePurged()) {
               try {
-                FinishedLensQuery finishedQuery = new FinishedLensQuery(finished.getCtx());
-                if (finished.ctx.getStatus().getStatus() == SUCCESSFUL) {
-                  if (finished.ctx.getStatus().isResultSetAvailable()) {
-                    try {
-                      LensResultSet set = finished.getResultset();
-                      if (set != null && PersistentResultSet.class.isAssignableFrom(set.getClass())) {
-                        LensResultSetMetadata metadata = set.getMetadata();
-                        String outputPath = set.getOutputPath();
-                        Long fileSize = ((PersistentResultSet) set).getFileSize();
-                        Integer rows = set.size();
-                        finishedQuery.setResult(outputPath);
-                        finishedQuery.setMetadata(metadata.toJson());
-                        finishedQuery.setRows(rows);
-                        finishedQuery.setFileSize(fileSize);
-                      }
-                    } catch (Exception e) {
-                      log.error("Couldn't obtain result set info for the query: {}. Going ahead with purge",
-                        finished.getQueryHandle(), e);
-                    }
-                  }
-                }
-                lensServerDao.insertFinishedQuery(finishedQuery);
-                log.info("Saved query {} to DB", finishedQuery.getHandle());
+                persistQuery(finished);
                 iter.remove();
               } catch (Exception e) {
                 log.warn("Exception while purging query {}", finished.getQueryHandle(), e);
                 continue;
+              } finally {
+                if (!finished.getCtx().isQueryClosedOnDriver()) {
+                  try {
+                    if (finished.getCtx().getSelectedDriver() != null) {
+                      finished.getCtx().getSelectedDriver().closeQuery(finished.getQueryHandle());
+                    }
+                    finished.getCtx().setQueryClosedOnDriver(true);
+                  } catch (Exception e) {
+                    log.warn("Exception while closing query with selected driver.", e);
+                  }
+                  processWaitingQueriesAsync(finished.ctx);
+                }
               }
               synchronized (finished.ctx) {
                 finished.ctx.setFinishedQueryPersisted(true);
-                try {
-                  if (finished.getCtx().getSelectedDriver() != null) {
-                    finished.getCtx().getSelectedDriver().closeQuery(finished.getQueryHandle());
-                  }
-                } catch (Exception e) {
-                  log.warn("Exception while closing query with selected driver.", e);
-                }
                 log.info("Purging: {}", finished.getQueryHandle());
                 allQueries.remove(finished.getQueryHandle());
                 resultSets.remove(finished.getQueryHandle());
@@ -1096,6 +1074,32 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         }
       }
       log.info("QueryPurger exited");
+    }
+
+    private void persistQuery(FinishedQuery finished) throws SQLException {
+      FinishedLensQuery finishedQuery = new FinishedLensQuery(finished.getCtx());
+      if (finished.ctx.getStatus().getStatus() == SUCCESSFUL) {
+        if (finished.ctx.getStatus().isResultSetAvailable()) {
+          try {
+            LensResultSet set = finished.getResultset();
+            if (set != null && PersistentResultSet.class.isAssignableFrom(set.getClass())) {
+              LensResultSetMetadata metadata = set.getMetadata();
+              String outputPath = set.getOutputPath();
+              Long fileSize = ((PersistentResultSet) set).getFileSize();
+              Integer rows = set.size();
+              finishedQuery.setResult(outputPath);
+              finishedQuery.setMetadata(metadata.toJson());
+              finishedQuery.setRows(rows);
+              finishedQuery.setFileSize(fileSize);
+            }
+          } catch (Exception e) {
+            log.error("Couldn't obtain result set info for the query: {}. Going ahead with perstsiting the query",
+              finished.getQueryHandle(), e);
+          }
+        }
+      }
+      lensServerDao.insertFinishedQuery(finishedQuery);
+      log.info("Saved query {} to DB", finishedQuery.getHandle());
     }
   }
 
@@ -1223,6 +1227,22 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     }
   }
 
+  private void awaitTermination(ExecutorService service) {
+    try {
+      service.awaitTermination(1, TimeUnit.MINUTES);
+    } catch (InterruptedException e) {
+      log.info("Couldn't finish executor service within 1 minute: {}", service);
+    }
+  }
+
+  private void awaitTermination(QueryResultPurger service) {
+    try {
+      service.awaitTermination(1, TimeUnit.MINUTES);
+    } catch (InterruptedException e) {
+      log.info("Couldn't finish query result purger within 1 minute: {}", service);
+    }
+  }
+
   /*
    * (non-Javadoc)
    *
@@ -1230,10 +1250,39 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   public void prepareStopping() {
     super.prepareStopping();
-    querySubmitter.interrupt();
-    statusPoller.interrupt();
-    queryPurger.interrupt();
-    prepareQueryPurger.interrupt();
+    Thread[] threadsToStop = new Thread[]{querySubmitter, statusPoller, queryPurger, prepareQueryPurger};
+    // Nudge the threads to stop
+    for (Thread th : threadsToStop) {
+      th.interrupt();
+    }
+
+    // Nudge executor pools to stop
+
+    // Hard shutdown, since it doesn't matter whether waiting queries were selected, all will be
+    // selected in the next restart
+    waitingQueriesSelectionSvc.shutdownNow();
+    // Soft shutdown, Wait for current estimate tasks
+    estimatePool.shutdown();
+    // Soft shutdown for result purger too. Purging shouldn't take much time.
+    if (null != queryResultPurger) {
+      queryResultPurger.shutdown();
+    }
+    // Soft shutdown right now, will await termination in this method itself, since cancellation pool
+    // should be terminated before query state gets persisted.
+    queryCancellationPool.shutdown();
+
+    // Join the threads.
+    for (Thread th : threadsToStop) {
+      try {
+        log.debug("Waiting for {}", th.getName());
+        th.join();
+      } catch (InterruptedException e) {
+        log.error("Error waiting for thread: {}", th.getName(), e);
+      }
+    }
+    // Needs to be done before queries' states are persisted, hence doing here. Await of other
+    // executor services can be done after persistence, hence they are done in #stop
+    awaitTermination(queryCancellationPool);
   }
 
   /*
@@ -1243,26 +1292,9 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   public synchronized void stop() {
     super.stop();
-
-    waitingQueriesSelectionSvc.shutdown();
-
-    for (Thread th : new Thread[]{querySubmitter, statusPoller, queryPurger, prepareQueryPurger}) {
-      try {
-        log.debug("Waiting for {}", th.getName());
-        th.join();
-      } catch (InterruptedException e) {
-        log.error("Error waiting for thread: {}", th.getName(), e);
-      }
-    }
-
-    estimatePool.shutdownNow();
-
-    if (null != queryResultPurger) {
-      queryResultPurger.stop();
-    }
-
-    queryCancellationPool.shutdown();
-
+    awaitTermination(waitingQueriesSelectionSvc);
+    awaitTermination(estimatePool);
+    awaitTermination(queryResultPurger);
     log.info("Query execution service stopped");
   }
 
@@ -1272,8 +1304,9 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    * @see org.apache.hive.service.CompositeService#start()
    */
   public synchronized void start() {
-    final List<QueryContext> allRestoredQueuedQueries = new LinkedList<QueryContext>();
     synchronized (allQueries) {
+      // populate the query queues
+      final List<QueryContext> allRestoredQueuedQueries = new LinkedList<QueryContext>();
       for (QueryContext ctx : allQueries.values()) {
         // recover query configurations from session
         try {
@@ -1306,6 +1339,14 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
             launchedQueries.add(ctx);
           } catch (final Exception e) {
             log.error("Query not restored:QueryContext:{}", ctx, e);
+          }
+          // If EXECUTED, try to nudge result formatting forward
+          if (ctx.getStatus().getStatus() == EXECUTED) {
+            try {
+              getEventService().notifyEvent(newStatusChangeEvent(ctx, null, ctx.getStatus().getStatus()));
+            } catch (LensException e) {
+              log.error("Couldn't notify event for query executed for {}", ctx, e);
+            }
           }
           break;
         case SUCCESSFUL:
@@ -1647,6 +1688,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   LensResultSet getResultset(QueryHandle queryHandle) throws LensException {
     QueryContext ctx = allQueries.get(queryHandle);
+
     if (ctx == null) {
       return getResultsetFromDAO(queryHandle);
     } else {
@@ -1659,7 +1701,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
           if (resultSet == null) {
             if (ctx.isPersistent() && ctx.getQueryOutputFormatter() != null) {
               resultSets.put(queryHandle, new LensPersistentResult(ctx, conf));
-            } else if (allQueries.get(queryHandle).isResultAvailableInDriver()) {
+            } else if (ctx.isResultAvailableInDriver() && !ctx.isQueryClosedOnDriver()) {
+              //InMemory result can not be returned for a closed query
               resultSet = getDriverResultset(queryHandle);
               resultSets.put(queryHandle, resultSet);
             }
@@ -1867,7 +1910,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    *
    * @param query
    * @param sessionHandle
-   * @param qconf
+   * @param conf
    * @param queryName
    * @return
    */
@@ -2897,17 +2940,6 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     }
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.lens.server.LensService#closeSession(org.apache.lens.api.LensSessionHandle)
-   */
-  public void closeSession(LensSessionHandle sessionHandle) throws LensException {
-    super.closeSession(sessionHandle);
-    // Call driver session close in case some one closes sessions directly on query service
-    closeDriverSessions(sessionHandle);
-  }
-
   // Used in test code
   Collection<LensDriver> getDrivers() {
     return drivers.values();
@@ -3147,12 +3179,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
 
     Set<QueryContext> eligibleWaitingQueries = this.waitingQueriesSelector
       .selectQueries(finishedQuery, this.waitingQueries);
-
+    log.info("Eligible queries to pick from waiting queries: {}", eligibleWaitingQueries);
     if (eligibleWaitingQueries.isEmpty()) {
-      log.debug("No queries eligible to move out of waiting state.");
+      log.info("No queries eligible to move out of waiting state.");
       return;
     }
-
     waitingQueries.removeAll(eligibleWaitingQueries);
     queuedQueries.addAll(eligibleWaitingQueries);
     if (log.isDebugEnabled()) {

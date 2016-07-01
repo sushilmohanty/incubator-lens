@@ -115,7 +115,7 @@ public class HiveDriver extends AbstractLensDriver {
 
   /** The hive handles. */
   @Getter
-  private Map<QueryHandle, OperationHandle> hiveHandles = new ConcurrentHashMap<QueryHandle, OperationHandle>();
+  private final Map<QueryHandle, OperationHandle> hiveHandles = new ConcurrentHashMap<QueryHandle, OperationHandle>();
 
   /** The orphaned hive sessions. */
   private ConcurrentLinkedQueue<SessionHandle> orphanedHiveSessions;
@@ -655,7 +655,7 @@ public class HiveDriver extends AbstractLensDriver {
           if (tstate == Task.TaskState.FINISHED) {
             completedTasks++;
           }
-          if (taskStat.getErrorMsg() != null) {
+          if ((taskStat.getReturnValue() != null && taskStat.getReturnValue() != 0) || taskStat.getErrorMsg() != null) {
             appendTaskIds(errorMessage, taskStat);
             errorMessage.append(" has failed! ");
           }
