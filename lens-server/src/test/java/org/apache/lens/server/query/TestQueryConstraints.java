@@ -50,10 +50,7 @@ import org.apache.hadoop.conf.Configuration;
 
 import org.glassfish.jersey.test.TestProperties;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import com.beust.jcommander.internal.Lists;
 
@@ -97,6 +94,12 @@ public class TestQueryConstraints extends LensJerseyTest {
   @BeforeTest
   public void setUp() throws Exception {
     super.setUp();
+
+  }
+
+  @BeforeClass
+  public void setupTest() throws Exception {
+    restartLensServer();
     queryService = LensServices.get().getService(QueryExecutionService.NAME);
     metricsSvc = LensServices.get().getService(MetricsService.NAME);
     Map<String, String> sessionConf = new HashMap<>();
@@ -105,6 +108,13 @@ public class TestQueryConstraints extends LensJerseyTest {
     // automatically
     createTable(TEST_TABLE);
     loadData(TEST_TABLE, TestResourceFile.TEST_DATA2_FILE.getValue());
+  }
+
+  @AfterClass
+  public void afterTest() throws Exception {
+    dropTable(TEST_TABLE);
+    queryService.closeSession(lensSessionId);
+    restartLensServer();
   }
 
   @Override
@@ -120,13 +130,6 @@ public class TestQueryConstraints extends LensJerseyTest {
      */
   @AfterTest
   public void tearDown() throws Exception {
-    dropTable(TEST_TABLE);
-    queryService.closeSession(lensSessionId);
-    for (LensDriver driver : queryService.getDrivers()) {
-      if (driver instanceof HiveDriver) {
-        assertFalse(((HiveDriver) driver).hasLensSession(lensSessionId));
-      }
-    }
     super.tearDown();
   }
 
@@ -143,7 +146,7 @@ public class TestQueryConstraints extends LensJerseyTest {
   }
 
   /** The test table. */
-  public static final String TEST_TABLE = "TEST_TABLE";
+  public static final String TEST_TABLE = "QUERY_CONSTRAINTS_TEST_TABLE";
 
   /**
    * Creates the table.
@@ -208,7 +211,7 @@ public class TestQueryConstraints extends LensJerseyTest {
     }
     for (QueryHandle handle : handles) {
       RestAPITestUtil.waitForQueryToFinish(target(), lensSessionId, handle, mt);
-      queryService.closeResultSet(lensSessionId, handle);
+      queryService.fetchResultSet(lensSessionId, handle, 0, 100);
       assertValidity();
     }
   }

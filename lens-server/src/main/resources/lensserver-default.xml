@@ -102,30 +102,6 @@
   </property>
 
   <property>
-    <name>lens.server.ui.base.uri</name>
-    <value>http://0.0.0.0:19999/</value>
-    <description>The base url for the Lens UI Server</description>
-  </property>
-
-  <property>
-    <name>lens.server.ui.static.dir</name>
-    <value>webapp/lens-server/static</value>
-    <description>The base directory to server UI static files from</description>
-  </property>
-
-  <property>
-    <name>lens.server.ui.enable</name>
-    <value>true</value>
-    <description>Bringing up the ui server is optional. By default it brings up UI server.</description>
-  </property>
-
-  <property>
-    <name>lens.server.ui.enable.caching</name>
-    <value>true</value>
-    <description>Set this to false to disable static file caching in the UI server</description>
-  </property>
-
-  <property>
     <name>lens.server.query.state.logger.enabled</name>
     <value>true</value>
     <description>Disable or enable the query state logger with this config.
@@ -772,6 +748,28 @@
   </property>
 
   <property>
+    <name>lens.server.launcher.pool.min.threads</name>
+    <value>3</value>
+    <description>Minimum number of threads in the query launcher thread pool</description>
+  </property>
+
+  <property>
+    <name>lens.server.launcher.pool.max.threads</name>
+    <value>100</value>
+    <description>Maximum number of threads in the query launcher thread pool. Keeping the default to hundred, we may
+      never grow till there, it would go to max for concurrrent queries allowed on all drivers together.
+      This value should be greater than the max concurrent queries allowed on all drivers. </description>
+  </property>
+
+  <property>
+    <name>lens.server.launcher.pool.keepalive.millis</name>
+    <value>60000</value>
+    <description>Thread keep alive time in milliseconds for the query launcher thread pool.
+      If there are no query launches for this period,then cached threads will be released from the pool.
+    </description>
+  </property>
+
+  <property>
     <name>lens.server.session.expiry.service.interval.secs</name>
     <value>3600</value>
     <description>Interval at which lens session expiry service runs</description>
@@ -866,9 +864,15 @@
     </description>
   </property>
   <property>
-  <name>lens.server.status.update.exponential.wait.millis</name>
-  <value>30000</value>
-  <description>Number of millis that would grow exponentially for next update, incase of transient failures.
-  </description>
-</property>
+    <name>lens.server.status.update.exponential.wait.millis</name>
+    <value>30000</value>
+    <description>Number of millis that would grow exponentially for next update, incase of transient failures.
+    </description>
+  </property>
+  <property>
+    <name>lens.query.current.time.millis</name>
+    <value>0</value>
+    <description>Query current time in millis. This is used to resolve 'now'. If value is set to zero, 'now' is
+     resolved to current value</description>
+  </property>
 </configuration>

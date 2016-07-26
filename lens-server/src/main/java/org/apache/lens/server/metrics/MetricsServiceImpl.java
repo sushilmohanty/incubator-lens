@@ -40,16 +40,12 @@ import org.apache.lens.server.api.metastore.CubeMetastoreService;
 import org.apache.lens.server.api.metrics.*;
 import org.apache.lens.server.api.query.QueryExecutionService;
 import org.apache.lens.server.api.query.StatusChange;
-import org.apache.lens.server.api.session.SessionClosed;
-import org.apache.lens.server.api.session.SessionEvent;
-import org.apache.lens.server.api.session.SessionExpired;
-import org.apache.lens.server.api.session.SessionOpened;
-import org.apache.lens.server.api.session.SessionService;
+import org.apache.lens.server.api.session.*;
 import org.apache.lens.server.healthcheck.LensServiceHealthCheck;
 import org.apache.lens.server.query.QueryExecutionServiceImpl;
 import org.apache.lens.server.quota.QuotaServiceImpl;
+import org.apache.lens.server.scheduler.AlarmService;
 import org.apache.lens.server.scheduler.SchedulerServiceImpl;
-import org.apache.lens.server.scheduler.notification.services.AlarmService;
 import org.apache.lens.server.session.DatabaseResourceService;
 import org.apache.lens.server.session.HiveSessionService;
 
@@ -67,11 +63,9 @@ import com.codahale.metrics.health.HealthCheckRegistry;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
-
 import info.ganglia.gmetric4j.gmetric.GMetric;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 import lombok.Getter;
-
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -138,6 +132,9 @@ public class MetricsServiceImpl extends AbstractService implements MetricsServic
 
   /** The waiting queries. */
   private Gauge<Long> waitingQueries;
+
+  /** The queries being launched. */
+  private Gauge<Long> launchingQueries;
 
   /** The finished queries. */
   private Gauge<Long> finishedQueries;
@@ -355,6 +352,14 @@ public class MetricsServiceImpl extends AbstractService implements MetricsServic
         @Override
         public Long getValue() {
           return getQuerySvc().getWaitingQueriesCount();
+        }
+      });
+
+    launchingQueries = metricRegistry.register(MetricRegistry.name(QueryExecutionService.class, LAUNCHING_QUERIES),
+      new Gauge<Long>() {
+        @Override
+        public Long getValue() {
+          return getQuerySvc().getLaunchingQueriesCount();
         }
       });
 
