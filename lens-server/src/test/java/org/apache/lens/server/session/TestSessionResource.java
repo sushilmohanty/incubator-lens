@@ -67,6 +67,7 @@ import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
 
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 /**
@@ -84,7 +85,7 @@ public class TestSessionResource extends LensJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#setUp()
    */
-  @BeforeClass
+  @BeforeTest
   public void setUp() throws Exception {
     metricsSvc = LensServices.get().getService(MetricsService.NAME);
     LensServices.get().getLogSegregationContext().setLogSegregationId("logid");
