@@ -88,7 +88,7 @@ public class TestSavedQueryService extends LensJerseyTest {
     }
   }
 
-  @BeforeClass
+  @BeforeTest
   public void setUp() throws Exception {
     super.setUp();
     savedQueryService = LensServices.get().getService(SavedQueryService.NAME);
@@ -100,7 +100,7 @@ public class TestSavedQueryService extends LensJerseyTest {
     SessionState.start(new HiveConf());
   }
 
-  @AfterClass
+  @AfterTest
   public void tearDown() throws Exception {
     super.tearDown();
     queryService.closeSession(lensSessionId);
