@@ -82,9 +82,13 @@ public class TestQueryEndEmailNotifier extends LensJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#setUp()
    */
-  @BeforeClass
+  @BeforeTest
   public void setUp() throws Exception {
     super.setUp();
+  }
+
+  @BeforeClass
+  public void create() throws Exception {
     wiser = new Wiser();
     wiser.setHostname("localhost");
     wiser.setPort(25000);
@@ -110,12 +114,16 @@ public class TestQueryEndEmailNotifier extends LensJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#tearDown()
    */
-  @AfterClass
+  @AfterTest
   public void tearDown() throws Exception {
+    super.tearDown();
+  }
+
+  @AfterClass
+  public void drop() throws Exception {
     wiser.stop();
     dropTable(TEST_TABLE);
     queryService.closeSession(lensSessionId);
-    super.tearDown();
   }
 
   /*

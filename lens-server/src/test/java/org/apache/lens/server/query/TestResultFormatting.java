@@ -76,12 +76,7 @@ public class TestResultFormatting extends LensJerseyTest {
    */
   @BeforeTest
   public void setUp() throws Exception {
-    super.setUp();
-    queryService = LensServices.get().getService(QueryExecutionService.NAME);
-    lensSessionId = queryService.openSession("foo", "bar", new HashMap<String, String>());
-    createTable(testTable, target(), lensSessionId,
-      "(ID INT, IDSTR STRING, IDARR ARRAY<INT>, IDSTRARR ARRAY<STRING>)", defaultMT);
-    loadDataFromClasspath(testTable, TestResourceFile.TEST_DATA2_FILE.getValue(), target(), lensSessionId, defaultMT);
+    super.setUp();;
   }
 
   @BeforeClass
