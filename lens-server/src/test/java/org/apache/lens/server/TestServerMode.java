@@ -43,9 +43,7 @@ import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.testng.Assert;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 /**
  * The Class TestServerMode.
@@ -58,7 +56,7 @@ public class TestServerMode extends LensAllApplicationJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#setUp()
    */
-  @BeforeTest
+  @BeforeClass
   public void setUp() throws Exception {
     super.setUp();
     LensServerTestUtil.createTable("test_table", target(), RestAPITestUtil.openFooBarSession(target(), defaultMT),
@@ -70,7 +68,7 @@ public class TestServerMode extends LensAllApplicationJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#tearDown()
    */
-  @AfterTest
+  @AfterClass
   public void tearDown() throws Exception {
     super.tearDown();
   }

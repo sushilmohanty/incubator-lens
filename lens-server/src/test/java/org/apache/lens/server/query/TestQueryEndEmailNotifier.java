@@ -82,7 +82,7 @@ public class TestQueryEndEmailNotifier extends LensJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#setUp()
    */
-  @BeforeTest
+  @BeforeClass
   public void setUp() throws Exception {
     super.setUp();
     wiser = new Wiser();
@@ -110,7 +110,7 @@ public class TestQueryEndEmailNotifier extends LensJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#tearDown()
    */
-  @AfterTest
+  @AfterClass
   public void tearDown() throws Exception {
     wiser.stop();
     dropTable(TEST_TABLE);

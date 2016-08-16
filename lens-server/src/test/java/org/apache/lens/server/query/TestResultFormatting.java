@@ -52,9 +52,7 @@ import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -76,7 +74,7 @@ public class TestResultFormatting extends LensJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#setUp()
    */
-  @BeforeTest
+  @BeforeClass
   public void setUp() throws Exception {
     super.setUp();
     queryService = LensServices.get().getService(QueryExecutionService.NAME);
@@ -91,7 +89,7 @@ public class TestResultFormatting extends LensJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#tearDown()
    */
-  @AfterTest
+  @AfterClass
   public void tearDown() throws Exception {
     dropTable(testTable, target(), lensSessionId, defaultMT);
     queryService.closeSession(lensSessionId);
