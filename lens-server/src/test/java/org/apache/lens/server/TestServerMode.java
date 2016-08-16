@@ -56,11 +56,14 @@ public class TestServerMode extends LensAllApplicationJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#setUp()
    */
-  @BeforeClass
+  @BeforeTest
   public void setUp() throws Exception {
     super.setUp();
+  }
+  @BeforeClass
+  public void create() throws Exception {
     LensServerTestUtil.createTable("test_table", target(), RestAPITestUtil.openFooBarSession(target(), defaultMT),
-      defaultMT);
+        defaultMT);
   }
 
   /*
@@ -68,9 +71,15 @@ public class TestServerMode extends LensAllApplicationJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#tearDown()
    */
-  @AfterClass
+  @AfterTest
   public void tearDown() throws Exception {
     super.tearDown();
+  }
+
+  @AfterClass
+  public void drop() throws Exception {
+    LensServerTestUtil.dropTable("test_table", target(), RestAPITestUtil.openFooBarSession(target(), defaultMT),
+        defaultMT);
   }
 
   /**

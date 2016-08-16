@@ -87,11 +87,14 @@ public class TestSessionResource extends LensJerseyTest {
    */
   @BeforeTest
   public void setUp() throws Exception {
-    metricsSvc = LensServices.get().getService(MetricsService.NAME);
-    LensServices.get().getLogSegregationContext().setLogSegregationId("logid");
     super.setUp();
   }
 
+  @BeforeClass
+  public void create() throws Exception {
+    metricsSvc = LensServices.get().getService(MetricsService.NAME);
+    LensServices.get().getLogSegregationContext().setLogSegregationId("logid");
+  }
   /*
    * (non-Javadoc)
    *

@@ -124,9 +124,13 @@ public class TestQueryService extends LensJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#setUp()
    */
-  @BeforeClass
+  @BeforeTest
   public void setUp() throws Exception {
     super.setUp();
+  }
+
+  @BeforeClass
+  public void create() throws Exception {
     queryService = LensServices.get().getService(QueryExecutionService.NAME);
     metricsSvc = LensServices.get().getService(MetricsService.NAME);
     Map<String, String> sessionconf = new HashMap<>();
@@ -164,8 +168,13 @@ public class TestQueryService extends LensJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#tearDown()
    */
-  @AfterClass
+  @AfterTest
   public void tearDown() throws Exception {
+    super.tearDown();
+  }
+
+  @AfterClass
+  public void drop() throws Exception {
     dropTable(TEST_TABLE);
     queryService.closeSession(lensSessionId);
     for (LensDriver driver : queryService.getDrivers()) {
@@ -173,7 +182,6 @@ public class TestQueryService extends LensJerseyTest {
         assertFalse(((HiveDriver) driver).hasLensSession(lensSessionId));
       }
     }
-    super.tearDown();
   }
 
   /*

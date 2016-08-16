@@ -91,6 +91,10 @@ public class TestSavedQueryService extends LensJerseyTest {
   @BeforeTest
   public void setUp() throws Exception {
     super.setUp();
+  }
+
+  @BeforeClass
+  public void create() throws Exception {
     savedQueryService = LensServices.get().getService(SavedQueryService.NAME);
     queryService = LensServices.get().getService(QueryExecutionService.NAME);
     metricsSvc = LensServices.get().getService(MetricsService.NAME);
@@ -103,9 +107,13 @@ public class TestSavedQueryService extends LensJerseyTest {
   @AfterTest
   public void tearDown() throws Exception {
     super.tearDown();
-    queryService.closeSession(lensSessionId);
-    super.tearDown();
   }
+
+  @AfterClass
+  public void drop() throws Exception {
+    queryService.closeSession(lensSessionId);
+  }
+
 
   @Override
   protected Application configure() {

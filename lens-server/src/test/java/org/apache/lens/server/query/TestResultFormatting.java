@@ -74,7 +74,7 @@ public class TestResultFormatting extends LensJerseyTest {
    *
    * @see org.glassfish.jersey.test.JerseyTest#setUp()
    */
-  @BeforeClass
+  @BeforeTest
   public void setUp() throws Exception {
     super.setUp();
     queryService = LensServices.get().getService(QueryExecutionService.NAME);
@@ -84,16 +84,29 @@ public class TestResultFormatting extends LensJerseyTest {
     loadDataFromClasspath(testTable, TestResourceFile.TEST_DATA2_FILE.getValue(), target(), lensSessionId, defaultMT);
   }
 
+  @BeforeClass
+  public void create() throws Exception {
+    queryService = LensServices.get().getService(QueryExecutionService.NAME);
+    lensSessionId = queryService.openSession("foo", "bar", new HashMap<String, String>());
+    createTable(testTable, target(), lensSessionId,
+        "(ID INT, IDSTR STRING, IDARR ARRAY<INT>, IDSTRARR ARRAY<STRING>)", defaultMT);
+    loadDataFromClasspath(testTable, TestResourceFile.TEST_DATA2_FILE.getValue(), target(), lensSessionId, defaultMT);
+  }
+
   /*
    * (non-Javadoc)
    *
    * @see org.glassfish.jersey.test.JerseyTest#tearDown()
    */
-  @AfterClass
+  @AfterTest
   public void tearDown() throws Exception {
+    super.tearDown();
+  }
+
+  @AfterClass
+  public void drop() throws Exception {
     dropTable(testTable, target(), lensSessionId, defaultMT);
     queryService.closeSession(lensSessionId);
-    super.tearDown();
   }
 
   /*
