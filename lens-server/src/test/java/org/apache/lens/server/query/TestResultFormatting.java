@@ -76,7 +76,7 @@ public class TestResultFormatting extends LensJerseyTest {
    */
   @BeforeTest
   public void setUp() throws Exception {
-    super.setUp();;
+    super.setUp();
   }
 
   @BeforeClass
