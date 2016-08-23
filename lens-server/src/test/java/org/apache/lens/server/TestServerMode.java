@@ -62,8 +62,9 @@ public class TestServerMode extends LensAllApplicationJerseyTest {
   }
   @BeforeClass
   public void create() throws Exception {
-    LensServerTestUtil.createTable("test_table", target(), RestAPITestUtil.openFooBarSession(target(), defaultMT),
-        defaultMT);
+    LensSessionHandle fooBarSessonHandle = RestAPITestUtil.openFooBarSession(target(), defaultMT);
+    LensServerTestUtil.createTable("test_table", target(), fooBarSessonHandle, defaultMT);
+    RestAPITestUtil.closeSession(target(), fooBarSessonHandle, defaultMT);
   }
 
   /*
@@ -78,8 +79,10 @@ public class TestServerMode extends LensAllApplicationJerseyTest {
 
   @AfterClass
   public void drop() throws Exception {
-    LensServerTestUtil.dropTable("test_table", target(), RestAPITestUtil.openFooBarSession(target(), defaultMT),
+    LensSessionHandle fooBarSessonHandle = RestAPITestUtil.openFooBarSession(target(), defaultMT);
+    LensServerTestUtil.dropTable("test_table", target(), fooBarSessonHandle,
         defaultMT);
+    RestAPITestUtil.closeSession(target(), fooBarSessonHandle, defaultMT);
   }
 
   /**
