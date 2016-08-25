@@ -163,8 +163,8 @@ public class TestLensFactCommands extends LensCliApplicationTest {
         "<property name=\"fact1.prop\" value=\"f1\"/>" + "\n<property name=\"fact1.prop1\" value=\"f2\"/>\n");
 
       xmlContent = xmlContent.replace("<column comment=\"\" name=\"measure3\" _type=\"FLOAT\"/>",
-          "<column comment=\"\" name=\"measure3\" _type=\"FLOAT\"/>" +
-          "\n<column comment=\"\" name=\"measure4\" _type=\"FLOAT\" start_time=\"2015-01-01\"/>\n");
+          "<column comment=\"\" name=\"measure3\" _type=\"FLOAT\"/>"
+              + "\n<column comment=\"\" name=\"measure4\" _type=\"FLOAT\" start_time=\"2015-01-01\"/>\n");
 
       File newFile = new File("target/local-fact1.xml");
       Writer writer = new OutputStreamWriter(new FileOutputStream(newFile));
