@@ -20,6 +20,8 @@ package org.apache.lens.server.healthcheck;
 
 import static org.testng.Assert.*;
 
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.lens.server.EventServiceImpl;
 import org.apache.lens.server.LensAllApplicationJerseyTest;
 import org.apache.lens.server.LensServices;
@@ -41,6 +43,7 @@ public class TestHealthChecks extends LensAllApplicationJerseyTest {
   @BeforeTest
   public void setUp() throws Exception {
     super.setUp();
+    //SessionState.start(new HiveConf());
   }
 
   @AfterTest

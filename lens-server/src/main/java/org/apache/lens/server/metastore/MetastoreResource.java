@@ -33,7 +33,9 @@ import org.apache.lens.api.DateTime;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.StringList;
 import org.apache.lens.api.metastore.*;
+import org.apache.lens.server.LensServerConf;
 import org.apache.lens.server.LensServices;
+import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.metastore.CubeMetastoreService;
 
@@ -41,6 +43,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import lombok.extern.slf4j.Slf4j;
@@ -1561,7 +1564,6 @@ public class MetastoreResource {
    * </p>
    *
    * @param sessionid session handle object
-   * @param type      The type of resource. Valid types are 'jar'
    * @param fileInputStream      stream of the resource. Local or HDFS path
    * @return {@link APIResult} with state {@link Status#SUCCEEDED}, if add was successful. {@link APIResult} with state
    * {@link Status#PARTIAL}, if add succeeded only for some services. {@link APIResult} with state
@@ -1570,12 +1572,19 @@ public class MetastoreResource {
   @POST
   @Path("databases/jar")
   @Consumes({MediaType.MULTIPART_FORM_DATA})
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_PLAIN})
+  @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
   public APIResult addDBResource(@QueryParam("sessionid") LensSessionHandle sessionid,
-    @FormDataParam("type") String type, @FormDataParam("file") InputStream fileInputStream) {
-
+    @FormDataParam("file") InputStream fileInputStream,
+    @FormDataParam("file") FormDataContentDisposition fileDetail) throws LensException{
+    int maxFileSize = LensServerConf.getHiveConf().getInt(LensConfConstants.DB_RESOURCE_JAR_MAX_SIZE,
+        LensConfConstants.DEFAULT_DB_RESOURCE_JAR_MAX_SIZE);
+    if (fileDetail.getSize() > maxFileSize) {
+      throw new LensException(" File is too big! "
+          + "File : " + fileDetail.getName()
+          + "FileSize : " + fileDetail.getSize() + "AllowedSize :" + maxFileSize);
+    }
     try {
-      getSvc().addDBJar(sessionid, type, fileInputStream);
+      getSvc().addDBJar(sessionid, fileInputStream);
     } catch (LensException e) {
       log.error("Error in adding resource to db", e);
       return new APIResult(Status.FAILED, e.getMessage());

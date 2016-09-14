@@ -82,6 +82,8 @@ public class DatabaseResourceService extends AbstractService {
       // If the base folder itself is not present, then return as we can't load any jars.
       FileSystem serverFs = null;
       try {
+        resTopDir = getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR,
+            LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
         Path resTopDirPath = new Path(resTopDir);
         serverFs = FileSystem.newInstance(resTopDirPath.toUri(), getHiveConf());
         if (!serverFs.exists(resTopDirPath)) {
@@ -102,7 +104,6 @@ public class DatabaseResourceService extends AbstractService {
         }
       }
 
-
       // Map common jars available for all DB folders
       mapCommonResourceEntries();
 
@@ -111,7 +112,6 @@ public class DatabaseResourceService extends AbstractService {
 
       // Load all the jars for all the DB's mapped in previous steps
       loadMappedResources();
-
 
     } catch (LensException e) {
       incrCounter(LOAD_RESOURCES_ERRORS);

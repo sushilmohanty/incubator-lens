@@ -48,6 +48,7 @@ import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import org.glassfish.jersey.moxy.json.MoxyJsonFeature;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -368,17 +369,17 @@ public class LensConnection implements AutoCloseable {
    * @param resourcePath the resource path
    * @return the API result
    */
-  public APIResult addResourceToDB(String type, String resourcePath) {
+  public APIResult addResourceToDB(String type, @NonNull final String resourcePath) {
     WebTarget target = getMetastoreWebTarget();
     FormDataMultiPart mp = new FormDataMultiPart();
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("type").build(), type));
 
     File file = new File(resourcePath);
-    log.debug("uploading file path : " + file.getAbsolutePath() + "|size = " + file.length());
-    final FormDataContentDisposition dispo = FormDataContentDisposition//
-      .name("file")//
-      .fileName("db_0.jar")// temp dummy name
-      .size(file.length())//
+    log.debug("uploading file path : " + file.getAbsolutePath() + " | size = " + file.length());
+    final FormDataContentDisposition dispo = FormDataContentDisposition
+      .name("file")
+      .fileName(file.getName() + ".jar")
+      .size(file.length())
       .build();
 
     FileDataBodyPart filePart = new FileDataBodyPart("file", file);

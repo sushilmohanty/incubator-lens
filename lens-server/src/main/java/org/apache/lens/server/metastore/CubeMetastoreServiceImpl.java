@@ -730,7 +730,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
   }
 
   @Override
-  public void addDBJar(LensSessionHandle sessionid, String type, InputStream is) throws LensException {
+  public synchronized void addDBJar(LensSessionHandle sessionid, InputStream is) throws LensException {
     // Read list of databases in
     FileSystem serverFs = null;
     FileSystem jarOrderFs = null;
@@ -740,7 +740,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
       String currentDB = SessionState.get().getCurrentDatabase();
 
       String baseDir =
-        getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR, LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
+          getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR, LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
 
       String dbDir = baseDir + File.separator + currentDB;
       log.info("Database specific resources at {}", dbDir);
@@ -766,11 +766,10 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
       FileSystem uploadingFs = FileSystem.newInstance(uploadingPath.toUri(), getHiveConf());
       if (uploadingFs.exists(uploadingPath)) {
         log.warn("Already uploading a file - {}. This Database jar can't be uploaded. Try later!", uploadingPath);
-        throw new LensException("Database jar file upload in progress . Database jar can't be uploaded. Try later!");
+        throw new LensException("Jar can't be uploaded as another database jar upload is in progress. "
+            + "Pleas try again later!");
       }
-
       int lastIndex = 0;
-
       Path dbFolderPath = new Path(baseDir, currentDB);
       FileStatus[] existingFiles = serverFs.listStatus(dbFolderPath);
       for (FileStatus fs : existingFiles) {
@@ -778,31 +777,29 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
         String[] tokens = fPath.split("_");
 
         if (tokens.length > 1) {
-          int fIndex = Integer.parseInt(tokens[tokens.length - 1].substring(0, 1));
+          String lastToken = tokens[tokens.length - 1];
+          int fIndex = Integer.parseInt(lastToken.substring(0, lastToken.indexOf(".jar")));
           if (fIndex > lastIndex) {
             lastIndex = fIndex;
           }
         }
       }
-
       int newIndex = lastIndex + 1;
-
-
       Path resJarPath = new Path(baseDir, currentDB + File.separator + tempFileName);
       log.info("new jar name : " + resJarPath.getName());
       fos = serverFs.create(resJarPath);
       IOUtils.copy(is, fos);
       fos.flush();
-
       Path renamePath = new Path(baseDir, currentDB + File.separator + currentDB + "_" + newIndex + ".jar");
-      serverFs.rename(resJarPath, renamePath);
-
-
+      if (!serverFs.rename(resJarPath, renamePath)) {
+        log.error("File rename failed from {} to {}", resJarPath, renamePath);
+        throw new LensException("File rename failed!");
+      }
     } catch (FileNotFoundException e) {
-      log.error("FileNotFoundException", e);
+      log.error("FileNotFoundException while uploading jar", e);
       throw new LensException(e);
     } catch (IOException e) {
-      log.error("IOException", e);
+      log.error("IOException while uploading jar", e);
       throw new LensException(e);
     } finally {
       release(sessionid);
@@ -813,7 +810,6 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
           log.error("Error closing file system instance fos", e);
         }
       }
-
       if (serverFs != null) {
         try {
           serverFs.close();
@@ -821,7 +817,6 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
           log.error("Error closing file system instance serverFs", e);
         }
       }
-
       if (jarOrderFs != null) {
         try {
           jarOrderFs.close();

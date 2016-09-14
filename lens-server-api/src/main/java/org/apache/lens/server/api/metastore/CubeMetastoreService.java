@@ -573,7 +573,7 @@ public interface CubeMetastoreService extends LensService, SessionValidator {
   void updatePartitions(LensSessionHandle sessionid, String tblName, String storageName,
     XPartitionList partitions) throws LensException;
 
-  void addDBJar(LensSessionHandle sessionid, String type, InputStream is) throws LensException;
+  void addDBJar(LensSessionHandle sessionid, InputStream is) throws LensException;
 
   /**
    *

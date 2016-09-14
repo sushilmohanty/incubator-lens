@@ -245,8 +245,8 @@ public class TestDatabaseService extends LensJerseyTest {
       queryParam("sessionid", lensSessionId).request(mediaType)
       .post(Entity.entity(mp, multiPart.getMediaType()), APIResult.class);
     log.debug(resultUpd.getStatus() + " " + resultUpd);
-    assertEquals(resultUpd.getMessage(), "Database jar file upload in progress . Database jar can't be uploaded."
-      + " Try later!");
+    assertEquals(resultUpd.getMessage(), "Jar can't be uploaded as another database jar upload is in progress. "
+        + "Pleas try again later!");
 
     cleanUp(dbFolder);
   }
