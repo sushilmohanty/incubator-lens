@@ -43,7 +43,6 @@ public class TestHealthChecks extends LensAllApplicationJerseyTest {
   @BeforeTest
   public void setUp() throws Exception {
     super.setUp();
-    //SessionState.start(new HiveConf());
   }
 
   @AfterTest

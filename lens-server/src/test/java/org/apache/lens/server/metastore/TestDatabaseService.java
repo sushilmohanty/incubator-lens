@@ -44,9 +44,7 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import org.glassfish.jersey.test.TestProperties;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -63,18 +61,25 @@ public class TestDatabaseService extends LensJerseyTest {
     assertEquals(result.getStatus(), APIResult.Status.SUCCEEDED, String.valueOf(result));
   }
 
-  @BeforeMethod
+  @BeforeTest
   public void setUp() throws Exception {
     super.setUp();
+  }
+  @BeforeClass
+  public void create() throws Exception {
     rootPath = getServerConf().get(LensConfConstants.DATABASE_RESOURCE_DIR);
     metastoreService = LensServices.get().getService(CubeMetastoreService.NAME);
     lensSessionId = metastoreService.openSession("foo", "bar", new HashMap<String, String>());
   }
 
-  @AfterMethod
+  @AfterTest
   public void tearDown() throws Exception {
-    metastoreService.closeSession(lensSessionId);
     super.tearDown();
+  }
+
+  @AfterClass
+  public void drop() throws Exception {
+    metastoreService.closeSession(lensSessionId);
   }
 
   @Override
