@@ -91,6 +91,7 @@ public class TestDatabaseResourceService {
 
   }
 
+  /*
   @AfterClass
   public void tearDown() throws Exception {
     Hive hive0 = Hive.get(conf);
@@ -109,7 +110,7 @@ public class TestDatabaseResourceService {
     }
 
   }
-
+*/
   @Test
   public void testClassLoaderCreated() throws Exception {
     ClassLoader db1Loader = dbResService.getClassLoader(DB1);

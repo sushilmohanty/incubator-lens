@@ -76,12 +76,12 @@ public class TestDatabaseService extends LensJerseyTest {
   public void tearDown() throws Exception {
     super.tearDown();
   }
-
+/*
   @AfterClass
   public void drop() throws Exception {
     metastoreService.closeSession(lensSessionId);
   }
-
+*/
   @Override
   protected Application configure() {
     enable(TestProperties.LOG_TRAFFIC);
