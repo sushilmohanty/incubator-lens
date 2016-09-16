@@ -65,7 +65,8 @@ public class TestDatabaseService extends LensJerseyTest {
   public void setUp() throws Exception {
     super.setUp();
   }
-  @BeforeClass
+
+  @BeforeMethod
   public void create() throws Exception {
     rootPath = getServerConf().get(LensConfConstants.DATABASE_RESOURCE_DIR);
     metastoreService = LensServices.get().getService(CubeMetastoreService.NAME);
@@ -76,12 +77,12 @@ public class TestDatabaseService extends LensJerseyTest {
   public void tearDown() throws Exception {
     super.tearDown();
   }
-/*
-  @AfterClass
+
+  @AfterMethod
   public void drop() throws Exception {
     metastoreService.closeSession(lensSessionId);
   }
-*/
+
   @Override
   protected Application configure() {
     enable(TestProperties.LOG_TRAFFIC);

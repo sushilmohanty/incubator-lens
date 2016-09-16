@@ -1352,6 +1352,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
 
     try {
       /** Try to issue command on hive **/
+      SessionState.start(LensServerConf.getHiveConf());
       Hive.get(LensServerConf.getHiveConf()).getAllDatabases();
     } catch (HiveException e) {
       isHealthy = false;

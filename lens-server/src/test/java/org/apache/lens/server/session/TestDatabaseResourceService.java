@@ -87,11 +87,8 @@ public class TestDatabaseResourceService {
     dbResService2 = new DatabaseResourceService(DatabaseResourceService.NAME);
     dbResService2.init(conf2);
     dbResService2.start();
-
-
   }
 
-  /*
   @AfterClass
   public void tearDown() throws Exception {
     Hive hive0 = Hive.get(conf);
@@ -108,9 +105,8 @@ public class TestDatabaseResourceService {
     for (String db : testDatabases1) {
       hive2.dropDatabase(db, true, true);
     }
-
   }
-*/
+
   @Test
   public void testClassLoaderCreated() throws Exception {
     ClassLoader db1Loader = dbResService.getClassLoader(DB1);
