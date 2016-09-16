@@ -294,7 +294,7 @@ public class TestDatabaseResourceService {
     for (LensSessionImpl.ResourceEntry res : actualOrder) {
       actualOrderList.add(res.getLocation());
     }
-
+    System.out.println("Order List : " + actualOrderList);
     // Should pick the latest one
     String[] jarFilesOrder = {
       "lens-ship.jar",
