@@ -179,9 +179,9 @@ public class TestDatabaseResourceService {
   }
 
 
-  /**************************************************
+  /*
    * Test cases without common jars
-   **************************************************/
+   */
   @Test
   public void testDbWithoutCommonJarsAndWithJarOrderAndFiles() throws Exception {
     String db = testDatabases1[0];
@@ -201,7 +201,7 @@ public class TestDatabaseResourceService {
     // Verify order
     for (int i = 0; i < jarFilesOrder.length; i++) {
       Assert.assertTrue(actualOrderList.get(i).contains(jarFilesOrder[i]),
-        actualOrderList.get(i) + " > " + jarFilesOrder[i]);
+          actualOrderList.get(i) + " > " + jarFilesOrder[i]);
     }
   }
 
@@ -235,10 +235,9 @@ public class TestDatabaseResourceService {
 
   }
 
-  /**************************************************
+  /*
    * Test cases without common jars
-   **************************************************/
-
+   */
   @Test
   public void testDbWithCommonJarsAndWithJarOrderAndFiles() throws Exception {
     String db = testDatabases1[0];
@@ -258,7 +257,7 @@ public class TestDatabaseResourceService {
     // Verify order
     for (int i = 0; i < jarFilesOrder.length; i++) {
       Assert.assertTrue(actualOrderList.get(i).contains(jarFilesOrder[i]),
-        actualOrderList.get(i) + " > " + jarFilesOrder[i]);
+          actualOrderList.get(i) + " > " + jarFilesOrder[i]);
     }
   }
 
