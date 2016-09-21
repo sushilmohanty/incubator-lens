@@ -365,8 +365,8 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
         || hqlQuery.toLowerCase().startsWith(
         "select coalesce(mq1.dim1, mq2.dim1, mq3.dim1) dim1, mq3.msr12 msr12,"
           + " mq2.roundedmsr2 roundedmsr2, mq1.msr13 msr13, mq2.msr3 msr3 from "), hqlQuery);
-    assertTrue(hqlQuery.contains("mq1 full outer join ") && hqlQuery.contains("mq2 full outer join ")
-      && hqlQuery.endsWith("mq3 on mq1.dim1 <=> mq2.dim1 AND mq1.dim1 <=> mq3.dim1"), hqlQuery);
+    assertTrue(hqlQuery.contains("mq1 full outer join ") && hqlQuery.contains("mq3 on mq2.dim1 <=> mq3.dim1")
+        && hqlQuery.contains("mq2 on mq1.dim1 <=> mq2.dim1"), hqlQuery);
   }
 
   @Test
