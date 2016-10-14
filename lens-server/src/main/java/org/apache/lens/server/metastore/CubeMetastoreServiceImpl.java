@@ -21,6 +21,8 @@ package org.apache.lens.server.metastore;
 import static org.apache.lens.server.metastore.JAXBUtils.*;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.Date;
 
@@ -37,6 +39,7 @@ import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.health.HealthStatus;
 import org.apache.lens.server.api.metastore.CubeMetastoreService;
+import org.apache.lens.server.session.LensSessionImpl;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -730,23 +733,60 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
     }
   }
 
+
   @Override
   public synchronized void addDBJar(LensSessionHandle sessionid, InputStream is) throws LensException {
+    //baseDir can be local file system or HDFS
+    try {
+      getSession(sessionid).setReadClassLoaderFromCache(false);
+      acquire(sessionid);
+
+      String currentDB = SessionState.get().getCurrentDatabase();
+      String baseDir = getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR,
+          LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
+      String localDir = getHiveConf().get(LensConfConstants.DATABASE_LOCAL_RESOURCE_DIR,
+          LensConfConstants.DEFAULT_LOCAL_DATABASE_RESOURCE_DIR);
+      if (baseDir.startsWith("hdfs:")) {
+        Path jarFilePath = addDBJarToLocal(sessionid, is, localDir, currentDB);
+        //copy jar file to hdfs
+        copyJarFilesToHDFS(jarFilePath, new Path(baseDir, currentDB),
+            getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR));
+        List<LensSessionImpl.ResourceEntry> resourceEntries = new ArrayList<>();
+        resourceEntries.add(new LensSessionImpl.ResourceEntry("jar",
+            new Path(baseDir, currentDB + jarFilePath.getName()).toUri().toString()));
+        // add jarfile to dbresource entry so that it can be added to hive session
+        getSession(sessionid).getDbResService().addremoteDbResEntryMap(currentDB, resourceEntries);
+      } else {
+        addDBJarToLocal(sessionid, is, baseDir, currentDB);
+      }
+    } finally {
+      release(sessionid);
+    }
+  }
+  private void copyJarFilesToHDFS(Path source, Path dest, String resourceDir) throws LensException {
+    try {
+      FileSystem sourceFs = FileSystem.get(new URI(resourceDir), getHiveConf());
+      sourceFs.copyFromLocalFile(source, dest);
+      log.info("Jar file Copied from {} to {} ", source, dest);
+    } catch (IOException e) {
+      log.error("Error while copying file to HDFS ", e);
+      throw new LensException(e);
+    } catch (URISyntaxException e) {
+      log.error("Error in URI syntax ", e);
+      throw new LensException(e);
+    }
+  }
+
+  private Path addDBJarToLocal(LensSessionHandle sessionid, InputStream is, String baseDir, String currentDB)
+    throws LensException {
     // Read list of databases in
     FileSystem serverFs = null;
     FileSystem jarOrderFs = null;
     FSDataOutputStream fos = null;
+
     try {
-      acquire(sessionid);
-      String currentDB = SessionState.get().getCurrentDatabase();
-
-      String baseDir =
-          getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR, LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
-
       String dbDir = baseDir + File.separator + currentDB;
       log.info("Database specific resources at {}", dbDir);
-
-
       Path resTopDirPath = new Path(dbDir);
       serverFs = FileSystem.newInstance(resTopDirPath.toUri(), getHiveConf());
       if (!serverFs.exists(resTopDirPath)) {
@@ -796,6 +836,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
         log.error("File rename failed from {} to {}", resJarPath, renamePath);
         throw new LensException("File rename failed!");
       }
+      return renamePath;
     } catch (FileNotFoundException e) {
       log.error("FileNotFoundException while uploading jar", e);
       throw new LensException(e);
@@ -803,7 +844,6 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
       log.error("IOException while uploading jar", e);
       throw new LensException(e);
     } finally {
-      release(sessionid);
       if (fos != null) {
         try {
           fos.close();
@@ -827,6 +867,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
       }
     }
   }
+
 
   @Override
   public int addPartitionsToDimStorage(LensSessionHandle sessionid,

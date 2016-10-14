@@ -34,6 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hive.service.AbstractService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -44,9 +45,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DatabaseResourceService extends AbstractService {
   public static final String NAME = "database-resources";
-  private Map<String, UncloseableClassLoader> classLoaderCache = new HashMap<>();
-  private final Map<String, List<LensSessionImpl.ResourceEntry>> dbResEntryMap = new HashMap<>();
-  private List<LensSessionImpl.ResourceEntry> commonResMap = new LinkedList<>();
+  private Map<String, UncloseableClassLoader> classLoaderCache;
+  private Map<String, List<LensSessionImpl.ResourceEntry>> dbResEntryMap;
+  private Map<String, List<LensSessionImpl.ResourceEntry>> remoteDbResEntryMap;
+  private List<LensSessionImpl.ResourceEntry> commonResMap;
 
   /**
    * The metrics service.
@@ -72,18 +74,46 @@ public class DatabaseResourceService extends AbstractService {
     super(name);
   }
   private String resTopDir = null;
+  private String localResTopDir = null;
+
+  private void downloadJarFilesFromHDFS(String source, String dest) throws LensException {
+    try {
+      FileSystem sourceFs = FileSystem.newInstance(new Path(source).toUri(), getHiveConf());
+      sourceFs.copyToLocalFile(new Path(source), new Path(dest));
+    } catch (IOException e) {
+      log.error("Error while downloading file from HDFS", e);
+      throw new LensException(e);
+    }
+  }
+
+  @Override
+  public synchronized void init(HiveConf hiveConf) {
+    super.init(hiveConf);
+    classLoaderCache = new HashMap<>();
+    dbResEntryMap = new HashMap<>();
+    remoteDbResEntryMap = new HashMap<>();
+    commonResMap = new LinkedList<>();
+  }
 
   @Override
   public synchronized void start() {
     super.start();
     try {
       log.info("Starting loading DB specific resources");
-
       // If the base folder itself is not present, then return as we can't load any jars.
       FileSystem serverFs = null;
       try {
         resTopDir = getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR,
             LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
+        if (resTopDir.startsWith("hdfs:")) {
+          localResTopDir =  getHiveConf().get(LensConfConstants.DATABASE_LOCAL_RESOURCE_DIR,
+              LensConfConstants.DEFAULT_LOCAL_DATABASE_RESOURCE_DIR);
+          downloadJarFilesFromHDFS(resTopDir, localResTopDir);
+          resTopDir = localResTopDir;
+        } else {
+          resTopDir = getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR,
+              LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
+        }
         Path resTopDirPath = new Path(resTopDir);
         serverFs = FileSystem.newInstance(resTopDirPath.toUri(), getHiveConf());
         if (!serverFs.exists(resTopDirPath)) {
@@ -125,6 +155,7 @@ public class DatabaseResourceService extends AbstractService {
     super.stop();
     classLoaderCache.clear();
     dbResEntryMap.clear();
+    remoteDbResEntryMap.clear();
     commonResMap.clear();
   }
 
@@ -240,7 +271,8 @@ public class DatabaseResourceService extends AbstractService {
         String[] tokens = fPath.split("_");
 
         if (tokens.length > 1) {
-          int fIndex = Integer.parseInt(tokens[tokens.length - 1].substring(0, 1));
+          String lastToken = tokens[tokens.length - 1];
+          int fIndex = Integer.parseInt(lastToken.substring(0, lastToken.indexOf(".jar")));
           if (fIndex > lastIndex) {
             lastIndex = fIndex;
           }
@@ -373,7 +405,15 @@ public class DatabaseResourceService extends AbstractService {
    * @return resources added to the database, or null if no resources are noted for this database
    */
   public Collection<LensSessionImpl.ResourceEntry> getResourcesForDatabase(String database) {
-    return dbResEntryMap.get(database);
+    if (remoteDbResEntryMap.get(database) != null) {
+      return remoteDbResEntryMap.get(database);
+    } else {
+      return dbResEntryMap.get(database);
+    }
+  }
+
+  public void addremoteDbResEntryMap(String database, List<LensSessionImpl.ResourceEntry> resource) {
+    remoteDbResEntryMap.put(database, resource);
   }
 
   private MetricsService getMetrics() {
