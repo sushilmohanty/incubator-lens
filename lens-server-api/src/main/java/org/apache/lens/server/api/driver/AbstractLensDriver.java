@@ -55,6 +55,7 @@ public abstract class AbstractLensDriver implements LensDriver {
       throw new LensException("Driver Type and Name can not be null or empty");
     }
     fullyQualifiedName = new StringBuilder(driverType).append(SEPARATOR).append(driverName).toString();
+    noOpDriverQueryHook.setDriver(this);
   }
 
   /**
@@ -65,6 +66,10 @@ public abstract class AbstractLensDriver implements LensDriver {
   @Override
   public LensResultSet fetchResultSet(QueryContext ctx) throws LensException {
     log.info("FetchResultSet: {}", ctx.getQueryHandle());
+    if (!ctx.getDriverStatus().isSuccessful()) {
+      throw new LensException("Can't fetch results for a " + ctx.getQueryHandleString() + " because it's status is "
+        + ctx.getStatus());
+    }
     ctx.registerDriverResult(createResultSet(ctx)); // registerDriverResult makes sure registration happens ony once
     return ctx.getDriverResult();
   }
