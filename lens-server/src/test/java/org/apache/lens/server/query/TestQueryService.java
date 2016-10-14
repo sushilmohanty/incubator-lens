@@ -66,6 +66,7 @@ import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryExecutionService;
 import org.apache.lens.server.api.session.SessionService;
 import org.apache.lens.server.common.ErrorResponseExpectedData;
+import org.apache.lens.server.common.RestAPITestUtil;
 import org.apache.lens.server.common.TestDataUtils;
 import org.apache.lens.server.common.TestResourceFile;
 import org.apache.lens.server.error.GenericExceptionMapper;
@@ -84,6 +85,7 @@ import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.test.TestProperties;
+import org.junit.Assert;
 import org.testng.annotations.*;
 
 import com.codahale.metrics.MetricRegistry;
@@ -765,6 +767,10 @@ public class TestQueryService extends LensJerseyTest {
       Thread.sleep(1000);
     }
     assertEquals(ctx.getSelectedDriverConf().get(KEY_PRE_LAUNCH), VALUE_PRE_LAUNCH);
+    assertEquals(ctx.getSelectedDriverConf().get(PRE_REWRITE), PRE_REWRITE);
+    assertEquals(ctx.getSelectedDriverConf().get(POST_REWRITE), POST_REWRITE);
+    assertEquals(ctx.getSelectedDriverConf().get(PRE_ESTIMATE), PRE_ESTIMATE);
+    assertEquals(ctx.getSelectedDriverConf().get(POST_ESTIMATE), POST_ESTIMATE);
     assertTrue(lensQuery.getSubmissionTime() > 0);
     assertTrue(lensQuery.getLaunchTime() > 0);
     assertTrue(lensQuery.getDriverStartTime() > 0);
@@ -1421,6 +1427,17 @@ public class TestQueryService extends LensJerseyTest {
     };
   }
 
+  @Test
+  public void testExecuteAsyncJDBCQuery() throws InterruptedException {
+    String query = "select ID, IDSTR from " + TEST_JDBC_TABLE;
+    QueryHandle handle = RestAPITestUtil.executeAndGetHandle(target(), Optional.of(lensSessionId), Optional.of(query),
+      Optional.of(getLensConf(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, false)), APPLICATION_XML_TYPE);
+    // fetch results so that it can be purged
+    InMemoryQueryResult queryResult = RestAPITestUtil.getLensQueryResult(target(), lensSessionId, handle,
+      InMemoryQueryResult.class, APPLICATION_XML_TYPE);
+    assertEquals(queryResult.getRows().size(), 5);
+  }
+
   /**
    * @param timeOutMillis : wait time for execute with timeout api
    * @param preFetchRows : number of rows to pre-fetch in case of InMemoryResultSet
@@ -1452,7 +1469,7 @@ public class TestQueryService extends LensJerseyTest {
     conf.addProperty("deferPersistenceByMillis", deferPersistenceByMillis); // property used for test only
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
         APPLICATION_XML_TYPE));
-    QueryHandleWithResultSet result =target.request(APPLICATION_XML_TYPE)
+    QueryHandleWithResultSet result = target.request(APPLICATION_XML_TYPE)
             .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
                 new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {}).getData();
     QueryHandle handle = result.getQueryHandle();
@@ -1931,5 +1948,38 @@ public class TestQueryService extends LensJerseyTest {
     assertEquals(TestQueryNotifictaionResource.getFinishedCount(), 6);
 
     TestQueryNotifictaionResource.clearState();
+  }
+
+  @Test
+  public void testGetQueryDetails() throws IOException, InterruptedException, LensException {
+
+    UUID queryName = UUID.randomUUID();
+    WebTarget target = target().path("queryapi/queries");
+    final FormDataMultiPart mp = new FormDataMultiPart();
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
+      APPLICATION_XML_TYPE));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(), "select ID, IDSTR from "
+      + TEST_TABLE));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute_with_timeout"));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("timeoutmillis").build(), "300000"));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("queryName").build(), queryName.toString()));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), new LensConf(),
+      APPLICATION_XML_TYPE));
+
+    QueryHandleWithResultSet result = target.request(APPLICATION_XML_TYPE)
+      .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
+        new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {}).getData();
+    assertNotNull(result.getQueryHandle());
+    assertNotNull(result.getResult());
+
+    target = target().path("queryapi/queries/detail");
+    List<LensQuery> results = target.queryParam("queryName", queryName)
+      .queryParam("sessionid", lensSessionId)
+      .request(APPLICATION_XML_TYPE)
+      .get(new GenericType<List<LensQuery>>(){});
+    Assert.assertNotNull(results);
+    Assert.assertEquals(1, results.size());
+    Assert.assertEquals(queryName.toString(), results.get(0).getQueryName());
+    Assert.assertEquals(result.getQueryHandle(), results.get(0).getQueryHandle());
   }
 }
