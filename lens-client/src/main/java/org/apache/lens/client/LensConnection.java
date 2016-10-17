@@ -375,10 +375,10 @@ public class LensConnection implements AutoCloseable {
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("type").build(), type));
 
     File file = new File(resourcePath);
-    log.debug("uploading file path : " + file.getAbsolutePath() + " | size = " + file.length());
+    log.info("uploading file path : {} File size : {}", file.getAbsolutePath(), file.length());
     final FormDataContentDisposition dispo = FormDataContentDisposition
       .name("file")
-      .fileName(file.getName() + ".jar")
+      .fileName(file.getName())
       .size(file.length())
       .build();
 
