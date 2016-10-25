@@ -41,8 +41,8 @@ import org.apache.lens.server.api.LensErrorInfo;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.events.SchedulerAlarmEvent;
 import org.apache.lens.server.api.health.HealthStatus;
-import org.apache.lens.server.api.query.QueryEnded;
 import org.apache.lens.server.api.query.QueryExecutionService;
+import org.apache.lens.server.api.query.events.QueryEnded;
 import org.apache.lens.server.api.scheduler.SchedulerService;
 import org.apache.lens.server.error.LensSchedulerErrorCode;
 import org.apache.lens.server.session.LensSessionImpl;
@@ -81,6 +81,7 @@ public class SchedulerServiceImpl extends BaseLensService implements SchedulerSe
   private AlarmService alarmService;
 
   private int maxJobsPerUser = LensConfConstants.DEFAULT_MAX_SCHEDULED_JOB_PER_USER;
+  private boolean healthy = true;
 
   /**
    * Instantiates a new scheduler service.
@@ -105,6 +106,7 @@ public class SchedulerServiceImpl extends BaseLensService implements SchedulerSe
       getEventService().addListenerForType(schedulerQueryEventListener, QueryEnded.class);
     } catch (LensException e) {
       log.error("Error Initialising Scheduler-service", e);
+      healthy = false;
     }
   }
 
@@ -126,7 +128,6 @@ public class SchedulerServiceImpl extends BaseLensService implements SchedulerSe
    */
   @Override
   public synchronized void start() {
-    super.start();
     List<SchedulerJobInstanceRun> instanceRuns = schedulerDAO
       .getInstanceRuns(SchedulerJobInstanceState.WAITING, SchedulerJobInstanceState.LAUNCHED,
         SchedulerJobInstanceState.RUNNING);
@@ -165,6 +166,9 @@ public class SchedulerServiceImpl extends BaseLensService implements SchedulerSe
           log.error("Error closing session ", e);
         }
       }
+    }
+    if (healthy) {
+      super.start();
     }
   }
 
