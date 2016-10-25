@@ -18,6 +18,7 @@
  */
 package org.apache.lens.server.session;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,11 +32,14 @@ import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.StringList;
 import org.apache.lens.api.session.UserSessionInfo;
+import org.apache.lens.server.LensServerConf;
 import org.apache.lens.server.LensServices;
+import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.session.SessionService;
 import org.apache.lens.server.util.ScannedPaths;
 
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +55,11 @@ public class SessionResource {
 
   /** The session service. */
   private SessionService sessionService;
+
+  /**
+   *  The database resource service
+   */
+  private DatabaseResourceService databaseResourceService;
 
   /**
    * API to know if session service is up and running
@@ -70,6 +79,7 @@ public class SessionResource {
    */
   public SessionResource() throws LensException {
     sessionService = LensServices.get().getService(SessionService.NAME);
+    databaseResourceService = LensServices.get().getService(DatabaseResourceService.NAME);
   }
 
   /**
@@ -283,5 +293,48 @@ public class SessionResource {
     sessionService.cleanupIdleSessions();
     int after = getSessionInfo().size();
     return APIResult.success("cleared " + (after - before) + " idle sessions");
+  }
+  /**
+   * Add a resource to the current DB
+   * <p></p>
+   * <p>
+   * The returned @{link APIResult} will have status SUCCEEDED <em>only if</em> the add operation was successful for all
+   * services running in this Lens server.
+   * </p>
+   *
+   * @param sessionid session handle object
+   * @param type type of the file
+   * @param fileInputStream stream of the resource
+   * @param fileDetail form-data content disposition
+   * @return {@link APIResult} with state {@link Status#SUCCEEDED}, if add was successful. {@link APIResult} with state
+   * {@link Status#PARTIAL}, if add succeeded only for some services. {@link APIResult} with state
+   * {@link Status#FAILED}, if add has failed
+   */
+  @POST
+  @Path("databases/resources")
+  @Consumes({MediaType.MULTIPART_FORM_DATA})
+  @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
+  public APIResult addDBResource(@QueryParam("sessionid") LensSessionHandle sessionid,
+                                 @FormDataParam("type") String type,
+                                 @FormDataParam("file") InputStream fileInputStream,
+                                 @FormDataParam("file") FormDataContentDisposition fileDetail) throws LensException{
+    int maxFileSize = LensServerConf.getHiveConf().getInt(LensConfConstants.DB_RESOURCE_JAR_MAX_SIZE,
+        LensConfConstants.DEFAULT_DB_RESOURCE_JAR_MAX_SIZE);
+    if (fileDetail.getSize() > maxFileSize) {
+      throw new LensException(" File is too big! "
+          + " File : " + fileDetail.getName()
+          + " FileSize : " + fileDetail.getSize() + " AllowedSize :" + maxFileSize);
+    }
+    try {
+      if (type.equals("jar")) {
+        databaseResourceService.addDBJar(sessionid, fileInputStream);
+      } else {
+        throw new LensException("File type ."+  type + " not supported.");
+      }
+    } catch (LensException e) {
+      log.error("Error in adding resource to db", e);
+      return new APIResult(Status.FAILED, e.getMessage());
+    }
+    return new APIResult(Status.SUCCEEDED, "Add resource succeeded");
   }
 }

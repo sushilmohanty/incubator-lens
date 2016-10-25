@@ -768,7 +768,7 @@ public class LensClient implements AutoCloseable {
     closeConnection();
   }
 
-  public APIResult addDBJarResource(String path) {
+  public APIResult addDBResource(String path) {
     return this.connection.addResourceToDB("jar", path);
   }
 }

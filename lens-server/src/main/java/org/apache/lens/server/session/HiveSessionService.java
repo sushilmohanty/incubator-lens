@@ -336,7 +336,7 @@ public class HiveSessionService extends BaseLensService implements SessionServic
    */
   @Override
   public synchronized void init(HiveConf hiveConf) {
-    this.databaseResourceService = new DatabaseResourceService(DatabaseResourceService.NAME);
+    this.databaseResourceService = new DatabaseResourceService(null);
     addService(this.databaseResourceService);
     this.conf = hiveConf;
     super.init(hiveConf);

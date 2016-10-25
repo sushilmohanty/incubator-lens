@@ -76,17 +76,18 @@ public class TestDatabaseResourceService {
     LensServerTestUtil.createTestDbWithoutCommonJars(testDatabases1, conf1);
     LensServerTestUtil.createTestDbWithCommonJars(testDatabases1, conf2);
 
-    dbResService = new DatabaseResourceService(DatabaseResourceService.NAME);
+    dbResService = new DatabaseResourceService(null);
     dbResService.init(conf);
     dbResService.start();
 
-    dbResService1 = new DatabaseResourceService(DatabaseResourceService.NAME);
+    dbResService1 = new DatabaseResourceService(null);
     dbResService1.init(conf1);
     dbResService1.start();
 
-    dbResService2 = new DatabaseResourceService(DatabaseResourceService.NAME);
+    dbResService2 = new DatabaseResourceService(null);
     dbResService2.init(conf2);
     dbResService2.start();
+
   }
 
   @AfterClass
@@ -232,7 +233,6 @@ public class TestDatabaseResourceService {
     String db = testDatabases1[2];
     Collection<LensSessionImpl.ResourceEntry> actualOrder = dbResService1.getResourcesForDatabase(db);
     Assert.assertNull(actualOrder);
-
   }
 
   /*
@@ -307,6 +307,5 @@ public class TestDatabaseResourceService {
         actualOrderList.get(i) + " > " + jarFilesOrder[i]);
     }
   }
-
 
 }

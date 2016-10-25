@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.lens.server.metastore;
+package org.apache.lens.server.session;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -28,15 +28,13 @@ import java.util.HashMap;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.lens.api.APIResult;
 import org.apache.lens.api.LensSessionHandle;
-import org.apache.lens.server.LensJerseyTest;
+import org.apache.lens.server.LensAllApplicationJerseyTest;
 import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.LensConfConstants;
-import org.apache.lens.server.api.metastore.CubeMetastoreService;
 
 import org.apache.commons.io.FileUtils;
 
@@ -52,7 +50,6 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
-import org.glassfish.jersey.test.TestProperties;
 import org.testng.annotations.*;
 
 import lombok.extern.slf4j.Slf4j;
@@ -60,8 +57,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Test(groups = "unit-test")
-public class TestDatabaseService extends LensJerseyTest {
-  CubeMetastoreServiceImpl metastoreService;
+public class TestDatabaseService extends LensAllApplicationJerseyTest {
+  DatabaseResourceService dbResourceSvc;
   LensSessionHandle lensSessionId;
   String rootPath = null;
   Configuration conf;
@@ -69,7 +66,6 @@ public class TestDatabaseService extends LensJerseyTest {
   FileSystem fs;
   File testPath;
   private static final String CLUSTER_1 = "cluster1";
-
 
   private void assertSuccess(APIResult result) {
     assertEquals(result.getStatus(), APIResult.Status.SUCCEEDED, String.valueOf(result));
@@ -99,8 +95,8 @@ public class TestDatabaseService extends LensJerseyTest {
   @BeforeMethod
   public void create() throws Exception {
     rootPath = getServerConf().get(LensConfConstants.DATABASE_RESOURCE_DIR);
-    metastoreService = LensServices.get().getService(CubeMetastoreService.NAME);
-    lensSessionId = metastoreService.openSession("foo", "bar", new HashMap<String, String>());
+    dbResourceSvc = LensServices.get().getService(DatabaseResourceService.NAME);
+    lensSessionId = dbResourceSvc.openSession("foo", "bar", new HashMap<String, String>());
   }
 
   @AfterTest
@@ -116,18 +112,11 @@ public class TestDatabaseService extends LensJerseyTest {
 
   @AfterMethod
   public void drop() throws Exception {
-    metastoreService.closeSession(lensSessionId);
-  }
-
-  @Override
-  protected Application configure() {
-    enable(TestProperties.LOG_TRAFFIC);
-    enable(TestProperties.DUMP_ENTITY);
-    return new MetastoreApp();
+    dbResourceSvc.closeSession(lensSessionId);
   }
 
   private String getCurrentDatabase(MediaType mediaType) throws Exception {
-    return target().path("metastore").path("databases/current")
+    return target().path("session").path("databases/current")
         .queryParam("sessionid", lensSessionId).request(mediaType).get(String.class);
   }
 
@@ -163,7 +152,6 @@ public class TestDatabaseService extends LensJerseyTest {
   @Test(dataProvider = "mediaTypeData")
   public void testJarUpload(MediaType mediaType) throws Exception {
     String dbName = "db1" + "_" + mediaType.getSubtype();
-
     // create
     APIResult result = target().path("metastore").path("databases")
         .queryParam("sessionid", lensSessionId).request(mediaType).post(getEntityForString(dbName, mediaType), APIResult
@@ -179,18 +167,16 @@ public class TestDatabaseService extends LensJerseyTest {
     assertNotNull(result);
     assertSuccess(result);
 
-
     FormDataMultiPart mp = getFormData(mediaType);
     MultiPart multiPart = new MultiPart();
     multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
 
 
-    APIResult resultUpd = target().path("metastore").path("databases/jar").
+    APIResult resultUpd = target().path("session").path("databases/resources").
         queryParam("sessionid", lensSessionId).request(mediaType)
         .post(Entity.entity(mp, multiPart.getMediaType()), APIResult.class);
     log.debug(resultUpd.getStatus() + " " + resultUpd);
-    assertEquals(resultUpd.getMessage(), "Database resource location does not exist. Database jar can't be uploaded");
-
+    assertEquals(resultUpd.getMessage(), "Add resource succeeded");
   }
 
 
@@ -232,64 +218,15 @@ public class TestDatabaseService extends LensJerseyTest {
     multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
 
 
-    APIResult resultUpd = target().path("metastore").path("databases/jar").
+    APIResult resultUpd = target().path("session").path("databases/resources").
         queryParam("sessionid", lensSessionId).request(mediaType)
         .post(Entity.entity(mp, multiPart.getMediaType()), APIResult.class);
     log.debug(resultUpd.getStatus() + " " + resultUpd);
-    assertEquals(resultUpd.getMessage(), "Database jar_order file exist. Database jar can't be uploaded");
+    assertTrue(resultUpd.getMessage().startsWith("This database db2_")
+        && resultUpd.getMessage().endsWith("does not support jar upload"));
 
     cleanUp(dbFolder);
   }
-
-
-  /**
-   * Test case when db folder exists & jar_order file NOT present & db_uploading.jar present.
-   * This restricts single upload ant any time.
-   *
-   * @param mediaType
-   * @throws Exception
-   */
-  @Test(dataProvider = "mediaTypeData")
-  public void testJarUploadWithDbUploadingJarInFolder(MediaType mediaType) throws Exception {
-    String dbName = "db3" + "_" + mediaType.getSubtype() + "_" + System.currentTimeMillis();
-
-    // create
-    APIResult result = target().path("metastore").path("databases")
-        .queryParam("sessionid", lensSessionId).request(mediaType).post(getEntityForString(dbName, mediaType), APIResult
-            .class);
-    assertNotNull(result);
-    assertSuccess(result);
-
-    // set
-    WebTarget dbTarget = target().path("metastore").path("databases/current");
-
-    result = dbTarget.queryParam("sessionid", lensSessionId).request(mediaType)
-        .put(getEntityForString(dbName, mediaType), APIResult.class);
-    assertNotNull(result);
-    assertSuccess(result);
-
-    // Create DB folder
-    File dbFolder = new File("target/resources/" + dbName);
-    dbFolder.mkdirs();
-
-    File dbFolderJarOrder = new File("target/resources/" + dbName + File.separator + dbName + "_uploading.jar");
-    dbFolderJarOrder.createNewFile();
-
-    FormDataMultiPart mp = getFormData(mediaType);
-    MultiPart multiPart = new MultiPart();
-    multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
-
-
-    APIResult resultUpd = target().path("metastore").path("databases/jar").
-        queryParam("sessionid", lensSessionId).request(mediaType)
-        .post(Entity.entity(mp, multiPart.getMediaType()), APIResult.class);
-    log.debug(resultUpd.getStatus() + " " + resultUpd);
-    assertEquals(resultUpd.getMessage(), "Jar can't be uploaded as another database jar upload is in progress. "
-        + "Pleas try again later!");
-
-    cleanUp(dbFolder);
-  }
-
 
   /**
    * Test case when db folder exists & jar_order file NOT present & db_uploading.jar NOT present.
@@ -325,7 +262,7 @@ public class TestDatabaseService extends LensJerseyTest {
     multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
 
 
-    APIResult resultUpd = target().path("metastore").path("databases/jar").
+    APIResult resultUpd = target().path("session").path("databases/resources").
         queryParam("sessionid", lensSessionId).request(mediaType)
         .post(Entity.entity(mp, multiPart.getMediaType()), APIResult.class);
     log.debug(resultUpd.getStatus() + " " + resultUpd);
@@ -374,7 +311,7 @@ public class TestDatabaseService extends LensJerseyTest {
     multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
 
 
-    APIResult resultUpd = target().path("metastore").path("databases/jar").
+    APIResult resultUpd = target().path("session").path("databases/resources").
         queryParam("sessionid", lensSessionId).request(mediaType)
         .post(Entity.entity(mp, multiPart.getMediaType()), APIResult.class);
     log.debug(resultUpd.getStatus() + " " + resultUpd);
@@ -429,7 +366,7 @@ public class TestDatabaseService extends LensJerseyTest {
     MultiPart multiPart = new MultiPart();
     multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
 
-    APIResult resultUpd = target().path("metastore").path("databases/jar").
+    APIResult resultUpd = target().path("session").path("databases/resources").
         queryParam("sessionid", lensSessionId).request(mediaType)
         .post(Entity.entity(mp, multiPart.getMediaType()), APIResult.class);
     log.debug(resultUpd.getStatus() + " " + resultUpd);

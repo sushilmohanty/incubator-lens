@@ -20,22 +20,31 @@ package org.apache.lens.server.session;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 
+import org.apache.lens.api.LensSessionHandle;
+import org.apache.lens.server.BaseLensService;
 import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
+import org.apache.lens.server.api.health.HealthStatus;
 import org.apache.lens.server.api.metrics.MetricsService;
 import org.apache.lens.server.util.ScannedPaths;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hive.service.AbstractService;
+import org.apache.hadoop.hive.ql.session.SessionState;
+import org.apache.hive.service.cli.CLIService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,12 +52,12 @@ import lombok.extern.slf4j.Slf4j;
  * Service to maintain DB specific static jars. This service is managed by HiveSessionService.
  */
 @Slf4j
-public class DatabaseResourceService extends AbstractService {
+public class DatabaseResourceService extends BaseLensService {
   public static final String NAME = "database-resources";
   private Map<String, UncloseableClassLoader> classLoaderCache;
   private Map<String, List<LensSessionImpl.ResourceEntry>> dbResEntryMap;
   private Map<String, List<LensSessionImpl.ResourceEntry>> remoteDbResEntryMap;
-  private List<LensSessionImpl.ResourceEntry> commonResMap;
+  private List<LensSessionImpl.ResourceEntry> commonResList;
 
   /**
    * The metrics service.
@@ -69,10 +78,10 @@ public class DatabaseResourceService extends AbstractService {
     getMetrics().incrCounter(DatabaseResourceService.class, counter);
   }
 
-
-  public DatabaseResourceService(String name) {
-    super(name);
+  public DatabaseResourceService(CLIService cliService) {
+    super(NAME, cliService);
   }
+
   private String resTopDir = null;
   private String localResTopDir = null;
 
@@ -88,11 +97,11 @@ public class DatabaseResourceService extends AbstractService {
 
   @Override
   public synchronized void init(HiveConf hiveConf) {
-    super.init(hiveConf);
     classLoaderCache = new HashMap<>();
     dbResEntryMap = new HashMap<>();
     remoteDbResEntryMap = new HashMap<>();
-    commonResMap = new LinkedList<>();
+    commonResList = new LinkedList<>();
+    super.init(hiveConf);
   }
 
   @Override
@@ -110,19 +119,16 @@ public class DatabaseResourceService extends AbstractService {
               LensConfConstants.DEFAULT_LOCAL_DATABASE_RESOURCE_DIR);
           downloadJarFilesFromHDFS(resTopDir, localResTopDir);
           resTopDir = localResTopDir;
-        } else {
-          resTopDir = getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR,
-              LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
         }
         Path resTopDirPath = new Path(resTopDir);
         serverFs = FileSystem.newInstance(resTopDirPath.toUri(), getHiveConf());
         if (!serverFs.exists(resTopDirPath)) {
           incrCounter(LOAD_RESOURCES_ERRORS);
-          log.warn("DB base location does not exist.", resTopDir);
+          log.warn("DB resources base location does not exist", resTopDir);
           return;
         }
       } catch (Exception io) {
-        log.error("Error locating base directory", io);
+        log.error("Error locating DB resource base directory", io);
         throw new LensException(io);
       } finally {
         if (serverFs != null) {
@@ -133,16 +139,12 @@ public class DatabaseResourceService extends AbstractService {
           }
         }
       }
-
       // Map common jars available for all DB folders
       mapCommonResourceEntries();
-
       // Map DB specific jar
       mapDbResourceEntries();
-
       // Load all the jars for all the DB's mapped in previous steps
       loadMappedResources();
-
     } catch (LensException e) {
       incrCounter(LOAD_RESOURCES_ERRORS);
       log.error("Failed to load DB resource mapping, resources must be added explicitly to session.", e);
@@ -156,7 +158,7 @@ public class DatabaseResourceService extends AbstractService {
     classLoaderCache.clear();
     dbResEntryMap.clear();
     remoteDbResEntryMap.clear();
-    commonResMap.clear();
+    commonResList.clear();
   }
 
   private void mapCommonResourceEntries() {
@@ -164,7 +166,7 @@ public class DatabaseResourceService extends AbstractService {
     List<String> jars = new ScannedPaths(new Path(resTopDir), "jar", false).getFinalPaths();
     for (String resPath : jars) {
       Path jarFilePath = new Path(resPath);
-      commonResMap.add(new LensSessionImpl.ResourceEntry("jar", jarFilePath.toUri().toString()));
+      commonResList.add(new LensSessionImpl.ResourceEntry("jar", jarFilePath.toUri().toString()));
     }
 
   }
@@ -207,7 +209,6 @@ public class DatabaseResourceService extends AbstractService {
   private void mapDbResourceEntries() throws LensException {
     // Read list of databases in
     FileSystem serverFs = null;
-
     try {
       String baseDir =
         getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR, LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
@@ -221,12 +222,12 @@ public class DatabaseResourceService extends AbstractService {
         log.warn("DB base location does not exist.", baseDir);
         return;
       }
-
       // Look for db dirs
+      String dbName = null;
       for (FileStatus dbDir : serverFs.listStatus(resTopDirPath)) {
         Path dbDirPath = dbDir.getPath();
         if (serverFs.isDirectory(dbDirPath)) {
-          String dbName = dbDirPath.getName();
+          dbName = dbDirPath.getName();
 
           Path dbJarOrderPath = new Path(baseDir, dbName + File.separator + "jar_order");
           if (serverFs.exists(dbJarOrderPath)) {
@@ -239,7 +240,7 @@ public class DatabaseResourceService extends AbstractService {
         }
       }
 
-      log.debug("Found resources {}", dbResEntryMap);
+      log.debug("Found resources {}", dbResEntryMap.get(dbName));
     } catch (IOException io) {
       log.error("Error getting list of dbs to load resources from", io);
       throw new LensException(io);
@@ -256,14 +257,13 @@ public class DatabaseResourceService extends AbstractService {
     }
   }
 
-  private void mapDbSpecificJar(Path baseDir, String dbName) throws Exception {
-    FileSystem serverFs = null;
+  public Map<String, Integer> getLatestJarFileFromDbResourceWithIndex(Path baseDir, String dbName, FileSystem serverFs,
+                                               boolean shouldIncrVersion) throws LensException {
+    String jarFile = null;
+    Map<String, Integer> jarfileToIndexMap = new HashMap();
     try {
       int lastIndex = 0;
-
-
       Path dbFolderPath = new Path(baseDir, dbName);
-
       serverFs = FileSystem.newInstance(dbFolderPath.toUri(), getHiveConf());
       FileStatus[] existingFiles = serverFs.listStatus(dbFolderPath);
       for (FileStatus fs : existingFiles) {
@@ -278,22 +278,15 @@ public class DatabaseResourceService extends AbstractService {
           }
         }
       }
-
-      if (lastIndex > 0) {
-        // latest jar
-        Path latestJarPath = new Path(baseDir, dbName + File.separator + dbName + "_" + lastIndex + ".jar");
-        addResourceEntry(new LensSessionImpl.ResourceEntry("jar", latestJarPath.toUri().toString()), dbName);
+      if (shouldIncrVersion && lastIndex > 0) {
+        lastIndex++;
       }
-
-
-      // add common jars
-      for (LensSessionImpl.ResourceEntry jar : commonResMap) {
-        addResourceEntry(jar, dbName);
-      }
-
-    } catch (Exception io) {
-      log.error("Error getting db specific resource ", io);
-      throw new LensException(io);
+      jarFile =  dbName + "_" + lastIndex + ".jar";
+      jarfileToIndexMap.put(jarFile, lastIndex);
+      return jarfileToIndexMap;
+    } catch (IOException e) {
+      log.error("Error getting db specific resource for database {}", dbName, e);
+      throw new LensException(e);
     } finally {
       if (serverFs != null) {
         try {
@@ -303,7 +296,20 @@ public class DatabaseResourceService extends AbstractService {
         }
       }
     }
+  }
 
+  private void mapDbSpecificJar(Path baseDir, String dbName) throws LensException {
+    Map<String, Integer> jarfileToIndexMap = getLatestJarFileFromDbResourceWithIndex(baseDir, dbName, null, false);
+    String latestJarFile = jarfileToIndexMap.keySet().iterator().next();
+    int index = jarfileToIndexMap.values().iterator().next();
+    if (index > 0) {
+      Path latestJarPath = new Path(baseDir, dbName + File.separator +  latestJarFile);
+      addResourceEntry(new LensSessionImpl.ResourceEntry("jar", latestJarPath.toUri().toString()), dbName);
+    }
+    // add common jars
+    for (LensSessionImpl.ResourceEntry jar : commonResList) {
+      addResourceEntry(jar, dbName);
+    }
   }
 
 
@@ -412,8 +418,12 @@ public class DatabaseResourceService extends AbstractService {
     }
   }
 
-  public void addremoteDbResEntryMap(String database, List<LensSessionImpl.ResourceEntry> resource) {
+  public void addremoteDbResourceEntry(String database, List<LensSessionImpl.ResourceEntry> resource) {
     remoteDbResEntryMap.put(database, resource);
+  }
+
+  public void addLocalDbResourceEntry(String database, List<LensSessionImpl.ResourceEntry> resource) {
+    dbResEntryMap.put(database, resource);
   }
 
   private MetricsService getMetrics() {
@@ -424,5 +434,142 @@ public class DatabaseResourceService extends AbstractService {
       }
     }
     return metricsService;
+  }
+
+  public synchronized void addDBJar(LensSessionHandle sessionid, InputStream is) throws LensException {
+    try {
+      log.info("Adding jar to DB started");
+      acquire(sessionid);
+      String currentDB = SessionState.get().getCurrentDatabase();
+      //baseDir can be local file system or HDFS
+      String baseDir = getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR,
+          LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
+      String localDir = getHiveConf().get(LensConfConstants.DATABASE_LOCAL_RESOURCE_DIR,
+          LensConfConstants.DEFAULT_LOCAL_DATABASE_RESOURCE_DIR);
+      //DatabaseResourceService dbResSvc = getSession(sessionid).getDbResService();
+      Path jarFilePath = null;
+      if (new Path(baseDir).getFileSystem(getHiveConf()).getScheme().equals("file")) {
+        // baseDir is in local filesystem, add jar to local base directory
+        jarFilePath = addDBJarToLocal(sessionid, is, baseDir, currentDB);
+        addLocalDbResourceEntry(currentDB,
+            updateDbResourceEntries(currentDB, baseDir, jarFilePath));
+      } else {
+        // add jar to local secondary directory first and then copy to HDFS
+        jarFilePath = addDBJarToLocal(sessionid, is, localDir, currentDB);
+        //copy jar file to hdfs
+        copyJarFileToHDFS(jarFilePath, new Path(baseDir, currentDB), baseDir);
+        String jarFile = jarFilePath.toString().substring(jarFilePath.toString().lastIndexOf(File.separator) + 1);
+        addremoteDbResourceEntry(currentDB,
+            updateDbResourceEntries(currentDB, baseDir, new Path(baseDir, currentDB + File.separator +  jarFile)));
+      }
+      log.info("Adding jar to DB ended");
+    } catch (IOException e) {
+      log.error("Exception occoured while uploading jar file ", e);
+      throw new LensException(e);
+    } finally {
+      release(sessionid);
+    }
+  }
+
+  private List<LensSessionImpl.ResourceEntry> updateDbResourceEntries(String currentDB,
+                                                                      String baseDir, Path jarFilePath) {
+    List<LensSessionImpl.ResourceEntry> resourceEntries = new ArrayList<>();
+    resourceEntries.add(new LensSessionImpl.ResourceEntry("jar",
+        new Path(baseDir, currentDB + jarFilePath.getName()).toUri().toString()));
+    return resourceEntries;
+  }
+
+  private void copyJarFileToHDFS(Path source, Path dest, String resourceDir) throws LensException {
+    try {
+      FileSystem sourceFs = FileSystem.get(new URI(resourceDir), getHiveConf());
+      sourceFs.copyFromLocalFile(source, dest);
+      log.info("Jar file Copied from {} to {} ", source, dest);
+    } catch (IOException e) {
+      log.error("Error while copying file to HDFS ", e);
+      throw new LensException(e);
+    } catch (URISyntaxException e) {
+      log.error("Error in URI syntax ", e);
+      throw new LensException(e);
+    }
+  }
+
+  private Path addDBJarToLocal(LensSessionHandle sessionid, InputStream is, String baseDir, String currentDB)
+    throws LensException {
+    // Read list of databases in
+    FileSystem serverFs = null;
+    FileSystem jarOrderFs = null;
+    FSDataOutputStream fos = null;
+
+    try {
+      String dbDir = baseDir + File.separator + currentDB;
+      log.info("Database specific resources at {}", dbDir);
+      Path resTopDirPath = new Path(dbDir);
+      serverFs = FileSystem.newInstance(resTopDirPath.toUri(), getHiveConf());
+      if (!serverFs.exists(resTopDirPath)) {
+        // Create DB directory if its not present
+        serverFs.mkdirs(resTopDirPath);
+        //log.warn("Database resource location does not exist. Database jar can't be uploaded", dbDir);
+        //throw new LensException("Database resource location does not exist. Database jar can't be uploaded");
+      }
+
+      Path resJarOrderPath = new Path(dbDir, "jar_order");
+      jarOrderFs = FileSystem.newInstance(resJarOrderPath.toUri(), getHiveConf());
+      if (jarOrderFs.exists(resJarOrderPath)) {
+        log.warn("Database jar_order file exist - {}. Database jar can't be uploaded", resJarOrderPath);
+        throw new LensException("This database " + currentDB + " does not support jar upload");
+      }
+
+      String tempFileName = currentDB + "_uploading.jar";
+      Path uploadingPath = new Path(dbDir, tempFileName);
+      FileSystem uploadingFs = FileSystem.newInstance(uploadingPath.toUri(), getHiveConf());
+      if (uploadingFs.exists(uploadingPath)) {
+        // Delete the temp file already existing, which might have created due to
+        // server restart or some other unexpected reason while renaming file.
+        uploadingFs.delete(uploadingPath, true);
+      }
+      String latestJarFile = getLatestJarFileFromDbResourceWithIndex(new Path(baseDir),
+          currentDB, null, true).keySet().iterator().next();
+      Path renamePath = new Path(dbDir + File.separator + latestJarFile);
+
+      log.info("New jar name : " + uploadingPath.getName());
+      fos = serverFs.create(uploadingPath);
+      IOUtils.copy(is, fos);
+      fos.flush();
+      if (!serverFs.rename(uploadingPath, renamePath)) {
+        log.error("File rename failed from {} to {}", uploadingPath, renamePath);
+        throw new LensException("File rename failed!");
+      }
+      return renamePath;
+    } catch (IOException e) {
+      log.error("Exception occoured while uploading jar file ", e);
+      throw new LensException(e);
+    } finally {
+      if (fos != null) {
+        try {
+          fos.close();
+        } catch (IOException e) {
+          log.error("Error closing file system instance fos", e);
+        }
+      }
+      if (serverFs != null) {
+        try {
+          serverFs.close();
+        } catch (IOException e) {
+          log.error("Error closing file system instance serverFs", e);
+        }
+      }
+      if (jarOrderFs != null) {
+        try {
+          jarOrderFs.close();
+        } catch (IOException e) {
+          log.error("Error closing file system instance jarOrderFs", e);
+        }
+      }
+    }
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    return null;
   }
 }

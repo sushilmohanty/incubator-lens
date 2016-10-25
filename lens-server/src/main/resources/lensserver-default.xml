@@ -55,7 +55,7 @@
 
   <property>
     <name>lens.server.servicenames</name>
-    <value>session,alarm,query,savedquery,metastore,scheduler,quota</value>
+    <value>session,alarm,query,savedquery,metastore,scheduler,quota,database-resources</value>
     <description>These services would be started in the specified order when lens-server starts up</description>
   </property>
 
@@ -98,6 +98,12 @@
   <property>
     <name>lens.server.scheduler.service.impl</name>
     <value>org.apache.lens.server.scheduler.SchedulerServiceImpl</value>
+    <description>Implementation class for query scheduler service</description>
+  </property>
+
+  <property>
+    <name>lens.server.database-resources.service.impl</name>
+    <value>org.apache.lens.server.session.DatabaseResourceService</value>
     <description>Implementation class for query scheduler service</description>
   </property>
 

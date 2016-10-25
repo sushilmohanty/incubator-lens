@@ -370,12 +370,12 @@ public class LensConnection implements AutoCloseable {
    * @return the API result
    */
   public APIResult addResourceToDB(String type, @NonNull final String resourcePath) {
-    WebTarget target = getMetastoreWebTarget();
+    WebTarget target = getSessionWebTarget();
     FormDataMultiPart mp = new FormDataMultiPart();
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("type").build(), type));
 
     File file = new File(resourcePath);
-    log.info("uploading file path : {} File size : {}", file.getAbsolutePath(), file.length());
+    log.info("Uploading file path : {} File size : {}", file.getAbsolutePath(), file.length());
     final FormDataContentDisposition dispo = FormDataContentDisposition
       .name("file")
       .fileName(file.getName())
@@ -389,12 +389,9 @@ public class LensConnection implements AutoCloseable {
     MultiPart multiPart = new MultiPart();
     multiPart.setMediaType(MediaType.MULTIPART_FORM_DATA_TYPE);
 
-
-    APIResult result = target.path("databases/jar").queryParam("sessionid", this.sessionHandle).request()
+    APIResult result = target.path("databases/resources").queryParam("sessionid", this.sessionHandle).request()
       .post(Entity.entity(mp, multiPart.getMediaType()), APIResult.class);
-
     log.debug(result.getStatus() + " - " + result);
-
     return result;
   }
 }

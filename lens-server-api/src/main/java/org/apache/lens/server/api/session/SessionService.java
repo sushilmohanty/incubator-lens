@@ -135,4 +135,5 @@ public interface SessionService {
    * @return a list of all sessions
    */
   List<UserSessionInfo> getSessionInfo();
+
 }
