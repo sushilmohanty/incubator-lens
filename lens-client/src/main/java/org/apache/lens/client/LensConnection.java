@@ -369,20 +369,19 @@ public class LensConnection implements AutoCloseable {
    * @param resourcePath the resource path
    * @return the API result
    */
-  public APIResult addResourceToDB(String type, @NonNull final String resourcePath) {
+  public APIResult addResourceToDB(String type, @NonNull final File resourcePath) {
     WebTarget target = getSessionWebTarget();
     FormDataMultiPart mp = new FormDataMultiPart();
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("type").build(), type));
 
-    File file = new File(resourcePath);
-    log.info("Uploading file path : {} File size : {}", file.getAbsolutePath(), file.length());
+    log.info("Uploading file path : {} File size : {}", resourcePath.getAbsolutePath(), resourcePath.length());
     final FormDataContentDisposition dispo = FormDataContentDisposition
       .name("file")
-      .fileName(file.getName())
-      .size(file.length())
+      .fileName(resourcePath.getName())
+      .size(resourcePath.length())
       .build();
 
-    FileDataBodyPart filePart = new FileDataBodyPart("file", file);
+    FileDataBodyPart filePart = new FileDataBodyPart("file", resourcePath);
     filePart.setContentDisposition(dispo);
     mp.bodyPart(filePart);
 

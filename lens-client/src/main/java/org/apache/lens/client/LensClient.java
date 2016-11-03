@@ -18,6 +18,7 @@
  */
 package org.apache.lens.client;
 
+import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Date;
@@ -768,7 +769,7 @@ public class LensClient implements AutoCloseable {
     closeConnection();
   }
 
-  public APIResult addDBResource(String path) {
+  public APIResult addDBResource(File path) {
     return this.connection.addResourceToDB("jar", path);
   }
 }

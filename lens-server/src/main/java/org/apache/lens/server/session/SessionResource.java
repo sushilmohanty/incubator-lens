@@ -307,7 +307,6 @@ public class SessionResource {
    * @param fileInputStream stream of the resource
    * @param fileDetail form-data content disposition
    * @return {@link APIResult} with state {@link Status#SUCCEEDED}, if add was successful. {@link APIResult} with state
-   * {@link Status#PARTIAL}, if add succeeded only for some services. {@link APIResult} with state
    * {@link Status#FAILED}, if add has failed
    */
   @POST

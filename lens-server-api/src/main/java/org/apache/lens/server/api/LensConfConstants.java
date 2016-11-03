@@ -838,12 +838,15 @@ public final class LensConfConstants {
 
   public static final String DATABASE_LOCAL_RESOURCE_DIR = SERVER_PFX + "database.local.resource.dir";
 
-  public static final String DEFAULT_LOCAL_DATABASE_RESOURCE_DIR = "file:///tmp/lens/local/resources";
+  public static final String DEFAULT_LOCAL_DATABASE_RESOURCE_DIR = "/tmp/lens/local/resources";
 
   public static final String DB_RESOURCE_JAR_MAX_SIZE = SERVER_PFX + "db.resourcejar.max.size";
 
-  public static final int DEFAULT_DB_RESOURCE_JAR_MAX_SIZE = 50 * 1024 * 1024;
+  public static final String DB_RESOURCE_COPY_FROM_HDFS = SERVER_PFX + "db.resource.copy.from.hdfs";
 
+  public static final boolean DEFAULT_DB_RESOURCE_COPY_FROM_HDFS = true;
+
+  public static final int DEFAULT_DB_RESOURCE_JAR_MAX_SIZE = 50 * 1024 * 1024;
 
   /**
    * Key for enabling metrics for each query to be different

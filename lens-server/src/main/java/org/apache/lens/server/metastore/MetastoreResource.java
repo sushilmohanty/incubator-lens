@@ -20,7 +20,6 @@ package org.apache.lens.server.metastore;
 
 import static org.apache.lens.api.APIResult.*;
 
-import java.io.*;
 import java.util.List;
 
 import javax.ws.rs.*;

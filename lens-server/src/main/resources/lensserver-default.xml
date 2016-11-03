@@ -55,7 +55,7 @@
 
   <property>
     <name>lens.server.servicenames</name>
-    <value>session,alarm,query,savedquery,metastore,scheduler,quota,database-resources</value>
+    <value>session,alarm,query,savedquery,metastore,scheduler,quota</value>
     <description>These services would be started in the specified order when lens-server starts up</description>
   </property>
 

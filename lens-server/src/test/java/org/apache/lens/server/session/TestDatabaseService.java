@@ -44,6 +44,7 @@ import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.hadoop.hive.conf.HiveConf;
 
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -56,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
-@Test(groups = "unit-test")
+@Test(groups = "restart-test", dependsOnGroups = "unit-test")
 public class TestDatabaseService extends LensAllApplicationJerseyTest {
   DatabaseResourceService dbResourceSvc;
   LensSessionHandle lensSessionId;
@@ -223,7 +224,7 @@ public class TestDatabaseService extends LensAllApplicationJerseyTest {
         .post(Entity.entity(mp, multiPart.getMediaType()), APIResult.class);
     log.debug(resultUpd.getStatus() + " " + resultUpd);
     assertTrue(resultUpd.getMessage().startsWith("This database db2_")
-        && resultUpd.getMessage().endsWith("does not support jar upload"));
+        && resultUpd.getMessage().endsWith("does not support jar upload!"));
 
     cleanUp(dbFolder);
   }
@@ -330,9 +331,12 @@ public class TestDatabaseService extends LensAllApplicationJerseyTest {
   @Test(dataProvider = "mediaTypeData")
   public void testJarUploadWithExistingJarsInFolderAndCopyToHDFS(MediaType mediaType) throws Exception {
     String hdfsDir = fs.getUri().toString() + "/" + "testing/database/jar";
-    getServerConf().set(LensConfConstants.DATABASE_RESOURCE_DIR, hdfsDir);
-    getServerConf().set(LensConfConstants.DATABASE_LOCAL_RESOURCE_DIR, System.getProperty("user.dir") + "/"
+    fs.mkdirs(new Path(hdfsDir));
+    HiveConf conf = getServerConf();
+    conf.set(LensConfConstants.DATABASE_RESOURCE_DIR, hdfsDir);
+    conf.set(LensConfConstants.DATABASE_LOCAL_RESOURCE_DIR, System.getProperty("user.dir") + "/"
         + "target/resources");
+    restartLensServer(conf);
     rootPath = getServerConf().get(LensConfConstants.DATABASE_RESOURCE_DIR);
     String dbName = "db5" + "_" + mediaType.getSubtype() + "_" + System.currentTimeMillis();
     // create

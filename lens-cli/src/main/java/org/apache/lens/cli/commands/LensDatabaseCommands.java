@@ -18,6 +18,7 @@
  */
 package org.apache.lens.cli.commands;
 
+import java.io.File;
 import java.util.List;
 
 import org.apache.lens.api.APIResult;
@@ -132,7 +133,7 @@ public class LensDatabaseCommands extends LensCRUDCommand {
   @CliCommand(value = "add dbjar", help = "Add jar resource to the db")
   public String addDBJar(
     @CliOption(key = {"", "path"}, mandatory = true, help =  "<path-to-jar-on-local>")
-    @NonNull String path) {
+    @NonNull File path) {
     APIResult result = getClient().addDBResource(path);
     return result.getMessage();
   }

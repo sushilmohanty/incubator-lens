@@ -171,7 +171,8 @@ public class TestDatabaseResourceService {
       Class clz = Class.forName("ClassLoaderTestClass", true, getClass().getClassLoader());
       Assert.fail("Expected class loading to fail");
     } catch (Throwable th) {
-      log.error("Expected error " + th + " msg = " + th.getMessage(), th);
+      //log.error("Expected error " + th + " msg = " + th.getMessage(), th);
+      log.error("Expected error {} msg {} ", th, th.getMessage());
     }
 
     // Should pass now
