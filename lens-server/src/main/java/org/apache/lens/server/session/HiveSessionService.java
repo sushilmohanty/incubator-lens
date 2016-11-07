@@ -19,6 +19,7 @@
 package org.apache.lens.server.session;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.*;
@@ -48,7 +49,6 @@ import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.hive.service.cli.OperationHandle;
 
 import com.google.common.collect.Maps;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,7 +57,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class HiveSessionService extends BaseLensService implements SessionService {
-
 
   /** The restorable sessions. */
   private List<LensSessionImpl.LensSessionPersistInfo> restorableSessions;
@@ -69,7 +68,7 @@ public class HiveSessionService extends BaseLensService implements SessionServic
   private Runnable sessionExpiryRunnable = new SessionExpiryRunnable();
 
   /** Service to manage database specific resources */
-  @Getter(AccessLevel.PROTECTED)
+  @Getter
   private DatabaseResourceService databaseResourceService;
 
   /**
@@ -239,6 +238,11 @@ public class HiveSessionService extends BaseLensService implements SessionServic
     return SESSION_MAP.containsKey(sessionHandle.getPublicId().toString());
   }
 
+  @Override
+  public void addDBJar(LensSessionHandle sessionid, InputStream is) throws LensException {
+    databaseResourceService.addDBJar(sessionid, is);
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -336,7 +340,7 @@ public class HiveSessionService extends BaseLensService implements SessionServic
    */
   @Override
   public synchronized void init(HiveConf hiveConf) {
-    this.databaseResourceService = new DatabaseResourceService(null);
+    this.databaseResourceService = new DatabaseResourceService(getCliService());
     addService(this.databaseResourceService);
     this.conf = hiveConf;
     super.init(hiveConf);

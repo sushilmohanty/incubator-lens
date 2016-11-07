@@ -62,7 +62,7 @@
   <property>
     <name>lens.server.session.service.impl</name>
     <value>org.apache.lens.server.session.HiveSessionService</value>
-    <description>Implementation class for session service</description>
+    <description>Implementation class for hive session service</description>
   </property>
 
   <property>
@@ -102,9 +102,9 @@
   </property>
 
   <property>
-    <name>lens.server.database-resources.service.impl</name>
-    <value>org.apache.lens.server.session.DatabaseResourceService</value>
-    <description>Implementation class for query scheduler service</description>
+    <name>lens.server.hive.session.service.impl</name>
+    <value>org.apache.lens.server.session.HiveSessionService</value>
+    <description>Implementation class hive session service</description>
   </property>
 
   <property>

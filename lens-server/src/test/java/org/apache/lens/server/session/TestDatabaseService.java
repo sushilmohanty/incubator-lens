@@ -35,6 +35,7 @@ import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.server.LensAllApplicationJerseyTest;
 import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.api.session.SessionService;
 
 import org.apache.commons.io.FileUtils;
 
@@ -57,9 +58,10 @@ import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
-@Test(groups = "restart-test", dependsOnGroups = "unit-test")
+//@Test(groups = "db-resource-restart-test", dependsOnGroups = {"unit-test","restart-test"} )
+@Test(groups = "db-resource-test", dependsOnGroups = "restart-test")
 public class TestDatabaseService extends LensAllApplicationJerseyTest {
-  DatabaseResourceService dbResourceSvc;
+  SessionService sessionService;
   LensSessionHandle lensSessionId;
   String rootPath = null;
   Configuration conf;
@@ -96,8 +98,9 @@ public class TestDatabaseService extends LensAllApplicationJerseyTest {
   @BeforeMethod
   public void create() throws Exception {
     rootPath = getServerConf().get(LensConfConstants.DATABASE_RESOURCE_DIR);
-    dbResourceSvc = LensServices.get().getService(DatabaseResourceService.NAME);
-    lensSessionId = dbResourceSvc.openSession("foo", "bar", new HashMap<String, String>());
+    sessionService = LensServices.get().getService(HiveSessionService.NAME);
+    lensSessionId = ((HiveSessionService) sessionService).getDatabaseResourceService()
+        .openSession("foo", "bar", new HashMap<String, String>(), false);
   }
 
   @AfterTest
@@ -113,7 +116,7 @@ public class TestDatabaseService extends LensAllApplicationJerseyTest {
 
   @AfterMethod
   public void drop() throws Exception {
-    dbResourceSvc.closeSession(lensSessionId);
+    sessionService.closeSession(lensSessionId);
   }
 
   private String getCurrentDatabase(MediaType mediaType) throws Exception {
@@ -152,6 +155,7 @@ public class TestDatabaseService extends LensAllApplicationJerseyTest {
    */
   @Test(dataProvider = "mediaTypeData")
   public void testJarUpload(MediaType mediaType) throws Exception {
+
     String dbName = "db1" + "_" + mediaType.getSubtype();
     // create
     APIResult result = target().path("metastore").path("databases")

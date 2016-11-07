@@ -41,6 +41,8 @@ import org.apache.lens.server.api.LensConfConstants;
 
 import org.apache.commons.io.FileUtils;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -267,9 +269,11 @@ public final class LensServerTestUtil {
       // nothing to setup
       return;
     }
-    File resDir = new File(conf.get(LensConfConstants.DATABASE_RESOURCE_DIR, "target/resources/"));
-    if (!resDir.exists()) {
-      resDir.mkdir();
+
+    Path resPath = new Path(conf.get(LensConfConstants.DATABASE_RESOURCE_DIR, "target/resources/"));
+    FileSystem fs = FileSystem.newInstance(resPath.toUri(), conf);
+    if (!fs.exists(resPath)) {
+      fs.mkdirs(resPath);
     }
 
     // Create databases and resource dirs
@@ -280,7 +284,7 @@ public final class LensServerTestUtil {
       Database database = new Database();
       database.setName(db);
       hive.createDatabase(database, true);
-      File dbDir = new File(resDir, db);
+      File dbDir = new File(resPath.toUri().getPath().toString(), db);
       if (!dbDir.exists()) {
         dbDir.mkdir();
       }
@@ -357,16 +361,16 @@ public final class LensServerTestUtil {
       // nothing to setup
       return;
     }
-    File resDir = new File(conf.get(LensConfConstants.DATABASE_RESOURCE_DIR));
-    if (!resDir.exists()) {
-      resDir.mkdir();
+
+    Path resPath = new Path(conf.get(LensConfConstants.DATABASE_RESOURCE_DIR));
+    FileSystem fs = FileSystem.newInstance(resPath.toUri(), conf);
+    if (!fs.exists(resPath)) {
+      fs.mkdirs(resPath);
     }
 
-    setUpDbWithJarOrderAndFiles(dbs[0], resDir, conf);
-
-    setUpDbWithNoJarOrderAndVersionFiles(dbs[1], resDir, conf);
-
-    setUpDbWithNoJarOrderAndNoFiles(dbs[2], resDir, conf);
+    setUpDbWithJarOrderAndFiles(dbs[0], resPath, conf);
+    setUpDbWithNoJarOrderAndVersionFiles(dbs[1], resPath, conf);
+    setUpDbWithNoJarOrderAndNoFiles(dbs[2], resPath, conf);
   }
 
 
@@ -376,57 +380,55 @@ public final class LensServerTestUtil {
       // nothing to setup
       return;
     }
-    File resDir = new File(conf.get(LensConfConstants.DATABASE_RESOURCE_DIR));
-    if (!resDir.exists()) {
-      resDir.mkdir();
+
+    Path resPath = new Path(conf.get(LensConfConstants.DATABASE_RESOURCE_DIR));
+    FileSystem fs = FileSystem.newInstance(resPath.toUri(), conf);
+    if (!fs.exists(resPath)) {
+      fs.mkdirs(resPath);
     }
 
-    File testJarFile = new File("target/testjars/test.jar");
+    String testJarFile = "target/testjars/test.jar";
+    fs.copyToLocalFile(new Path(testJarFile), new Path(resPath, "lens-ship.jar"));
+    fs.copyToLocalFile(new Path(testJarFile), new Path(resPath, "meta.jar"));
 
     // Copy common jars
-    FileUtils.copyFile(testJarFile, new File(resDir, "lens-ship.jar"));
-    FileUtils.copyFile(testJarFile, new File(resDir, "meta.jar"));
+    //FileUtils.copyFile(testJarFile, new File(resDir, "lens-ship.jar"));
+    //FileUtils.copyFile(testJarFile, new File(resDir, "meta.jar"));
 
-
-    setUpDbWithJarOrderAndFiles(dbs[0], resDir, conf);
-
-    setUpDbWithNoJarOrderAndVersionFiles(dbs[1], resDir, conf);
-
-    setUpDbWithNoJarOrderAndNoFiles(dbs[2], resDir, conf);
+    setUpDbWithJarOrderAndFiles(dbs[0], resPath, conf);
+    setUpDbWithNoJarOrderAndVersionFiles(dbs[1], resPath, conf);
+    setUpDbWithNoJarOrderAndNoFiles(dbs[2], resPath, conf);
   }
 
-  //*********************************************
-  // Setup DB : JAR_ORDER  SOME FILES
-  //*********************************************
-  private static void setUpDbWithJarOrderAndFiles(String db, File resDir, HiveConf conf) throws Exception {
+  // jar_order file with jar files
+  private static void setUpDbWithJarOrderAndFiles(String db, Path resPath, HiveConf conf) throws Exception {
     Database database0 = new Database();
     database0.setName(db);
 
     Hive hive = Hive.get(conf);
     hive.createDatabase(database0, true);
 
-    File dbDir1 = new File(resDir, db);
-    if (!dbDir1.exists()) {
-      dbDir1.mkdir();
+    Path dbDirPath1 = new Path(resPath, db);
+    FileSystem fs = FileSystem.newInstance(dbDirPath1.toUri(), conf);
+    if (!fs.exists(dbDirPath1)) {
+      fs.mkdirs(dbDirPath1);
     }
 
-    File dbDir0 = new File(resDir, db);
-    if (!dbDir0.exists()) {
-      dbDir0.mkdir();
+    Path dbDirPath0 = new Path(resPath, db);
+    FileSystem fs1 = FileSystem.newInstance(dbDirPath0.toUri(), conf);
+    if (!fs1.exists(dbDirPath0)) {
+      fs1.mkdirs(dbDirPath0);
     }
-
     String[] jarFilesOrder = {
       "x_" + db + ".jar",
       "y_" + db + ".jar",
       "z_" + db + ".jar",
     };
-
     try {
-
       // We are explicitly specifying jar order
-      FileUtils.writeLines(new File(dbDir0, "jar_order"), Arrays.asList(jarFilesOrder[2], jarFilesOrder[1],
-          jarFilesOrder[0]));
-
+      File dbDir0 = new File(dbDirPath0.toUri().getPath().toString());
+      FileUtils.writeLines(new File(dbDir0, "jar_order"),
+          Arrays.asList(jarFilesOrder[2], jarFilesOrder[1], jarFilesOrder[0]));
       File testJarFile = new File("target/testjars/test.jar");
 
       FileUtils.copyFile(testJarFile, new File(dbDir0, jarFilesOrder[0]));
@@ -440,20 +442,17 @@ public final class LensServerTestUtil {
   }
 
 
-  //*********************************************
-  // Setup DB : NO JAR_ORDER  VERSION FILES
-  //*********************************************
-  private static void setUpDbWithNoJarOrderAndVersionFiles(String db, File resDir, HiveConf conf) throws Exception {
-
+  // No jar_order file, with version files
+  private static void setUpDbWithNoJarOrderAndVersionFiles(String db, Path resPath, HiveConf conf) throws Exception {
     Database database0 = new Database();
     database0.setName(db);
-
     Hive hive = Hive.get(conf);
     hive.createDatabase(database0, true);
 
-    File dbDir1 = new File(resDir, db);
-    if (!dbDir1.exists()) {
-      dbDir1.mkdir();
+    Path dbDirPath1 = new Path(resPath, db);
+    FileSystem fs = FileSystem.newInstance(dbDirPath1.toUri(), conf);
+    if (!fs.exists(dbDirPath1)) {
+      fs.mkdirs(dbDirPath1);
     }
 
     String[] jarOrder = {
@@ -461,11 +460,9 @@ public final class LensServerTestUtil {
       db + "_2.jar",
       db + "_1.jar",
     };
-
-
     try {
+      File dbDir1 = new File(dbDirPath1.toUri().getPath().toString());
       File testJarFile = new File("target/testjars/test.jar");
-
       FileUtils.copyFile(testJarFile, new File(dbDir1, jarOrder[0]));
       FileUtils.copyFile(testJarFile, new File(dbDir1, jarOrder[1]));
       FileUtils.copyFile(testJarFile, new File(dbDir1, jarOrder[2]));
@@ -474,20 +471,18 @@ public final class LensServerTestUtil {
     }
   }
 
-  //*********************************************
-  // Setup DB : NO JAR_ORDER  NO FILES  NO VERSION FILES
-  //*********************************************
-  private static void setUpDbWithNoJarOrderAndNoFiles(String db, File resDir, HiveConf conf) throws Exception {
-
+  // No jar_order file and no version files
+  private static void setUpDbWithNoJarOrderAndNoFiles(String db, Path resPath, HiveConf conf) throws Exception {
     Database database0 = new Database();
     database0.setName(db);
 
     Hive hive = Hive.get(conf);
     hive.createDatabase(database0, true);
 
-    File dbDir1 = new File(resDir, db);
-    if (!dbDir1.exists()) {
-      dbDir1.mkdir();
+    Path dbDirPath1 = new Path(resPath, db);
+    FileSystem fs = FileSystem.newInstance(dbDirPath1.toUri(), conf);
+    if (!fs.exists(dbDirPath1)) {
+      fs.mkdirs(dbDirPath1);
     }
   }
 }

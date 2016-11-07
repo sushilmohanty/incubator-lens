@@ -52,6 +52,12 @@
   </property>
 
   <property>
+    <name>lens.server.database.local.resource.dir</name>
+    <value>${project.build.directory}/resources/local/</value>
+    <description>database resource directory</description>
+  </property>
+
+  <property>
     <name>lens.server.persist.location</name>
     <value>target/persist-dir</value>
   </property>
@@ -146,7 +152,7 @@
 
   <property>
     <name>lens.server.servicenames</name>
-    <value>session,alarm,query,metastore,scheduler,quota,mocknonlens,savedquery,database-resources</value>
+    <value>session,alarm,query,metastore,scheduler,quota,mocknonlens,savedquery</value>
   </property>
 
   <property>
@@ -176,6 +182,11 @@
   <property>
     <name>lens.server.database.resource.dir</name>
     <value>target/resources</value>
+  </property>
+
+  <property>
+    <name>lens.server.database.local.resource.dir</name>
+    <value>target/resources/local</value>
   </property>
 
   <property>

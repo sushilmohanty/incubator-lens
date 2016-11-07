@@ -50,11 +50,11 @@ public class TestLensDatabaseCommands extends LensCliApplicationTest {
       LensCubeCommands cubeCommand = new LensCubeCommands();
       command.setClient(client);
       cubeCommand.setClient(client);
+      testAddDbResource(command);
       boolean cascade = true;
       for (int i = 0; i < 4; i++, cascade = !cascade) {
         testDrop(command, cubeCommand, cascade);
       }
-      testAddDbResource(command);
     }
   }
 
@@ -93,16 +93,14 @@ public class TestLensDatabaseCommands extends LensCliApplicationTest {
 
   private void testAddDbResource(LensDatabaseCommands command)
     throws URISyntaxException {
+    assertTrue(command.showAllDatabases().contains("default"));
     String myDatabase = "my_db";
-    assertFalse(command.showAllDatabases().contains(myDatabase));
-    String loadingOutput = command.addDBJar(new File(TestLensDatabaseCommands.class.getClassLoader()
-        .getResource("schema/jars/test_db_resource.jar").toURI()));
+    command.createDatabase(myDatabase, true);
+    assertTrue(command.showAllDatabases().contains(myDatabase));
+    command.switchDatabase(myDatabase);
+    File res = new File("target/dbresourcetest/jars/test_db_resource.jar");
+    String loadingOutput = command.addDBJar(res);
     assertEquals(loadingOutput, "Add resource succeeded");
-    try {
-      command.addDBJar(new File(TestLensDatabaseCommands.class.getClassLoader()
-          .getResource("schema/jars/test_db_resource_not_existing.jar").toURI()));
-    } catch (NullPointerException e) {
-      System.out.println("File doesn't exist!");
-    }
+    command.dropDatabase(myDatabase, true);
   }
 }

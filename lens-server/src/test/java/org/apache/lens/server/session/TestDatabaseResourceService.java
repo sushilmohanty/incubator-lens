@@ -42,7 +42,6 @@ public class TestDatabaseResourceService {
   private static final String DB_PFX = TestDatabaseResourceService.class.getSimpleName();
   public static final String TEST_CLASS = "ClassLoaderTestClass";
 
-
   private static final String DB1 = DB_PFX + "db1";
   private static final String DB2 = DB_PFX + "db2";
 
@@ -68,9 +67,15 @@ public class TestDatabaseResourceService {
 
     String prefix = System.getProperty("user.dir");
 
-    conf.set(LensConfConstants.DATABASE_RESOURCE_DIR, prefix + "/target/resources");
-    conf1.set(LensConfConstants.DATABASE_RESOURCE_DIR, prefix + "/target/resources_without_common_jars");
-    conf2.set(LensConfConstants.DATABASE_RESOURCE_DIR, prefix + "/target/resources_with_common_jars");
+    conf.set(LensConfConstants.DATABASE_RESOURCE_DIR, "file://" + prefix + "/target/resources");
+    conf1.set(LensConfConstants.DATABASE_RESOURCE_DIR, "file://" + prefix + "/target/resources_without_common_jars");
+    conf2.set(LensConfConstants.DATABASE_RESOURCE_DIR, "file://" + prefix + "/target/resources_with_common_jars");
+
+    conf.set(LensConfConstants.DATABASE_LOCAL_RESOURCE_DIR, "file://" + prefix + "/target/local/resources");
+    conf1.set(LensConfConstants.DATABASE_LOCAL_RESOURCE_DIR, "file://" + prefix
+        + "/target/local/resources_without_common_jars");
+    conf2.set(LensConfConstants.DATABASE_LOCAL_RESOURCE_DIR, "file://" + prefix
+        + "/target/local/resources_with_common_jars");
 
     LensServerTestUtil.createTestDatabaseResources(testDatabases, conf);
     LensServerTestUtil.createTestDbWithoutCommonJars(testDatabases1, conf1);
@@ -308,5 +313,4 @@ public class TestDatabaseResourceService {
         actualOrderList.get(i) + " > " + jarFilesOrder[i]);
     }
   }
-
 }

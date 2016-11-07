@@ -326,7 +326,7 @@ public class SessionResource {
     }
     try {
       if (type.equals("jar")) {
-        databaseResourceService.addDBJar(sessionid, fileInputStream);
+        sessionService.addDBJar(sessionid, fileInputStream);
       } else {
         throw new LensException("File type ."+  type + " not supported.");
       }

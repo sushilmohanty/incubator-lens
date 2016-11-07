@@ -77,8 +77,9 @@ public class DatabaseResourceService extends BaseLensService {
     super(NAME, cliService);
   }
 
-  private String resTopDir = null;
-  private String localResTopDir = null;
+  private String dbResTopDir = null;
+  private String dbLocalResTopDir = null;
+  private FileSystem dbResourceFs;
 
   private void downloadJarFilesFromHDFS(String source, String dest) throws Exception {
     Path sourcePath = new Path(source);
@@ -133,30 +134,33 @@ public class DatabaseResourceService extends BaseLensService {
     super.init(hiveConf);
   }
 
+  private boolean isDbResourcePathLocal(String dbResPath) {
+    return dbResPath.startsWith("file:") ? true : false;
+  }
+
   @Override
   public synchronized void start() {
     super.start();
     try {
       log.info("Started loading DB specific resources");
       // If the base folder itself is not present, then return as we can't load any jars.
-      FileSystem serverFs = null;
       try {
         if (getHiveConf().getBoolean(LensConfConstants.DB_RESOURCE_COPY_FROM_HDFS,
             LensConfConstants.DEFAULT_DB_RESOURCE_COPY_FROM_HDFS)) {
-          resTopDir = getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR,
+          dbResTopDir = getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR,
               LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
-          Path resTopDirPath = new Path(resTopDir);
-          serverFs = FileSystem.newInstance(resTopDirPath.toUri(), getHiveConf());
-          if (serverFs.exists(resTopDirPath)) {
-            if (resTopDirPath.getFileSystem(getHiveConf()).getScheme().equals("hdfs")) {
-              localResTopDir = getHiveConf().get(LensConfConstants.DATABASE_LOCAL_RESOURCE_DIR,
-                  LensConfConstants.DEFAULT_LOCAL_DATABASE_RESOURCE_DIR);
-              downloadJarFilesFromHDFS(resTopDir, localResTopDir);
-              resTopDir = localResTopDir;
+          dbLocalResTopDir = getHiveConf().get(LensConfConstants.DATABASE_LOCAL_RESOURCE_DIR,
+              LensConfConstants.DEFAULT_LOCAL_DATABASE_RESOURCE_DIR);
+          Path dbResTopDirPath = new Path(dbResTopDir);
+          dbResourceFs = FileSystem.newInstance(dbResTopDirPath.toUri(), getHiveConf());
+          if (dbResourceFs.exists(dbResTopDirPath)) {
+            if (dbResTopDirPath.getFileSystem(getHiveConf()).getScheme().equals("hdfs")) {
+              downloadJarFilesFromHDFS(dbResTopDir, dbLocalResTopDir);
+              //resTopDir = localResTopDir;
             }
           } else {
             incrCounter(LOAD_RESOURCES_ERRORS);
-            log.error("DB resources base location does not exist", resTopDir);
+            log.error("DB resources base location does not exist", dbResTopDir);
             return;
           }
         }
@@ -188,7 +192,8 @@ public class DatabaseResourceService extends BaseLensService {
   }
 
   private void mapCommonResourceEntries() {
-    List<String> jars = new ScannedPaths(new Path(resTopDir), "jar", false).getFinalPaths();
+    Path jarFilesPath = isDbResourcePathLocal(dbResTopDir) ?  new Path(dbResTopDir) : new Path(dbLocalResTopDir);
+    List<String> jars = new ScannedPaths(jarFilesPath, "jar", false).getFinalPaths();
     for (String resPath : jars) {
       Path jarFilePath = new Path(resPath);
       commonResList.add(new LensSessionImpl.ResourceEntry("jar", jarFilePath.toUri().toString()));
@@ -200,7 +205,8 @@ public class DatabaseResourceService extends BaseLensService {
     // Read list of databases in
     FileSystem serverFs = null;
     try {
-      Path resDirPath = new Path(resTopDir, dbName);
+      Path jarFilesPath = isDbResourcePathLocal(dbResTopDir) ? new Path(dbResTopDir) : new Path(dbLocalResTopDir);
+      Path resDirPath = new Path(jarFilesPath, dbName);
       serverFs = FileSystem.newInstance(resDirPath.toUri(), getHiveConf());
       resDirPath = serverFs.resolvePath(resDirPath);
       if (!serverFs.exists(resDirPath)) {
@@ -223,16 +229,12 @@ public class DatabaseResourceService extends BaseLensService {
     // Read list of databases in
     FileSystem serverFs = null;
     try {
-     // String baseDir =
-     //   getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR, LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
-     // log.info("Database specific resources at {}", baseDir);
-
-      Path resTopDirPath = new Path(resTopDir);
+      Path resTopDirPath = isDbResourcePathLocal(dbResTopDir) ? new Path(dbResTopDir) : new Path(dbLocalResTopDir);
       serverFs = FileSystem.newInstance(resTopDirPath.toUri(), getHiveConf());
       resTopDirPath = serverFs.resolvePath(resTopDirPath);
       if (!serverFs.exists(resTopDirPath)) {
         incrCounter(LOAD_RESOURCES_ERRORS);
-        log.warn("DB base location does not exist.", resTopDir);
+        log.warn("DB base location does not exist.", dbResTopDir);
         return;
       }
       // Look for db dirs
@@ -242,7 +244,7 @@ public class DatabaseResourceService extends BaseLensService {
         if (serverFs.isDirectory(dbDirPath)) {
           dbName = dbDirPath.getName();
 
-          Path dbJarOrderPath = new Path(resTopDir, dbName + File.separator + "jar_order");
+          Path dbJarOrderPath = new Path(dbResTopDir, dbName + File.separator + "jar_order");
           if (serverFs.exists(dbJarOrderPath)) {
             // old flow
             mapDbResourceEntries(dbName);
@@ -457,8 +459,8 @@ public class DatabaseResourceService extends BaseLensService {
         // Add local path resource entry
         addLocalDbResourceEntry(currentDB, updateDbResourceEntries(currentDB, localDir, jarFilePath));
         // Add remote path resource entry
-        addremoteDbResourceEntry(currentDB,
-            updateDbResourceEntries(currentDB, resTopDir, new Path(resTopDir, currentDB + File.separator +  jarFile)));
+        addremoteDbResourceEntry(currentDB, updateDbResourceEntries(currentDB, dbResTopDir,
+                new Path(dbResTopDir, currentDB + File.separator +  jarFile)));
       }
       log.info("Adding jar to DB ended");
     } catch (IOException e) {

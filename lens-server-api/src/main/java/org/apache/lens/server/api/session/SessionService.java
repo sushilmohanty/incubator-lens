@@ -19,6 +19,7 @@
 
 package org.apache.lens.server.api.session;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -135,5 +136,13 @@ public interface SessionService {
    * @return a list of all sessions
    */
   List<UserSessionInfo> getSessionInfo();
+
+  /**
+   * Add database jar
+   *
+   * @param sessionid the sessionid
+   * @param is        the inputstream
+   */
+  void addDBJar(LensSessionHandle sessionid, InputStream is) throws LensException;
 
 }
