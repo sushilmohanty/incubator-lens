@@ -10,12 +10,39 @@ import org.apache.lens.server.api.error.LensException;
 
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 
+/**
+ * This interface represents the main entity/data-structure that is involved in different phases of
+ * query rewriting. At the lowest level, Candidate is represented by a StorageCandidate that has a
+ * fact on a storage and other joined dimensions (if any) that will be required to answer the query
+ * or part of the query. At a higher level Candidate can also be a Join or a Union Candidate representing
+ * join or union between two other candidates
+ *
+ * Different Re-writers will work on applicable candidates to produce a final candidate which will be used
+ * for generating the re-written query.
+ *
+ *
+ */
 public interface Candidate {
 
+  /**
+   * Returns String representation of this Candidate
+   * @return
+   */
   String toHQL();
+
+  /**
+   * Returns Query AST
+   * @return
+   */
   QueryAST getQueryAst();
 
-  Collection<String> getColumns();
+  /**
+   * Returns all the fact columns
+   * TODO decide if we need to return Dimension columns too in a separate method
+   * @return
+   */
+  Collection<String> getAllFactColumns();
+
 
   boolean isValidForTimeRange(TimeRange timeRange);
 
