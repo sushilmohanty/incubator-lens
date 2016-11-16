@@ -1,12 +1,13 @@
 package org.apache.lens.cube.parse;
 
+import java.util.Collection;
 import java.util.List;
 
-/**
- * Created by puneet.gupta on 11/14/16.
- */
+import org.apache.lens.cube.metadata.TimeRange;
+
 public class JoinCandidate implements Candidate {
-   List<Candidate> candidates;
+
+   List<Candidate> candidatesForJoin;
 
    private String getJoinCondition(Candidate candidate1, Candidate candidate2) {
       return null;
@@ -21,4 +22,15 @@ public class JoinCandidate implements Candidate {
    public QueryAST getQueryAst() {
       return null;
    }
+
+   @Override
+   public Collection<String> getColumns() {
+      return null;
+   }
+
+   @Override
+   public boolean isValidForTimeRange(TimeRange timeRange) {
+      return false;
+   }
+
 }

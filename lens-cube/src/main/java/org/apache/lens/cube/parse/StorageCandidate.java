@@ -40,7 +40,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Holds context of a candidate fact table.
+ * Holds context of a candidate fact on a storage table and the dimensions it needs to be joined with.
+ *
  */
 public class StorageCandidate implements Candidate {
 

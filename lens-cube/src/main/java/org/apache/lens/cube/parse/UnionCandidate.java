@@ -9,7 +9,8 @@ import org.apache.lens.cube.metadata.TimeRange;
  * Created by puneet.gupta on 11/14/16.
  */
 public class UnionCandidate implements Candidate {
-  List<Candidate> candidates;
+
+  List<Candidate> candidatesForUnion;
 
   @Override
   public String toHQL() {
