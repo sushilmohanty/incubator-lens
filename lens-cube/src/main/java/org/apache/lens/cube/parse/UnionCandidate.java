@@ -10,7 +10,9 @@ import org.apache.lens.cube.metadata.TimeRange;
  */
 public class UnionCandidate implements Candidate {
 
-  List<Candidate> candidatesForUnion;
+  private Candidate unionCandidate1;
+  private Candidate unionCandidate2;
+
 
   @Override
   public String toHQL() {
@@ -23,7 +25,7 @@ public class UnionCandidate implements Candidate {
   }
 
   @Override
-  public Collection<String> getColumns() {
+  public Collection<String> getFactColumns() {
     return null;
   }
 
@@ -31,6 +33,4 @@ public class UnionCandidate implements Candidate {
   public boolean isValidForTimeRange(TimeRange timeRange) {
     return false;
   }
-
-
 }

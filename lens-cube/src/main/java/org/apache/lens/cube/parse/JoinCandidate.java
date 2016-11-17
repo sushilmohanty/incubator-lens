@@ -7,11 +7,13 @@ import org.apache.lens.cube.metadata.TimeRange;
 
 public class JoinCandidate implements Candidate {
 
-   List<Candidate> candidatesForJoin;
+   private Candidate joinCandidate1;
+   private Candidate joinCandidate2;
 
-   private String getJoinCondition(Candidate candidate1, Candidate candidate2) {
+   private String getJoinCondition() {
       return null;
    }
+
 
    @Override
    public String toHQL() {
@@ -24,7 +26,7 @@ public class JoinCandidate implements Candidate {
    }
 
    @Override
-   public Collection<String> getColumns() {
+   public Collection<String> getFactColumns() {
       return null;
    }
 
@@ -32,5 +34,4 @@ public class JoinCandidate implements Candidate {
    public boolean isValidForTimeRange(TimeRange timeRange) {
       return false;
    }
-
 }

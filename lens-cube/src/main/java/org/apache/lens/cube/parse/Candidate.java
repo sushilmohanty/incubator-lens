@@ -11,9 +11,9 @@ import org.apache.lens.server.api.error.LensException;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 
 /**
- * This interface represents the main entity/data-structure that is involved in different phases of
+ * This interface will represent the main candidates that will be involved in different phases of
  * query rewriting. At the lowest level, Candidate is represented by a StorageCandidate that has a
- * fact on a storage and other joined dimensions (if any) that will be required to answer the query
+ * fact on a storage and other joined dimensions (if any) that are required to answer the query
  * or part of the query. At a higher level Candidate can also be a Join or a Union Candidate representing
  * join or union between two other candidates
  *
@@ -26,6 +26,7 @@ public interface Candidate {
 
   /**
    * Returns String representation of this Candidate
+   * TODO decide if this method should be moved to QueryAST instead
    * @return
    */
   String toHQL();
@@ -38,38 +39,35 @@ public interface Candidate {
 
   /**
    * Returns all the fact columns
-   * TODO decide if we need to return Dimension columns too in a separate method
+   * TODO decide if we need to return the participating Dimension columns too in a separate method
    * @return
    */
-  Collection<String> getAllFactColumns();
+  Collection<String> getFactColumns();
 
-
+  /**
+   * Returns true if the Candidate is valid for the given time range.
+   * Note: The validity is purely checked form schema perspective by considering start and end times configured for the
+   * representing candidates
+   *
+   * @param timeRange
+   * @return
+   */
   boolean isValidForTimeRange(TimeRange timeRange);
 
-  //Called during having push down
-  boolean isExpressionAnswerable(ASTNode node, CubeQueryContext context) throws LensException;
 
+  // Moved to CandidateUtil boolean isExpressionAnswerable(ASTNode node, CubeQueryContext context) throws LensException;
   // NO caller Set<String> getTimePartCols(CubeQueryContext query) throws LensException;
 
-  //TODO add methods to update AST in this candidate . Example push down having clause for join
-  void updateFromString(CubeQueryContext query) throws LensException;
 
-  /**
-   * Update the ASTs to include only the fields queried from this fact, in all the expressions
-   *
-   * @param cubeql
-   * @throws LensException
-   */
-  void updateASTs(CubeQueryContext cubeql) throws LensException;
 
-  /**
-   * Update Having clause. Required during pushdown of having conditions.
-   * @param ast
-   * @throws LensException
-   */
-  void addToHaving(ASTNode ast)  throws LensException;
+  //TODO add methods to update AST in this candidate in this class of in CandidateUtil.
+  //void updateFromString(CubeQueryContext query) throws LensException;
+
+  //void updateASTs(CubeQueryContext cubeql) throws LensException;
+
+  //void addToHaving(ASTNode ast)  throws LensException;
 
   //Used Having push down flow
-  String addAndGetAliasFromSelect(ASTNode ast, AliasDecider aliasDecider);
+  //String addAndGetAliasFromSelect(ASTNode ast, AliasDecider aliasDecider);
 
 }

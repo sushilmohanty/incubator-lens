@@ -45,7 +45,9 @@ import lombok.Setter;
  */
 public class StorageCandidate implements Candidate {
 
-  Map<Dimension, CandidateDim> dimsToJoin;
+  private CubeFactTable fact;
+
+  private Map<Dimension, CandidateDim> dimensions;
 
   @Override
   public String toHQL() {
@@ -57,8 +59,6 @@ public class StorageCandidate implements Candidate {
     return null;
   }
 
-
-  final CubeFactTable fact;
   @Getter
   private String storageTable;
   @Getter

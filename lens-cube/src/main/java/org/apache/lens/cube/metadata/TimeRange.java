@@ -137,7 +137,7 @@ public class TimeRange {
 
   /** iterable from fromDate(including) to toDate(excluding) incrementing increment units of updatePeriod */
   public static Iterable iterable(Date fromDate, Date toDate, UpdatePeriod updatePeriod, int increment) {
-    return TimeRange.getBuilder().fromDate(fromDate).toDate(toDate).build().iterable(updatePeriod, increment);
+      return TimeRange.getBuilder().fromDate(fromDate).toDate(toDate).build().iterable(updatePeriod, increment);
   }
 
   /** iterable from fromDate(including) incrementing increment units of updatePeriod. Do this numIters times */
