@@ -52,6 +52,8 @@ public class StorageCandidate implements Candidate {
   private String storage;
   private Map<Dimension, CandidateDim> dimensions;
 
+  private Collection<String> columns;
+
   @Override
   public String toHQL() {
     return null;
@@ -64,7 +66,13 @@ public class StorageCandidate implements Candidate {
 
   @Override
   public Collection<String> getFactColumns() {
-    return null;
+    if (columns == null) {
+      columns = fact.getValidColumns();
+      if (columns == null) {
+        columns = fact.getAllFieldNames();
+      }
+    }
+    return columns;
   }
 
   @Override
