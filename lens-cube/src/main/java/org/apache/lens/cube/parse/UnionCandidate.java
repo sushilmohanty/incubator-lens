@@ -1,12 +1,11 @@
 package org.apache.lens.cube.parse;
 
 import java.util.Collection;
-import java.util.List;
 
 import org.apache.lens.cube.metadata.TimeRange;
 
 /**
- * Created by puneet.gupta on 11/14/16.
+ * Represents a union of two candidates
  */
 public class UnionCandidate implements Candidate {
 

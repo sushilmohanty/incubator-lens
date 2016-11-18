@@ -1,10 +1,12 @@
 package org.apache.lens.cube.parse;
 
 import java.util.Collection;
-import java.util.List;
 
 import org.apache.lens.cube.metadata.TimeRange;
 
+/**
+ * Represents a join of two candidates
+ */
 public class JoinCandidate implements Candidate {
 
    private Candidate joinCandidate1;
