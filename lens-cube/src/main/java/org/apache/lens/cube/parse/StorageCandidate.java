@@ -45,10 +45,12 @@ import lombok.Setter;
  */
 public class StorageCandidate implements Candidate {
 
+  /**
+   * Participating fact, storage and dimensions for this StorageCandidate
+   */
   private CubeFactTable fact;
-
+  private String storage;
   private Map<Dimension, CandidateDim> dimensions;
-
 
   @Override
   public String toHQL() {
@@ -66,7 +68,12 @@ public class StorageCandidate implements Candidate {
   }
 
   @Override
-  public boolean isValidForTimeRange(TimeRange timeRange) {
-    return false;
+  public Date getStartTime() {
+    return fact.getStartTime();
+  }
+
+  @Override
+  public Date getEndTime() {
+    return fact.getEndTime();
   }
 }

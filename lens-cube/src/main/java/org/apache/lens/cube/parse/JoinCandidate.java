@@ -1,6 +1,7 @@
 package org.apache.lens.cube.parse;
 
 import java.util.Collection;
+import java.util.Date;
 
 import org.apache.lens.cube.metadata.TimeRange;
 
@@ -36,7 +37,16 @@ public class JoinCandidate implements Candidate {
    }
 
    @Override
-   public boolean isValidForTimeRange(TimeRange timeRange) {
-      return false;
+   public Date getStartTime() {
+      return childCandidate1.getStartTime().after(childCandidate2.getStartTime())
+        ? childCandidate1.getStartTime() : childCandidate2.getStartTime();
    }
+
+   @Override
+   public Date getEndTime() {
+     return childCandidate1.getEndTime().before(childCandidate2.getEndTime())
+       ? childCandidate1.getEndTime() : childCandidate2.getEndTime();
+   }
+
+
 }

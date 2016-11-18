@@ -1,6 +1,7 @@
 package org.apache.lens.cube.parse;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,16 +46,19 @@ public interface Candidate {
   Collection<String> getFactColumns();
 
   /**
-   * Returns true if the Candidate is valid for the given time range.
-   * Note: The validity is purely checked form schema perspective by considering start and end times configured for the
-   * representing candidates
-   *
-   * @param timeRange
+   * Start Time for this candidate (calculated based on schema)
    * @return
    */
-  boolean isValidForTimeRange(TimeRange timeRange);
+  Date getStartTime();
+
+  /**
+   * End Time for this candidate (calculated based on schema)
+   * @return
+   */
+  Date getEndTime();
 
 
+  // Moved to CandidateUtil boolean isValidForTimeRange(TimeRange timeRange);
   // Moved to CandidateUtil boolean isExpressionAnswerable(ASTNode node, CubeQueryContext context) throws LensException;
   // NO caller Set<String> getTimePartCols(CubeQueryContext query) throws LensException;
 
