@@ -1,6 +1,7 @@
 package org.apache.lens.cube.parse;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.lens.cube.metadata.TimeRange;
 
@@ -9,9 +10,10 @@ import org.apache.lens.cube.metadata.TimeRange;
  */
 public class UnionCandidate implements Candidate {
 
-  private Candidate unionCandidate1;
-  private Candidate unionCandidate2;
-
+  /**
+   * List of child candidates that will be union-ed
+   */
+  private List<Candidate> childCandidates;
 
   @Override
   public String toHQL() {

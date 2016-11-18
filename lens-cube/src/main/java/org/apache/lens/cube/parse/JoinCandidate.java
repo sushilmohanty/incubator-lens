@@ -9,8 +9,11 @@ import org.apache.lens.cube.metadata.TimeRange;
  */
 public class JoinCandidate implements Candidate {
 
-   private Candidate joinCandidate1;
-   private Candidate joinCandidate2;
+  /**
+   * Child candidates that will participate in the join
+   */
+   private Candidate childCandidate1;
+   private Candidate childCandidate2;
 
    private String getJoinCondition() {
       return null;
