@@ -675,6 +675,11 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     return qb.getParseInfo().getJoinExpr();
   }
 
+  @Override
+  public void setJoinAST(ASTNode node) {
+    //NO-OP
+  }
+
   public String getOrderByString() {
     if (orderByAST != null) {
       return HQLParser.getString(orderByAST);

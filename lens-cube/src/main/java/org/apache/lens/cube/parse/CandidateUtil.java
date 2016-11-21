@@ -4,8 +4,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lens.cube.metadata.CubeInterface;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
+import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
@@ -65,5 +65,23 @@ public class CandidateUtil {
       }
     }
     return timePartDimensions;
+  }
+
+  /**
+   * Copy Query AST from sourceAst to targetAst
+   *
+   * @param sourceAst
+   * @param targetAst
+   * @throws LensException
+   */
+  public void copyASTs(QueryAST sourceAst, QueryAST targetAst) throws LensException {
+    targetAst.setSelectAST(MetastoreUtil.copyAST(sourceAst.getSelectAST()));
+    targetAst.setWhereAST(MetastoreUtil.copyAST(sourceAst.getWhereAST()));
+    if (sourceAst.getJoinAST() != null) {
+      targetAst.setJoinAST(MetastoreUtil.copyAST(sourceAst.getJoinAST()));
+    }
+    if (sourceAst.getGroupByAST() != null) {
+      targetAst.setGroupByAST(MetastoreUtil.copyAST(sourceAst.getGroupByAST()));
+    }
   }
 }

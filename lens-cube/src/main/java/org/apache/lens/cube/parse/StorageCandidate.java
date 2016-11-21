@@ -23,6 +23,7 @@ import java.util.*;
 import org.apache.lens.cube.metadata.*;
 
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Represents a fact on a storage table and the dimensions it needs to be joined with to answer the query
@@ -33,6 +34,7 @@ public class StorageCandidate implements Candidate {
   /**
    * Participating fact, storage and dimensions for this StorageCandidate
    */
+  @Getter
   private CubeFactTable fact;
   @Getter
   private String storage;
@@ -46,6 +48,14 @@ public class StorageCandidate implements Candidate {
    * Cached fact columns
    */
   private Collection<String> factColumns;
+
+  /**
+   * This map holds Tags (A tag refers to one or more measures) that have incomplete (below configured threshold) data.
+   * Value is a map of date string and %completeness.
+   */
+  @Getter
+  @Setter
+  private Map<String, Map<String, Float>> incompleteDataDetails;
 
   @Override
   public String toHQL() {
