@@ -18,26 +18,11 @@
  */
 package org.apache.lens.cube.parse;
 
-import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
-
 import java.util.*;
 
 import org.apache.lens.cube.metadata.*;
-import org.apache.lens.server.api.error.LensException;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.ql.lib.Node;
-import org.apache.hadoop.hive.ql.parse.ASTNode;
-import org.apache.hadoop.hive.ql.parse.HiveParser;
-import org.apache.hadoop.hive.ql.session.SessionState;
-
-import org.antlr.runtime.CommonToken;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import lombok.Getter;
-import lombok.Setter;
 
 /**
  * Represents a fact on a storage table and the dimensions it needs to be joined with to answer the query
@@ -49,10 +34,18 @@ public class StorageCandidate implements Candidate {
    * Participating fact, storage and dimensions for this StorageCandidate
    */
   private CubeFactTable fact;
+  @Getter
   private String storage;
   private Map<Dimension, CandidateDim> dimensions;
 
-  private Collection<String> columns;
+
+  @Getter
+  private CubeInterface cube;
+
+  /**
+   * Cached fact columns
+   */
+  private Collection<String> factColumns;
 
   @Override
   public String toHQL() {
@@ -66,13 +59,13 @@ public class StorageCandidate implements Candidate {
 
   @Override
   public Collection<String> getFactColumns() {
-    if (columns == null) {
-      columns = fact.getValidColumns();
-      if (columns == null) {
-        columns = fact.getAllFieldNames();
+    if (factColumns == null) {
+      factColumns = fact.getValidColumns();
+      if (factColumns == null) {
+        factColumns = fact.getAllFieldNames();
       }
     }
-    return columns;
+    return factColumns;
   }
 
   @Override

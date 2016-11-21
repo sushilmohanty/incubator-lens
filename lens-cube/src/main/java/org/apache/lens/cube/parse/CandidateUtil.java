@@ -1,8 +1,15 @@
 package org.apache.lens.cube.parse;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.lens.cube.metadata.CubeInterface;
+import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 
 /**
@@ -35,5 +42,28 @@ public class CandidateUtil {
       && (!timeRange.getToDate().after(candidate.getEndTime()));
   }
 
-
+  /**
+   * Gets the time partition columns for a storage candidate
+   * TODO decide is this needs to be supported for all Candidate types.
+   *
+   * @param candidate : Stoarge Candidate
+   * @param metastoreClient : Cube metastore client
+   * @return
+   * @throws LensException
+   */
+  public Set<String> getTimePartitionCols(StorageCandidate candidate, CubeMetastoreClient metastoreClient)
+    throws LensException {
+    Set<String> cubeTimeDimensions = candidate.getCube().getTimedDimensions();
+    Set<String> timePartDimensions = new HashSet<String>();
+    String singleStorageTable = candidate.getStorage();
+    List<FieldSchema> partitionKeys = null;
+    partitionKeys = metastoreClient.getTable(singleStorageTable).getPartitionKeys();
+    for (FieldSchema fs : partitionKeys) {
+      if (cubeTimeDimensions.contains(CubeQueryContext.getTimeDimOfPartitionColumn(candidate.getCube(),
+        fs.getName()))) {
+        timePartDimensions.add(fs.getName());
+      }
+    }
+    return timePartDimensions;
+  }
 }
