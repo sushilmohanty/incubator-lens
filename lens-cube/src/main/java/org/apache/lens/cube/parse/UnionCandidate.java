@@ -44,7 +44,7 @@ public class UnionCandidate implements Candidate {
     if (startTime == null) {
       Date minStartTime = childCandidates.get(0).getStartTime();
       for (Candidate child : childCandidates) {
-        if (child.getStartTime().before(child.getStartTime())) {
+        if (child.getStartTime().before(minStartTime)) {
           minStartTime = child.getStartTime();
         }
       }
@@ -58,7 +58,7 @@ public class UnionCandidate implements Candidate {
     if (endTime == null) {
       Date maxEndTime = childCandidates.get(0).getEndTime();
       for (Candidate child : childCandidates) {
-        if (child.getEndTime().after(child.getEndTime())) {
+        if (child.getEndTime().after(maxEndTime)) {
           maxEndTime = child.getEndTime();
         }
       }

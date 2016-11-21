@@ -12,16 +12,14 @@ import org.apache.lens.server.api.error.LensException;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 
 /**
- * This interface will represent the main candidates that will be involved in different phases of
- * query rewriting. At the lowest level, Candidate is represented by a StorageCandidate that has a
- * fact on a storage and other joined dimensions (if any) that are required to answer the query
- * or part of the query. At a higher level Candidate can also be a Join or a Union Candidate representing
- * join or union between two other candidates
+ * This interface represents candidates that are involved in different phases of query rewriting.
+ * At the lowest level, Candidate is represented by a StorageCandidate that has a fact on a storage
+ * and other joined dimensions (if any) that are required to answer the query or part of the query.
+ * At a higher level Candidate can also be a Join or a Union Candidate representing join or union
+ * between other candidates
  *
  * Different Re-writers will work on applicable candidates to produce a final candidate which will be used
  * for generating the re-written query.
- *
- *
  */
 public interface Candidate {
 
