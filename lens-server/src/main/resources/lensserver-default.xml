@@ -291,6 +291,14 @@
   </property>
 
   <property>
+    <name>lens.server.query.expiry.check.interval.millis</name>
+    <value>60000</value>
+    <description>The interval(milliseconds) with which query expiry will run periodically. Default is 1 minute. The
+      value needs to be much lower than lens.query.timeout.millis. If the final deployment values of query timeout
+      can be smaller, then reduce this value to be much lower.
+    </description>
+  </property>
+  <property>
     <name>lens.server.inmemory.resultset.ttl.secs</name>
     <value>300</value>
     <description>This property defines the TTL(time to live) in seconds for all result sets of type InMemoryResultSet
@@ -927,6 +935,23 @@
     <value>-1</value>
     <description>Maximum number of jobs that can be scheduled by a single user. If the number is less than zero,
        then there is no restriction on the number of jobs scheduled.
+    </description>
+  </property>
+  <property>
+    <name>lens.server.query.cost.parser.class</name>
+    <value>org.apache.lens.server.api.query.cost.FactPartitionBasedQueryCost$Parser</value>
+    <description>The Query cost parser class. Default query cost class used is FactPartitionBasedQueryCost</description>
+  </property>
+  <property>
+    <name>lens.cube.metastore.enable.datacompleteness.check</name>
+    <value>false</value>
+    <description>This property is to enable Data Completeness Checks while resolving partitions.</description>
+  </property>
+  <property>
+    <name>lens.cube.metastore.completeness.checker.class</name>
+    <value>org.apache.lens.server.api.metastore.DefaultChecker</value>
+    <description>The class that implements the DataCompletenessChecker Interface. This will take effect if the flag
+      "lens.cube.metastore.enable.datacompleteness.check" is set.
     </description>
   </property>
 </configuration>
