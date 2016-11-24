@@ -71,6 +71,9 @@ class AggregateResolver implements ContextRewriter {
       || hasMeasuresNotInDefaultAggregates(cubeql, cubeql.getHavingAST(), null, aggregateResolverDisabled)
       || hasMeasures(cubeql, cubeql.getWhereAST()) || hasMeasures(cubeql, cubeql.getGroupByAST())
       || hasMeasures(cubeql, cubeql.getOrderByAST())) {
+
+      //TODO union : Change the logic to consume List<Candidate> : List<StorageCandidate>
+      //TODO union : assert List<Candidate> has only StorageCandidate s
       Iterator<CandidateFact> factItr = cubeql.getCandidateFacts().iterator();
       while (factItr.hasNext()) {
         CandidateFact candidate = factItr.next();
@@ -84,6 +87,7 @@ class AggregateResolver implements ContextRewriter {
       log.info("Query has non default aggregates, no aggregate resolution will be done");
     }
 
+    //TODO union: this call should not be required now
     cubeql.pruneCandidateFactSet(CandidateTablePruneCode.MISSING_DEFAULT_AGGREGATE);
 
     if (nonDefaultAggregates || aggregateResolverDisabled) {

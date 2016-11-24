@@ -659,6 +659,9 @@ class ExpressionResolver implements ContextRewriter {
                   boolean evaluableInSet = false;
                   for (CandidateFact cfact : factSet) {
                     if (ec.isEvaluable(cfact)) {
+                      //TODO union: in case of join , one of the candidates should bbe able to answer the mesaure expression
+                      //TODO union: In case of union, all the candidates should answer the expression
+                      //TODO union : add isExpresionEvaluable() to Candidate
                       evaluableInSet = true;
                     }
                   }
