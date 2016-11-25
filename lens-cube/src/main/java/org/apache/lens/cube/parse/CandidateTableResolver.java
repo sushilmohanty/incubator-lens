@@ -59,6 +59,7 @@ class CandidateTableResolver implements ContextRewriter {
   public void rewriteContext(CubeQueryContext cubeql) throws LensException {
     if (checkForQueriedColumns) {
       log.debug("Dump queried columns:{}", cubeql.getTblAliasToColumns());
+      //TODO union : create StoargeCandidate s now in populateCandidateTables
       populateCandidateTables(cubeql);
       resolveCandidateFactTables(cubeql);
       resolveCandidateDimTables(cubeql);

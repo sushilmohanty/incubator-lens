@@ -150,7 +150,9 @@ public class CubeQueryRewriter {
     // Resolve candidate fact tables and dimension tables for columns queried
     rewriters.add(candidateTblResolver);
     // Resolve aggregations and generate base select tree
-    //TODO union: This should run before CoveringSetResolver
+
+    //TODO union: Move AggregateResolver,GroupbyResolver,FieldValidator before candidateTblResolver
+    //TODO union: AggregateResolver should run before CoveringSetResolver
     rewriters.add(new AggregateResolver());
     rewriters.add(new GroupbyResolver(conf));
     rewriters.add(new FieldValidator());
@@ -160,12 +162,14 @@ public class CubeQueryRewriter {
     rewriters.add(new TimeRangeChecker(conf));
     // Resolve candidate fact tables and dimension tables for columns included
     // in join and denorm resolvers
+    //TODO union : this should be CoveringSetResolver
     rewriters.add(candidateTblResolver);
 
     // Phase 1: resolve fact tables.
     rewriters.add(storageTableResolver);
     if (lightFactFirst) {
       // Prune candidate tables for which denorm column references do not exist
+      //TODO union: phase 2 of denormResolver needs to be moved before CoveringSetResolver
       rewriters.add(denormResolver);
       // Prune candidate facts without any valid expressions
       rewriters.add(exprResolver);
@@ -177,6 +181,7 @@ public class CubeQueryRewriter {
     // Phase 3: resolve dimension tables and partitions.
     rewriters.add(storageTableResolver);
     // Prune candidate tables for which denorm column references do not exist
+    //TODO union: phase 2 of denormResolver needs to be moved before CoveringSetResolver.. check if this makes sense
     rewriters.add(denormResolver);
     // Prune candidate facts without any valid expressions
     rewriters.add(exprResolver);

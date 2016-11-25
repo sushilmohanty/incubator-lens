@@ -137,6 +137,7 @@ public class TimeRangeChecker implements ContextRewriter {
     cubeql.getTimeRanges().add(range);
   }
 
+  //TODO union: can do this check to ColumnResolver
   private void doColLifeValidation(CubeQueryContext cubeql) throws LensException,
       ColUnAvailableInTimeRangeException {
     Set<String> cubeColumns = cubeql.getColumnsQueriedForTable(cubeql.getCube().getName());
@@ -237,12 +238,14 @@ public class TimeRangeChecker implements ContextRewriter {
     throw new ColUnAvailableInTimeRangeException(col);
   }
 
+  //TODO union: use StoargeCandidate
   private void doFactRangeValidation(CubeQueryContext cubeql) {
     Iterator<CandidateFact> iter = cubeql.getCandidateFacts().iterator();
     while (iter.hasNext()) {
       CandidateFact cfact = iter.next();
       List<TimeRange> invalidTimeRanges = Lists.newArrayList();
       for (TimeRange timeRange : cubeql.getTimeRanges()) {
+        //TODO union: This code will be moved to CoveringSetResolver and it should not atke care of fact to fact union while considering validity
         if (!cfact.isValidForTimeRange(timeRange)) {
           invalidTimeRanges.add(timeRange);
         }

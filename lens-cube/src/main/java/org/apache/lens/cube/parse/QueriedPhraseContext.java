@@ -98,7 +98,14 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
     return false;
   }
 
-  boolean isEvaluable(CubeQueryContext cubeQl, CandidateFact cfact) throws LensException {
+  /**
+   * TODO union: change CandidateFact to StorageCandidate. Let the callers typecast and send for now.
+   * @param cubeQl
+   * @param cfact
+   * @return
+   * @throws LensException
+   */
+  public boolean isEvaluable(CubeQueryContext cubeQl, CandidateFact cfact) throws LensException {
     // all measures of the queried phrase should be present
     for (String msr : queriedMsrs) {
       if (!checkForColumnExistsAndValidForRange(cfact, msr, cubeQl)) {
@@ -128,20 +135,20 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
     return true;
   }
 
-  public static boolean isColumnAvailableInRange(final TimeRange range, Date startTime, Date endTime) {
+  private static boolean isColumnAvailableInRange(final TimeRange range, Date startTime, Date endTime) {
     return (isColumnAvailableFrom(range.getFromDate(), startTime)
       && isColumnAvailableTill(range.getToDate(), endTime));
   }
 
-  public static boolean isColumnAvailableFrom(@NonNull final Date date, Date startTime) {
+  private static boolean isColumnAvailableFrom(@NonNull final Date date, Date startTime) {
     return (startTime == null) || date.equals(startTime) || date.after(startTime);
   }
 
-  public static boolean isColumnAvailableTill(@NonNull final Date date, Date endTime) {
+  private static boolean isColumnAvailableTill(@NonNull final Date date, Date endTime) {
     return (endTime == null) || date.equals(endTime) || date.before(endTime);
   }
 
-  public static boolean isFactColumnValidForRange(CubeQueryContext cubeql, CandidateTable cfact, String col) {
+  private static boolean isFactColumnValidForRange(CubeQueryContext cubeql, CandidateTable cfact, String col) {
     for(TimeRange range : cubeql.getTimeRanges()) {
       if (!isColumnAvailableInRange(range, getFactColumnStartTime(cfact, col), getFactColumnEndTime(cfact, col))) {
         return false;
@@ -150,7 +157,7 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
     return true;
   }
 
-  public static Date getFactColumnStartTime(CandidateTable table, String factCol) {
+  private static Date getFactColumnStartTime(CandidateTable table, String factCol) {
     Date startTime = null;
     if (table instanceof CandidateFact) {
       for (String key : ((CandidateFact) table).fact.getProperties().keySet()) {
@@ -165,7 +172,7 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
     return startTime;
   }
 
-  public static Date getFactColumnEndTime(CandidateTable table, String factCol) {
+  private static Date getFactColumnEndTime(CandidateTable table, String factCol) {
     Date endTime = null;
     if (table instanceof CandidateFact) {
       for (String key : ((CandidateFact) table).fact.getProperties().keySet()) {
@@ -180,7 +187,7 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
     return endTime;
   }
 
-  static boolean checkForColumnExistsAndValidForRange(CandidateTable table, String column, CubeQueryContext cubeql) {
+  private static boolean checkForColumnExistsAndValidForRange(CandidateTable table, String column, CubeQueryContext cubeql) {
     return (table.getColumns().contains(column) &&  isFactColumnValidForRange(cubeql, table, column));
   }
 }

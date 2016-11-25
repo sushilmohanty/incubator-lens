@@ -348,6 +348,7 @@ public class DenormalizationResolver implements ContextRewriter {
       if (cubeql.getCube() != null && !cubeql.getCandidateFacts().isEmpty()) {
         for (Iterator<CandidateFact> i = cubeql.getCandidateFacts().iterator(); i.hasNext();) {
           CandidateFact cfact = i.next();
+          //TODO union: use StoargeCandidate.getFact().getName()
           if (denormCtx.tableToRefCols.containsKey(cfact.getName())) {
             for (ReferencedQueriedColumn refcol : denormCtx.tableToRefCols.get(cfact.getName())) {
               if (denormCtx.getReferencedCols().get(refcol.col.getName()).isEmpty()) {
