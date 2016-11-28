@@ -3,7 +3,9 @@ package org.apache.lens.cube.parse;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
 
 /**
@@ -65,6 +67,27 @@ public class UnionCandidate implements Candidate {
       endTime = maxEndTime;
     }
     return endTime;
+  }
+
+  @Override
+  public double getCost() {
+    return 0;
+  }
+
+  /**
+   * TODO union : break the timerange into candidate specific time ranges and call evaluateCompleteness() for them.
+   * TODO union : If any of the candidates returns false, this method should return false.
+   * @param timeRange
+   * @return
+   */
+  @Override
+  public boolean evaluateCompleteness(TimeRange timeRange) {
+    return false;
+  }
+
+  @Override
+  public Set<FactPartition> getParticipatingPartitions() {
+    return null;
   }
 
 }

@@ -563,6 +563,11 @@ class StorageTableResolver implements ContextRewriter {
     }
   }
 
+  /**
+   * TODO union: Should be rewritten to consume List<Candidate>
+   * TODO union: This code needs to be moved to appropriate candidate's
+   * TODO union: {@link Candidate#evaluateCompleteness(TimeRange)} method
+   */
   private void resolveFactCompleteness(CubeQueryContext cubeql) throws LensException {
     if (client == null || client.getCompletenessChecker() == null || completenessPartCol == null) {
       return;
@@ -589,6 +594,7 @@ class StorageTableResolver implements ContextRewriter {
     DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
     while (i.hasNext()) {
+      //TODO union : data completeness chacek  will be done at CandidateStorage level now
       CandidateFact cFact = i.next();
       // Map from measure to the map from partition to %completeness
       Map<String, Map<String, Float>> incompleteMeasureData = new HashMap<>();

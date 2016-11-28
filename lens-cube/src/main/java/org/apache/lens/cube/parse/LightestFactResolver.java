@@ -41,6 +41,8 @@ public class LightestFactResolver implements ContextRewriter {
     if (cubeql.getCube() != null && !cubeql.getCandidateFactSets().isEmpty()) {
       Map<Set<CandidateFact>, Double> factWeightMap = new HashMap<Set<CandidateFact>, Double>();
 
+      //TODO union: This will now work on List<candidate>.
+      //TODO union: Candidate.getCost will return the cost of that candidate
       for (Set<CandidateFact> facts : cubeql.getCandidateFactSets()) {
         factWeightMap.put(facts, getWeight(facts));
       }

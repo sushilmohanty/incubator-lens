@@ -2,7 +2,9 @@ package org.apache.lens.cube.parse;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.Set;
 
+import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
 
 /**
@@ -47,6 +49,27 @@ public class JoinCandidate implements Candidate {
      return childCandidate1.getEndTime().before(childCandidate2.getEndTime())
        ? childCandidate1.getEndTime() : childCandidate2.getEndTime();
    }
+
+  @Override
+  public double getCost() {
+    return 0;
+  }
+
+
+  /**
+   * TODO union : call evaluateCompleteness for child candidates and retrun false if either call returns false.
+   * @param timeRange
+   * @return
+   */
+  @Override
+  public boolean evaluateCompleteness(TimeRange timeRange) {
+    return false;
+  }
+
+  @Override
+  public Set<FactPartition> getParticipatingPartitions() {
+    return null;
+  }
 
 
 }

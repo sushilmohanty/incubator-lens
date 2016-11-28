@@ -166,6 +166,7 @@ public class CubeQueryRewriter {
     rewriters.add(candidateTblResolver);
 
     // Phase 1: resolve fact tables.
+    //TODO union: This should happen before pahse 2 of candidateTblResolver
     rewriters.add(storageTableResolver);
     if (lightFactFirst) {
       // Prune candidate tables for which denorm column references do not exist

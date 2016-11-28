@@ -87,4 +87,20 @@ public class StorageCandidate implements Candidate {
   public Date getEndTime() {
     return fact.getEndTime();
   }
+
+  @Override
+  public double getCost() {
+    return 0;
+  }
+
+  @Override
+  public boolean evaluateCompleteness(TimeRange timeRange) {
+    return false;
+  }
+
+  @Override
+  public Set<FactPartition> getParticipatingPartitions() {
+    return null;
+  }
+
 }
