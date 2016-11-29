@@ -27,7 +27,7 @@ public class CandidateUtil {
    */
   public static boolean isMeasureExpressionAnswerable(ASTNode exprNode, Candidate candidate, CubeQueryContext context)
     throws LensException {
-    return candidate.getFactColumns().containsAll(HQLParser.getColsInExpr(
+    return candidate.getColumns().containsAll(HQLParser.getColsInExpr(
       context.getAliasForTableName(context.getCube()), exprNode));
   }
 
@@ -55,7 +55,7 @@ public class CandidateUtil {
     throws LensException {
     Set<String> cubeTimeDimensions = candidate.getCube().getTimedDimensions();
     Set<String> timePartDimensions = new HashSet<String>();
-    String singleStorageTable = candidate.getStorage();
+    String singleStorageTable = candidate.getStorageTable();
     List<FieldSchema> partitionKeys = null;
     partitionKeys = metastoreClient.getTable(singleStorageTable).getPartitionKeys();
     for (FieldSchema fs : partitionKeys) {
@@ -83,5 +83,10 @@ public class CandidateUtil {
     if (sourceAst.getGroupByAST() != null) {
       targetAst.setGroupByAST(MetastoreUtil.copyAST(sourceAst.getGroupByAST()));
     }
+  }
+
+  public static Set<StorageCandidate> getStorageCandidates(Candidate candidate) {
+    //TODO union : add implementation
+    return null;
   }
 }

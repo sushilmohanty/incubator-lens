@@ -366,7 +366,7 @@ public class AutoJoinContext {
       // include columns from all picked facts
       Set<String> factColumns = new HashSet<>();
       for (CandidateFact cFact : cfacts) {
-        //Use StoargeCandidate.getFactColumns()
+        //Use StoargeCandidate.getColumns()
         factColumns.addAll(cFact.getColumns());
       }
 

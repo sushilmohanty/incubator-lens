@@ -177,20 +177,20 @@ class CandidateTableResolver implements ContextRewriter {
     }
   }
 
-  public static boolean isColumnAvailableInRange(final TimeRange range, Date startTime, Date endTime) {
+  private static boolean isColumnAvailableInRange(final TimeRange range, Date startTime, Date endTime) {
     return (isColumnAvailableFrom(range.getFromDate(), startTime)
         && isColumnAvailableTill(range.getToDate(), endTime));
   }
 
-  public static boolean isColumnAvailableFrom(@NonNull final Date date, Date startTime) {
+  private static boolean isColumnAvailableFrom(@NonNull final Date date, Date startTime) {
     return (startTime == null) ? true : date.equals(startTime) || date.after(startTime);
   }
 
-  public static boolean isColumnAvailableTill(@NonNull final Date date, Date endTime) {
+  private static boolean isColumnAvailableTill(@NonNull final Date date, Date endTime) {
     return (endTime == null) ? true : date.equals(endTime) || date.before(endTime);
   }
 
-  public static boolean isFactColumnValidForRange(CubeQueryContext cubeql, CandidateTable cfact, String col) {
+  private static boolean isFactColumnValidForRange(CubeQueryContext cubeql, CandidateTable cfact, String col) {
     for(TimeRange range : cubeql.getTimeRanges()) {
       if (!isColumnAvailableInRange(range, getFactColumnStartTime(cfact, col), getFactColumnEndTime(cfact, col))) {
         return false;
@@ -199,7 +199,7 @@ class CandidateTableResolver implements ContextRewriter {
     return true;
   }
 
-  public static Date getFactColumnStartTime(CandidateTable table, String factCol) {
+  private static Date getFactColumnStartTime(CandidateTable table, String factCol) {
     Date startTime = null;
     if (table instanceof CandidateFact) {
       for (String key : ((CandidateFact) table).fact.getProperties().keySet()) {
@@ -214,7 +214,7 @@ class CandidateTableResolver implements ContextRewriter {
     return startTime;
   }
 
-  public static Date getFactColumnEndTime(CandidateTable table, String factCol) {
+  private static Date getFactColumnEndTime(CandidateTable table, String factCol) {
     Date endTime = null;
     if (table instanceof CandidateFact) {
       for (String key : ((CandidateFact) table).fact.getProperties().keySet()) {
@@ -721,7 +721,7 @@ class CandidateTableResolver implements ContextRewriter {
 
   // The candidate table contains atleast one column in the colSet and
   // column can the queried in the range specified
-  static boolean checkForFactColumnExistsAndValidForRange(CandidateTable table, Collection<String> colSet,
+  private static boolean checkForFactColumnExistsAndValidForRange(CandidateTable table, Collection<String> colSet,
                                                           CubeQueryContext cubeql) {
     if (colSet == null || colSet.isEmpty()) {
       return true;
@@ -734,7 +734,7 @@ class CandidateTableResolver implements ContextRewriter {
     return false;
   }
 
-  static boolean checkForFactColumnExistsAndValidForRange(CandidateFact table, Collection<QueriedPhraseContext> colSet,
+  private static boolean checkForFactColumnExistsAndValidForRange(CandidateFact table, Collection<QueriedPhraseContext> colSet,
                                                           CubeQueryContext cubeql) throws LensException {
     if (colSet == null || colSet.isEmpty()) {
       return true;

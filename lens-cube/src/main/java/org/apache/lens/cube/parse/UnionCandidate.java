@@ -34,7 +34,7 @@ public class UnionCandidate implements Candidate {
   }
 
   @Override
-  public Collection<String> getFactColumns() {
+  public Collection<String> getColumns() {
     return null;
   }
 
@@ -88,6 +88,11 @@ public class UnionCandidate implements Candidate {
   @Override
   public Set<FactPartition> getParticipatingPartitions() {
     return null;
+  }
+
+  @Override
+  public boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr) {
+    return false;
   }
 
 }

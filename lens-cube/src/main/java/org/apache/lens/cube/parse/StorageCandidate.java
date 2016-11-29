@@ -29,15 +29,14 @@ import lombok.Setter;
  * Represents a fact on a storage table and the dimensions it needs to be joined with to answer the query
  *
  */
-public class StorageCandidate implements Candidate {
+public class StorageCandidate implements Candidate,CandidateTable {
 
   /**
    * Participating fact, storage and dimensions for this StorageCandidate
    */
-  @Getter
   private CubeFactTable fact;
   @Getter
-  private String storage;
+  private String storageTable;
   private Map<Dimension, CandidateDim> dimensions;
 
 
@@ -68,7 +67,27 @@ public class StorageCandidate implements Candidate {
   }
 
   @Override
-  public Collection<String> getFactColumns() {
+  public String getStorageString(String alias) {
+    return null;
+  }
+
+  @Override
+  public AbstractCubeTable getTable() {
+    return fact;
+  }
+
+  @Override
+  public AbstractCubeTable getBaseTable() {
+    return (AbstractCubeTable)cube;
+  }
+
+  @Override
+  public String getName() {
+    return null;
+  }
+
+  @Override
+  public Collection<String> getColumns() {
     if (factColumns == null) {
       factColumns = fact.getValidColumns();
       if (factColumns == null) {
@@ -101,6 +120,11 @@ public class StorageCandidate implements Candidate {
   @Override
   public Set<FactPartition> getParticipatingPartitions() {
     return null;
+  }
+
+  @Override
+  public boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr) {
+    return false;
   }
 
 }
