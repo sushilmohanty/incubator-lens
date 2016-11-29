@@ -98,10 +98,16 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
     return false;
   }
 
-  boolean isEvaluable(CubeQueryContext cubeQl, CandidateFact cfact) throws LensException {
+  boolean isEvaluable(CubeQueryContext cubeQl, Candidate cand) throws LensException {
     // all measures of the queried phrase should be present
+    StorageCandidate sc;
+    if (cand instanceof StorageCandidate) {
+      sc = (StorageCandidate) cand;
+    } else {
+      throw new LensException("Not a Storage Candidate!");
+    }
     for (String msr : queriedMsrs) {
-      if (!checkForColumnExistsAndValidForRange(cfact, msr, cubeQl)) {
+      if (!checkForColumnExistsAndValidForRange(sc, msr, cubeQl)) {
         return false;
       }
     }
@@ -141,23 +147,23 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
     return (endTime == null) || date.equals(endTime) || date.before(endTime);
   }
 
-  public static boolean isFactColumnValidForRange(CubeQueryContext cubeql, CandidateTable cfact, String col) {
+  public static boolean isFactColumnValidForRange(CubeQueryContext cubeql, Candidate cand, String col) {
     for(TimeRange range : cubeql.getTimeRanges()) {
-      if (!isColumnAvailableInRange(range, getFactColumnStartTime(cfact, col), getFactColumnEndTime(cfact, col))) {
+      if (!isColumnAvailableInRange(range, getFactColumnStartTime(cand, col), getFactColumnEndTime(cand, col))) {
         return false;
       }
     }
     return true;
   }
 
-  public static Date getFactColumnStartTime(CandidateTable table, String factCol) {
+  public static Date getFactColumnStartTime(Candidate cand, String factCol) {
     Date startTime = null;
-    if (table instanceof CandidateFact) {
-      for (String key : ((CandidateFact) table).fact.getProperties().keySet()) {
+    if (cand instanceof StorageCandidate) {
+      for (String key : ((StorageCandidate) cand).getFact().getProperties().keySet()) {
         if (key.contains(MetastoreConstants.FACT_COL_START_TIME_PFX)) {
           String propCol = StringUtils.substringAfter(key, MetastoreConstants.FACT_COL_START_TIME_PFX);
           if (factCol.equals(propCol)) {
-            startTime = ((CandidateFact) table).fact.getDateFromProperty(key, false, true);
+            startTime = ((StorageCandidate) cand).getFact().getDateFromProperty(key, false, true);
           }
         }
       }
@@ -165,14 +171,14 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
     return startTime;
   }
 
-  public static Date getFactColumnEndTime(CandidateTable table, String factCol) {
+  public static Date getFactColumnEndTime(Candidate cand, String factCol) {
     Date endTime = null;
-    if (table instanceof CandidateFact) {
-      for (String key : ((CandidateFact) table).fact.getProperties().keySet()) {
+    if (cand instanceof StorageCandidate) {
+      for (String key : ((StorageCandidate) cand).getFact().getProperties().keySet()) {
         if (key.contains(MetastoreConstants.FACT_COL_END_TIME_PFX)) {
           String propCol = StringUtils.substringAfter(key, MetastoreConstants.FACT_COL_END_TIME_PFX);
           if (factCol.equals(propCol)) {
-            endTime = ((CandidateFact) table).fact.getDateFromProperty(key, false, true);
+            endTime = ((StorageCandidate) cand).getFact().getDateFromProperty(key, false, true);
           }
         }
       }
@@ -180,7 +186,8 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
     return endTime;
   }
 
-  static boolean checkForColumnExistsAndValidForRange(CandidateTable table, String column, CubeQueryContext cubeql) {
-    return (table.getColumns().contains(column) &&  isFactColumnValidForRange(cubeql, table, column));
+  static boolean checkForColumnExistsAndValidForRange(Candidate cand, String column, CubeQueryContext cubeql) {
+    return (cand.getFactColumns().contains(column) &&  isFactColumnValidForRange(cubeql, cand, column));
   }
+
 }

@@ -87,4 +87,21 @@ public class StorageCandidate implements Candidate {
   public Date getEndTime() {
     return fact.getEndTime();
   }
+
+  public boolean isValidForTimeRange(TimeRange timeRange) {
+    return (!timeRange.getFromDate().before(fact.getStartTime())) && (!timeRange.getToDate().after(fact.getEndTime()));
+  }
+
+  private boolean isValidBeforeTimeRange(TimeRange timeRange) {
+    return fact.getStartTime().before(timeRange.getFromDate());
+  }
+
+  private boolean isValidAfterTimeRange(TimeRange timeRange) {
+    return fact.getEndTime().after(timeRange.getToDate());
+  }
+
+  public boolean isPartiallyValidForTimeRange(TimeRange range) {
+    return  isValidAfterTimeRange(range) || isValidBeforeTimeRange(range);
+  }
+
 }

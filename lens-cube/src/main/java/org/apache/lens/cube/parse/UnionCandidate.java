@@ -21,6 +21,10 @@ public class UnionCandidate implements Candidate {
    */
   private List<Candidate> childCandidates;
 
+  public UnionCandidate(List<Candidate> childCandidates) {
+    this.childCandidates = childCandidates;
+  }
+
   @Override
   public String toHQL() {
     return null;

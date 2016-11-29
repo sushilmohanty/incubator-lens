@@ -106,6 +106,12 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   private final Set<Set<CandidateFact>> candidateFactSets = new HashSet<>();
 
   @Getter
+  private final Set<Candidate> candidateSet = new HashSet<>();
+
+  @Getter
+  private final Set<UnionCandidate> unionCandidates = new HashSet<>();
+
+  @Getter
   // would be added through join chains and de-normalized resolver
   protected Map<Aliased<Dimension>, OptionalDimCtx> optionalDimensionMap = new HashMap<>();
 

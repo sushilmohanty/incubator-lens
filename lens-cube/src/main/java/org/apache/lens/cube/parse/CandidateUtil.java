@@ -1,5 +1,6 @@
 package org.apache.lens.cube.parse;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,9 +27,9 @@ public class CandidateUtil {
    * @throws LensException
    */
   public static boolean isMeasureExpressionAnswerable(ASTNode exprNode, Candidate candidate, CubeQueryContext context)
-    throws LensException {
+      throws LensException {
     return candidate.getFactColumns().containsAll(HQLParser.getColsInExpr(
-      context.getAliasForTableName(context.getCube()), exprNode));
+        context.getAliasForTableName(context.getCube()), exprNode));
   }
 
   /**
@@ -39,7 +40,7 @@ public class CandidateUtil {
    */
   public boolean isValidForTimeRange(Candidate candidate, TimeRange timeRange) {
     return (!timeRange.getFromDate().before(candidate.getStartTime()))
-      && (!timeRange.getToDate().after(candidate.getEndTime()));
+        && (!timeRange.getToDate().after(candidate.getEndTime()));
   }
 
   /**
@@ -52,7 +53,7 @@ public class CandidateUtil {
    * @throws LensException
    */
   public Set<String> getTimePartitionCols(StorageCandidate candidate, CubeMetastoreClient metastoreClient)
-    throws LensException {
+      throws LensException {
     Set<String> cubeTimeDimensions = candidate.getCube().getTimedDimensions();
     Set<String> timePartDimensions = new HashSet<String>();
     String singleStorageTable = candidate.getStorage();
@@ -60,11 +61,67 @@ public class CandidateUtil {
     partitionKeys = metastoreClient.getTable(singleStorageTable).getPartitionKeys();
     for (FieldSchema fs : partitionKeys) {
       if (cubeTimeDimensions.contains(CubeQueryContext.getTimeDimOfPartitionColumn(candidate.getCube(),
-        fs.getName()))) {
+          fs.getName()))) {
         timePartDimensions.add(fs.getName());
       }
     }
     return timePartDimensions;
+  }
+
+  /*
+  static boolean checkForFactColumnExistsAndValidForRange(Set<CandidateFact> candidates,
+                                                          Collection<QueriedPhraseContext> colSet,
+                                                          CubeQueryContext cubeql) throws LensException {
+    if (colSet == null || colSet.isEmpty()) {
+      return true;
+    }
+    for (CandidateFact cfact : candidates) {
+      for (QueriedPhraseContext qur : colSet) {
+        if (!qur.isEvaluable(cubeql, cfact)) {
+        return false;
+        }
+      }
+    }
+    return true;
+  }
+*/
+  
+  static boolean allEvaluableInSet(Set<Candidate> candidates, Collection<QueriedPhraseContext> colSet,
+                              CubeQueryContext cubeql) throws LensException {
+
+    for (Candidate cand : candidates) {
+      if (!allEvaluableInSingleCandidate(cand, colSet, cubeql)) {
+          return false;
+      }
+      }
+    return true;
+  }
+
+
+  static boolean allEvaluableInSingleCandidate(Candidate cand, Collection<QueriedPhraseContext> colSet,
+                                               CubeQueryContext cubeql) throws LensException {
+      if (colSet == null || colSet.isEmpty()) {
+        return true;
+      }
+        for (QueriedPhraseContext qur : colSet) {
+          if (!qur.isEvaluable(cubeql, fact)) {
+            return true;
+          }
+        }
+      return false;
+  }
+
+  static Set<QueriedPhraseContext> coveredMeasures(Set<CandidateFact> candidates, Collection<QueriedPhraseContext> msrs,
+                                                   CubeQueryContext cubeql) throws LensException {
+    Set<QueriedPhraseContext> coveringSet = new HashSet<>();
+    for (CandidateFact cfact : candidates) {
+      for (QueriedPhraseContext msr : msrs) {
+        if (msr.isEvaluable(cubeql, cfact)) {
+          coveringSet.add(msr);
+        }
+      }
+    }
+    return coveringSet;
   }
 
   /**
