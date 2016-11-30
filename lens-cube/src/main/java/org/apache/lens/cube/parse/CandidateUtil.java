@@ -55,7 +55,7 @@ public class CandidateUtil {
     throws LensException {
     Set<String> cubeTimeDimensions = candidate.getCube().getTimedDimensions();
     Set<String> timePartDimensions = new HashSet<String>();
-    String singleStorageTable = candidate.getStorageTable();
+    String singleStorageTable = candidate.getStorageName();
     List<FieldSchema> partitionKeys = null;
     partitionKeys = metastoreClient.getTable(singleStorageTable).getPartitionKeys();
     for (FieldSchema fs : partitionKeys) {
@@ -85,8 +85,13 @@ public class CandidateUtil {
     }
   }
 
-  public static Set<StorageCandidate> getStorageCandidates(Candidate candidate) {
+  public static Set<StorageCandidate> getStorageCandidates(final Candidate candidate) {
+    return getStorageCandidates(new HashSet<Candidate>(1){{add(candidate);}});
+  }
+
+  public static Set<StorageCandidate> getStorageCandidates(Set<Candidate> candidates){
     //TODO union : add implementation
     return null;
   }
+
 }

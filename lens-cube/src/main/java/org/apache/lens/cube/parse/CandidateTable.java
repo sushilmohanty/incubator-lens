@@ -40,7 +40,7 @@ public interface CandidateTable {
    * Get storage table corresponding to this candidate
    * @return
    */
-  String getStorageTable();
+  String getStorageName();
 
   /**
    * Get candidate table
