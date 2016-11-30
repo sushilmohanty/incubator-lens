@@ -34,7 +34,7 @@ public class JoinCandidate implements Candidate {
    }
 
    @Override
-   public Collection<String> getFactColumns() {
+   public Collection<String> getColumns() {
       return null;
    }
 
@@ -71,10 +71,8 @@ public class JoinCandidate implements Candidate {
     return null;
   }
 
-   @Override
-   public boolean isExpresionEvaluable(ExpressionResolver.ExpressionContext exptCtx) {
-      return false;
-   }
-
-
+  @Override
+  public boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr) {
+    return false;
+  }
 }

@@ -39,10 +39,9 @@ public interface Candidate {
 
   /**
    * Returns all the fact columns
-   * TODO decide if we need to return the participating Dimension columns too in a separate method
    * @return
    */
-  Collection<String> getFactColumns();
+  Collection<String> getColumns();
 
   /**
    * Start Time for this candidate (calculated based on schema)
@@ -81,10 +80,14 @@ public interface Candidate {
   Set<FactPartition> getParticipatingPartitions();
 
   /**
-   *
+   * TODO union: in case of join , one of the candidates should be able to answer the mesaure expression
+   * TODO union: In case of union, all the candidates should answer the expression
+   * TODO union : add isExpresionEvaluable() to Candidate
+   * @param expr
    * @return
    */
-  boolean isExpresionEvaluable(ExpressionResolver.ExpressionContext exptCtx);
+  boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr);
+
 
   // Moved to CandidateUtil boolean isValidForTimeRange(TimeRange timeRange);
   // Moved to CandidateUtil boolean isExpressionAnswerable(ASTNode node, CubeQueryContext context) throws LensException;

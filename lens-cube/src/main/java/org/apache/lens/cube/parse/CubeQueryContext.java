@@ -884,8 +884,14 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   }
 
   private HQLContextInterface hqlContext;
+
+  //TODO union : Delete this and use pickedCandidate
   @Getter
   private Collection<CandidateFact> pickedFacts;
+
+  @Getter
+  //TODO union : This will be the final Candidate . private Candidate pickedCandidate
+  private Candidate pickedCandidate;
   @Getter
   private Collection<CandidateDim> pickedDimTables;
 
