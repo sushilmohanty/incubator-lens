@@ -104,4 +104,24 @@ public class StorageCandidate implements Candidate {
     return  isValidAfterTimeRange(range) || isValidBeforeTimeRange(range);
   }
 
+  @Override
+  public double getCost() {
+    return 0;
+  }
+
+  @Override
+  public boolean evaluateCompleteness(TimeRange timeRange) {
+    return false;
+  }
+
+  @Override
+  public Set<FactPartition> getParticipatingPartitions() {
+    return null;
+  }
+
+  @Override
+  public boolean isExpresionEvaluable(ExpressionResolver.ExpressionContext exptCtx) {
+    return false;
+  }
+
 }

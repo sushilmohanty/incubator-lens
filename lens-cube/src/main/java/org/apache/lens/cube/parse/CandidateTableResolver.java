@@ -59,6 +59,7 @@ class CandidateTableResolver implements ContextRewriter {
   public void rewriteContext(CubeQueryContext cubeql) throws LensException {
     if (checkForQueriedColumns) {
       log.debug("Dump queried columns:{}", cubeql.getTblAliasToColumns());
+      //TODO union : create StoargeCandidate s now in populateCandidateTables
       populateCandidateTables(cubeql);
       resolveCandidateFactTables(cubeql);
       resolveCandidateDimTables(cubeql);
@@ -687,37 +688,37 @@ class CandidateTableResolver implements ContextRewriter {
     return false;
   }
 
-  static boolean checkForFactColumnExistsAndValidForRange(CandidateFact table, Collection<QueriedPhraseContext> colSet,
+  static boolean checkForFactColumnExistsAndValidForRange(StorageCandidate sc, Collection<QueriedPhraseContext> colSet,
                                                           CubeQueryContext cubeql) throws LensException {
     if (colSet == null || colSet.isEmpty()) {
       return true;
     }
     for (QueriedPhraseContext qur : colSet) {
-      if (qur.isEvaluable(cubeql, table)) {
+      if (qur.isEvaluable(cubeql, sc)) {
         return true;
       }
     }
     return false;
   }
 
-  static boolean allEvaluable(CandidateFact table, Collection<QueriedPhraseContext> colSet,
+  static boolean allEvaluable(StorageCandidate sc, Collection<QueriedPhraseContext> colSet,
                               CubeQueryContext cubeql) throws LensException {
     if (colSet == null || colSet.isEmpty()) {
       return true;
     }
     for (QueriedPhraseContext qur : colSet) {
-      if (!qur.isEvaluable(cubeql, table)) {
+      if (!qur.isEvaluable(cubeql, sc)) {
         return false;
       }
     }
     return true;
   }
 
-  static Set<QueriedPhraseContext> coveredMeasures(CandidateFact table, Collection<QueriedPhraseContext> msrs,
+  static Set<QueriedPhraseContext> coveredMeasures(StorageCandidate sc, Collection<QueriedPhraseContext> msrs,
                                                    CubeQueryContext cubeql) throws LensException {
     Set<QueriedPhraseContext> coveringSet = new HashSet<>();
     for (QueriedPhraseContext msr : msrs) {
-      if (msr.isEvaluable(cubeql, table)) {
+      if (msr.isEvaluable(cubeql, sc)) {
         coveringSet.add(msr);
       }
     }

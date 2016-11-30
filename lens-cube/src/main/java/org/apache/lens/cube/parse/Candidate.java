@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lens.cube.metadata.Dimension;
+import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
@@ -55,6 +56,35 @@ public interface Candidate {
    */
   Date getEndTime();
 
+  /**
+   * Returns the cost of this candidate
+   * @return
+   */
+  double getCost();
+
+  /**
+   * Calculates if this candidate can answer the query for given time range based on actual data registerad with
+   * the underlying candidate storages. This method will also update any internal candidate data structures that are
+   * required for writing the re-written query and to answer {@link #getParticipatingPartitions()}.
+   *
+   * @param timeRange
+   * @return true if this Candidate can answer query for the given time range.
+   */
+  boolean evaluateCompleteness(TimeRange timeRange);
+
+
+  /**
+   * Returns the set of fact partitions that will participate in this candidate.
+   * Note: This method can be called only after call to {@link #evaluateCompleteness(TimeRange)}
+   * @return
+   */
+  Set<FactPartition> getParticipatingPartitions();
+
+  /**
+   *
+   * @return
+   */
+  boolean isExpresionEvaluable(ExpressionResolver.ExpressionContext exptCtx);
 
   // Moved to CandidateUtil boolean isValidForTimeRange(TimeRange timeRange);
   // Moved to CandidateUtil boolean isExpressionAnswerable(ASTNode node, CubeQueryContext context) throws LensException;

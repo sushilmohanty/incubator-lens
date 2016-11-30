@@ -417,7 +417,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     }
 
     Set<String> colQueried = new HashSet<String>();
-    Set<CandidateTable> requiredForCandidates = new HashSet<CandidateTable>();
+    Set<StorageCandidate> requiredForCandidates = new HashSet<StorageCandidate>();
     boolean isRequiredInJoinChain = false;
   }
 
@@ -426,16 +426,16 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   }
 
   public void addOptionalExprDimTable(String dimAlias, String queriedExpr, String srcTableAlias,
-    CandidateTable candidate, String... cols) throws LensException {
-    addOptionalDimTable(dimAlias, candidate, false, queriedExpr, false, srcTableAlias, cols);
+    StorageCandidate sc, String... cols) throws LensException {
+    addOptionalDimTable(dimAlias, sc, false, queriedExpr, false, srcTableAlias, cols);
   }
 
-  public void addOptionalDimTable(String alias, CandidateTable candidate, boolean isRequiredInJoin, String cubeCol,
+  public void addOptionalDimTable(String alias, StorageCandidate sc, boolean isRequiredInJoin, String cubeCol,
     boolean isRef, String... cols) throws LensException {
-    addOptionalDimTable(alias, candidate, isRequiredInJoin, cubeCol, isRef, null, cols);
+    addOptionalDimTable(alias, sc, isRequiredInJoin, cubeCol, isRef, null, cols);
   }
 
-  private void addOptionalDimTable(String alias, CandidateTable candidate, boolean isRequiredInJoin, String cubeCol,
+  private void addOptionalDimTable(String alias, StorageCandidate sc, boolean isRequiredInJoin, String cubeCol,
     boolean isRef, String tableAlias, String... cols) throws LensException {
     alias = alias.toLowerCase();
     if (!addQueriedTable(alias, true)) {
@@ -448,11 +448,11 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       optDim = new OptionalDimCtx();
       optionalDimensionMap.put(aliasedDim, optDim);
     }
-    if (cols != null && candidate != null) {
+    if (cols != null && sc != null) {
       for (String col : cols) {
         optDim.colQueried.add(col);
       }
-      optDim.requiredForCandidates.add(candidate);
+      optDim.requiredForCandidates.add(sc);
     }
     if (cubeCol != null) {
       if (isRef) {
