@@ -246,6 +246,16 @@ class StorageTableResolver implements ContextRewriter {
   }
 
   // Resolves all the storage table names, which are valid for each updatePeriod
+  /**
+   * 1. Prunes Storages that have no Update periods
+   * 2. Prunes Storages that are not supported on this driver {@link #isStorageSupported(String)}
+   * 3. Prunes Storages based on "lens.cube.query.valid.fact.${facttable}.storagetable" property value.
+   * {@link #getStorageTableName(CubeFactTable, String, List)}
+   * 4. Prunes Storages based on "lens.cube.query.valid.fact.${facttable}.storage.${storagename}.updateperiods"
+   * 5. Prunes Storages based on "lens.cube.query.max.interval" property
+   */
+
+
   private void resolveFactStorageTableNames(CubeQueryContext cubeql) throws LensException {
     Iterator<CandidateFact> i = cubeql.getCandidateFacts().iterator();
     skipStorageCausesPerFact = new HashMap<>();

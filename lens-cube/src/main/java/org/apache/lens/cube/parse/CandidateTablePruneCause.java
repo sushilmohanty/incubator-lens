@@ -38,6 +38,7 @@ import lombok.NoArgsConstructor;
 @JsonWriteNullProperties(false)
 @Data
 @NoArgsConstructor
+//TODO union: Since we are working on StoargeCandidates now, we might need some chnages here
 public class CandidateTablePruneCause {
 
   public enum CandidateTablePruneCode {

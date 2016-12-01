@@ -1,8 +1,6 @@
 package org.apache.lens.cube.parse;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.MetastoreUtil;
@@ -11,6 +9,11 @@ import org.apache.lens.server.api.error.LensException;
 
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
+
+import com.google.common.collect.BoundType;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 
 /**
  * Placeholder for Util methods that will be required for {@link Candidate}
@@ -94,4 +97,18 @@ public class CandidateUtil {
     return null;
   }
 
+  /**
+   * Returns true is the Candidates cover the entire time range.
+   * @param candidates
+   * @param startTime
+   * @param endTime
+   * @return
+   */
+  public static boolean isTimeRangeCovered(Collection<Candidate> candidates, Date startTime, Date endTime) {
+    RangeSet<Date> set = TreeRangeSet.create();
+    for (Candidate candidate : candidates) {
+      set.add(Range.range(candidate.getStartTime(), BoundType.CLOSED, candidate.getEndTime(), BoundType.OPEN));
+    }
+    return set.encloses(Range.range(startTime, BoundType.CLOSED, endTime, BoundType.OPEN));
+  }
 }
