@@ -61,20 +61,29 @@ public interface Candidate {
    */
   double getCost();
 
+
   /**
-   * Calculates if this candidate can answer the query for given time range based on actual data registerad with
+   * Alias used for this candidate.
+   * @return
+   */
+  String getAlias();
+
+  /**
+   * Calculates if this candidate can answer the query for given time range based on actual data registered with
    * the underlying candidate storages. This method will also update any internal candidate data structures that are
    * required for writing the re-written query and to answer {@link #getParticipatingPartitions()}.
    *
-   * @param timeRange
+   * @param timeRange : TimeRange to check completeness for. TimeRange consists of start time, end time and the
+   *                  partition column
+   * @param failOnPartialData : fail fast if the candidate can answer the query only partially
    * @return true if this Candidate can answer query for the given time range.
    */
-  boolean evaluateCompleteness(TimeRange timeRange);
+  boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData);
 
 
   /**
    * Returns the set of fact partitions that will participate in this candidate.
-   * Note: This method can be called only after call to {@link #evaluateCompleteness(TimeRange)}
+   * Note: This method can be called only after call to {@link #evaluateCompleteness(TimeRange, boolean)}
    * @return
    */
   Set<FactPartition> getParticipatingPartitions();

@@ -55,6 +55,11 @@ public class JoinCandidate implements Candidate {
     return 0;
   }
 
+  @Override
+  public String getAlias() {
+    return null;
+  }
+
 
   /**
    * TODO union : call evaluateCompleteness for child candidates and retrun false if either call returns false.
@@ -62,7 +67,7 @@ public class JoinCandidate implements Candidate {
    * @return
    */
   @Override
-  public boolean evaluateCompleteness(TimeRange timeRange) {
+  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) {
     return false;
   }
 

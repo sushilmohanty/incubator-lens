@@ -114,7 +114,12 @@ public class StorageCandidate implements Candidate,CandidateTable {
   }
 
   @Override
-  public boolean evaluateCompleteness(TimeRange timeRange) {
+  public String getAlias() {
+    return null;
+  }
+
+  @Override
+  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) {
     return false;
   }
 
