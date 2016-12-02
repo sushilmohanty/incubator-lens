@@ -111,4 +111,19 @@ public class CandidateUtil {
     }
     return set.encloses(Range.range(startTime, BoundType.CLOSED, endTime, BoundType.OPEN));
   }
+
+  /**
+   * Filters Candidates that contain the filterCandidate
+   *
+   * @param candidates
+   * @param filterCandidate
+   */
+  public static void filterCandidates(Collection<Candidate> candidates, Candidate filterCandidate) {
+    Iterator<Candidate> itr = candidates.iterator();
+    while (itr.hasNext()) {
+      if(itr.next().contains(filterCandidate)) {
+        itr.remove();
+      }
+    }
+  }
 }

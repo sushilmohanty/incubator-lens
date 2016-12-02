@@ -119,6 +119,12 @@ public class StorageCandidate implements Candidate,CandidateTable {
   }
 
   @Override
+  public boolean contains(Candidate candidate) {
+    //TODO union : decide if we need to override equals and hashcode for StorageCandidate
+    return this.equals(candidate);
+  }
+
+  @Override
   public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) {
     return false;
   }

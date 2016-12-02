@@ -60,6 +60,14 @@ public class JoinCandidate implements Candidate {
     return null;
   }
 
+  @Override
+  public boolean contains(Candidate candidate) {
+    if (this.equals(candidate)) {
+      return true;
+    }
+    else return childCandidate1.contains(candidate) && childCandidate2.contains(candidate);
+  }
+
 
   /**
    * TODO union : call evaluateCompleteness for child candidates and retrun false if either call returns false.

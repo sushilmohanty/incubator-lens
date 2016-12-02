@@ -69,6 +69,15 @@ public interface Candidate {
   String getAlias();
 
   /**
+   * Returns true if this candidate contains the given candidate
+   *
+   * @param candidate
+   * @return
+   */
+  boolean contains(Candidate candidate);
+
+
+  /**
    * Calculates if this candidate can answer the query for given time range based on actual data registered with
    * the underlying candidate storages. This method will also update any internal candidate data structures that are
    * required for writing the re-written query and to answer {@link #getParticipatingPartitions()}.
