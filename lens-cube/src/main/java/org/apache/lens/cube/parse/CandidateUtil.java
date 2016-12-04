@@ -1,10 +1,11 @@
 package org.apache.lens.cube.parse;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
+import com.google.common.collect.BoundType;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.TimeRange;
@@ -57,7 +58,7 @@ public class CandidateUtil {
       throws LensException {
     Set<String> cubeTimeDimensions = candidate.getCube().getTimedDimensions();
     Set<String> timePartDimensions = new HashSet<String>();
-    String singleStorageTable = candidate.getStorageTable();
+    String singleStorageTable = candidate.getStorageName();
     List<FieldSchema> partitionKeys = null;
     partitionKeys = metastoreClient.getTable(singleStorageTable).getPartitionKeys();
     for (FieldSchema fs : partitionKeys) {
@@ -105,24 +106,11 @@ public class CandidateUtil {
         return true;
       }
         for (QueriedPhraseContext qur : colSet) {
-          if (!qur.isEvaluable(cubeql, fact)) {
+          if (!qur.isEvaluable(cubeql, (StorageCandidate) cand)) {
             return true;
           }
         }
       return false;
-  }
-
-  static Set<QueriedPhraseContext> coveredMeasures(Set<CandidateFact> candidates, Collection<QueriedPhraseContext> msrs,
-                                                   CubeQueryContext cubeql) throws LensException {
-    Set<QueriedPhraseContext> coveringSet = new HashSet<>();
-    for (CandidateFact cfact : candidates) {
-      for (QueriedPhraseContext msr : msrs) {
-        if (msr.isEvaluable(cubeql, cfact)) {
-          coveringSet.add(msr);
-        }
-      }
-    }
-    return coveringSet;
   }
 
   /**
@@ -147,4 +135,73 @@ public class CandidateUtil {
     //TODO union : add implementation
     return null;
   }
+
+  public static boolean checkForFactColumnExistsAndValidForRange(Collection<Candidate> candSet,
+                                                                  Collection<QueriedPhraseContext> colSet,
+                                                                  CubeQueryContext cubeql) throws LensException {
+    if (colSet == null || colSet.isEmpty()) {
+      return true;
+    }
+    boolean colExists = false;
+    for (QueriedPhraseContext qur : colSet) {
+      for (Candidate c : candSet) {
+        if (!qur.isEvaluable(cubeql, (StorageCandidate) c)) {
+          break;
+        }
+      }
+    }
+    return true;
+  }
+
+
+
+  public static boolean allEvaluable(StorageCandidate sc, Collection<QueriedPhraseContext> colSet,
+                              CubeQueryContext cubeql) throws LensException {
+    if (colSet == null || colSet.isEmpty()) {
+      return true;
+    }
+    for (QueriedPhraseContext qur : colSet) {
+      if (!qur.isEvaluable(cubeql, sc)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public static Set<QueriedPhraseContext> coveredMeasures(List<Candidate> candSet, Collection<QueriedPhraseContext> msrs,
+                                                   CubeQueryContext cubeql) throws LensException {
+    Set<QueriedPhraseContext> coveringSet = new HashSet<>();
+    for (QueriedPhraseContext msr : msrs) {
+      for (Candidate cand : candSet) {
+        if (msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
+          coveringSet.add(msr);
+        }
+      }
+    }
+    return coveringSet;
+  }
+  
+  /**
+   * Returns true is the Candidates cover the entire time range.
+   * @param candidates
+   * @param startTime
+   * @param endTime
+   * @return
+   */
+  public static boolean isTimeRangeCovered(Collection<Candidate> candidates, Date startTime, Date endTime) {
+    RangeSet<Date> set = TreeRangeSet.create();
+    for (Candidate candidate : candidates) {
+      set.add(Range.range(candidate.getStartTime(), BoundType.CLOSED, candidate.getEndTime(), BoundType.CLOSED));
+    }
+    return set.encloses(Range.range(startTime, BoundType.CLOSED, endTime, BoundType.OPEN));
+  }
+
+  public static Set<String> getColumns(Collection<QueriedPhraseContext> queriedPhraseContexts) {
+    Set<String> cols = new HashSet<>();
+    for (QueriedPhraseContext qur : queriedPhraseContexts) {
+      cols.addAll(qur.getColumns());
+    }
+    return cols;
+  }
+
 }

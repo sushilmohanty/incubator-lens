@@ -34,11 +34,17 @@ public class StorageCandidate implements Candidate,CandidateTable {
   /**
    * Participating fact, storage and dimensions for this StorageCandidate
    */
+  @Getter
   private CubeFactTable fact;
   @Getter
-  private String storageTable;
+  private String storageName;
   private Map<Dimension, CandidateDim> dimensions;
 
+  public StorageCandidate(CubeFactTable fact,CubeInterface cube, String storageName ) {
+    this.fact = fact;
+    this.cube = cube;
+    this.storageName = storageName;
+  }
 
   @Getter
   private CubeInterface cube;

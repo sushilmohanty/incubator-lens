@@ -540,6 +540,7 @@ public class CubeTestSetup {
     String prefix = "union_join_ctx_";
     cubeMeasures.add(new ColumnMeasure(new FieldSchema(prefix + "msr1", "int", prefix + "first measure")));
     cubeMeasures.add(new ColumnMeasure(new FieldSchema(prefix + "msr2", "int", prefix + "second measure")));
+    cubeMeasures.add(new ColumnMeasure(new FieldSchema(prefix + "msr3", "int", prefix + "third measure")));
 
     cubeDimensions = new HashSet<CubeDimAttribute>();
 
@@ -1298,20 +1299,10 @@ public class CubeTestSetup {
     s1.setPartCols(partCols);
     s1.setTimePartCols(timePartCols);
 
-    /*
-    StorageTableDesc s2 = new StorageTableDesc();
-    s2.setInputFormat(TextInputFormat.class.getCanonicalName());
-    s2.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getCanonicalName());
-    s2.setPartCols(partCols);
-    s2.setTimePartCols(timePartCols);
-    */
-
     storageAggregatePeriods.put(c1, updates);
-    //storageAggregatePeriods.put(c2, updates);
 
     Map<String, StorageTableDesc> storageTables = new HashMap<String, StorageTableDesc>();
     storageTables.put(c1, s1);
-    //storageTables.put(c2, s2);
 
     // create fact1 (all dim attributes only msr1)
     String factName = prefix + "fact1";
@@ -1322,18 +1313,18 @@ public class CubeTestSetup {
     factColumns.add(new FieldSchema(prefix + "cityid", "int", "city id"));
     // add fact start and end time property
     Map<String, String> properties = Maps.newHashMap(factValidityProperties);
-    properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now - 90 days"));
-    properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now - 31 days"));
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 90 days"));
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day - 30 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
         properties, storageTables);
 
-    // create fact2 (all dim attributes and msr1 & msr2)
+    // create fact2 with same schema, but it starts after fact1 ends
     factName = prefix + "fact2";
     properties.clear();
-    factColumns.add(new ColumnMeasure(new FieldSchema(prefix + "msr2", "int", "second measure")).getColumn());
+    //factColumns.add(new ColumnMeasure(new FieldSchema(prefix + "msr2", "int", "second measure")).getColumn());
     // add fact start and end time property
-    properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now - 30 days"));
-    properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now + 7 days"));
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 30 days"));
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
         properties, storageTables);
 
@@ -1346,8 +1337,37 @@ public class CubeTestSetup {
     factColumns.add(new FieldSchema(prefix + "cityid", "int", "city id"));
     properties.clear();
     // add fact start and end time property
-    properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now - 90 days"));
-    properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now - 31 days"));
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 90 days"));
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
+    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
+        properties, storageTables);
+
+    // create fact4 will all all measures and entire timerange covered
+    factName = prefix + "fact4";
+    factColumns.add(new ColumnMeasure(new FieldSchema(prefix + "msr1", "int", "first measure")).getColumn());
+    properties.clear();
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 90 days"));
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
+    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
+        properties, storageTables);
+
+    // create fact5 and fact6 with msr3 and covering timerange as set
+    factName = prefix + "fact5";
+    factColumns.clear();
+    factColumns.add(new FieldSchema("d_time", "timestamp", "event time"));
+    factColumns.add(new FieldSchema(prefix + "zipcode", "int", "zip"));
+    factColumns.add(new FieldSchema(prefix + "cityid", "int", "city id"));
+    factColumns.add(new ColumnMeasure(new FieldSchema(prefix + "msr3", "int", "third measure")).getColumn());
+    properties.clear();
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 90 days"));
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day -30 days"));
+    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
+        properties, storageTables);
+
+    factName = prefix + "fact6";
+    properties.clear();
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 30 days"));
+    properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
         properties, storageTables);
 
@@ -1357,6 +1377,7 @@ public class CubeTestSetup {
     Set<String> measures = new HashSet<>();
     measures.add(prefix + "msr1");
     measures.add(prefix + "msr2");
+    measures.add(prefix + "msr3");
     Set<String> dimensions = new HashSet<>();
     dimensions.add(prefix + "cityid");
     dimensions.add(prefix + "zipcode");

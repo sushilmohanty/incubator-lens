@@ -150,7 +150,7 @@ public class CubeQueryRewriter {
     // Resolve candidate fact tables and dimension tables for columns queried
     rewriters.add(candidateTblResolver);
     // Resolve aggregations and generate base select tree
-
+    rewriters.add(new CandidateCoveringSetsResolver(conf));
     //TODO union: Move AggregateResolver,GroupbyResolver,FieldValidator before candidateTblResolver
     //TODO union: AggregateResolver should run before CoveringSetResolver
     rewriters.add(new AggregateResolver());

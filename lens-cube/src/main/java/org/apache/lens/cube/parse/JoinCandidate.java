@@ -2,6 +2,7 @@ package org.apache.lens.cube.parse;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lens.cube.metadata.FactPartition;
@@ -17,6 +18,11 @@ public class JoinCandidate implements Candidate {
     */
    private Candidate childCandidate1;
    private Candidate childCandidate2;
+
+   public JoinCandidate(Candidate childCandidate1, Candidate childCandidate2) {
+      this.childCandidate1 = childCandidate1;
+      this.childCandidate2 = childCandidate2;
+   }
 
    private String getJoinCondition() {
       return null;

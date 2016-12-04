@@ -106,7 +106,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   private final Set<Set<CandidateFact>> candidateFactSets = new HashSet<>();
 
   @Getter
-  private final Set<Candidate> candidateSet = new HashSet<>();
+  private final List<Candidate> candidateSet = new ArrayList<>();
 
   @Getter
   private final Set<UnionCandidate> unionCandidates = new HashSet<>();
@@ -417,7 +417,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     }
 
     Set<String> colQueried = new HashSet<String>();
-    Set<StorageCandidate> requiredForCandidates = new HashSet<StorageCandidate>();
+    Set<CandidateTable> requiredForCandidates = new HashSet<CandidateTable>();
     boolean isRequiredInJoinChain = false;
   }
 
@@ -426,16 +426,16 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   }
 
   public void addOptionalExprDimTable(String dimAlias, String queriedExpr, String srcTableAlias,
-    StorageCandidate sc, String... cols) throws LensException {
-    addOptionalDimTable(dimAlias, sc, false, queriedExpr, false, srcTableAlias, cols);
+    CandidateTable candidate, String... cols) throws LensException {
+    addOptionalDimTable(dimAlias, candidate, false, queriedExpr, false, srcTableAlias, cols);
   }
 
-  public void addOptionalDimTable(String alias, StorageCandidate sc, boolean isRequiredInJoin, String cubeCol,
+  public void addOptionalDimTable(String alias, CandidateTable candidate, boolean isRequiredInJoin, String cubeCol,
     boolean isRef, String... cols) throws LensException {
-    addOptionalDimTable(alias, sc, isRequiredInJoin, cubeCol, isRef, null, cols);
+    addOptionalDimTable(alias, candidate, isRequiredInJoin, cubeCol, isRef, null, cols);
   }
 
-  private void addOptionalDimTable(String alias, StorageCandidate sc, boolean isRequiredInJoin, String cubeCol,
+  private void addOptionalDimTable(String alias, CandidateTable candidate, boolean isRequiredInJoin, String cubeCol,
     boolean isRef, String tableAlias, String... cols) throws LensException {
     alias = alias.toLowerCase();
     if (!addQueriedTable(alias, true)) {
@@ -448,11 +448,11 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       optDim = new OptionalDimCtx();
       optionalDimensionMap.put(aliasedDim, optDim);
     }
-    if (cols != null && sc != null) {
+    if (cols != null && candidate != null) {
       for (String col : cols) {
         optDim.colQueried.add(col);
       }
-      optDim.requiredForCandidates.add(sc);
+      optDim.requiredForCandidates.add(candidate);
     }
     if (cubeCol != null) {
       if (isRef) {

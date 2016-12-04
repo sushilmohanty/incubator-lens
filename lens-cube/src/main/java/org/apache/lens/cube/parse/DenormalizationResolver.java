@@ -116,7 +116,7 @@ public class DenormalizationResolver implements ContextRewriter {
     // When candidate table does not have the field, this method checks
     // if the field can be reached through reference,
     // if yes adds the ref usage and returns to true, if not returns false.
-    boolean addRefUsage(StorageCandidate sc, String col, String srcTbl) throws LensException {
+    boolean addRefUsage(CandidateTable table, String col, String srcTbl) throws LensException {
       // available as referenced col
       if (referencedCols.containsKey(col)) {
         for (ReferencedQueriedColumn refer : referencedCols.get(col)) {
@@ -125,16 +125,16 @@ public class DenormalizationResolver implements ContextRewriter {
             // should not be required here. Join resolution will figure out if
             // there is no path
             // to the source table
-            log.info("Adding denormalized column for column:{} for table:{}", col, sc);
-            Set<ReferencedQueriedColumn> refCols = tableToRefCols.get(sc.getFact().getName());
+            log.info("Adding denormalized column for column:{} for table:{}", col, table);
+            Set<ReferencedQueriedColumn> refCols = tableToRefCols.get(table.getName());
             if (refCols == null) {
               refCols = new HashSet<>();
-              tableToRefCols.put(sc.getFact().getName(), refCols);
+              tableToRefCols.put(table.getName(), refCols);
             }
             refCols.add(refer);
             // Add to optional tables
             for (ChainRefCol refCol : refer.col.getChainRefColumns()) {
-              cubeql.addOptionalDimTable(refCol.getChainName(), sc, false, refer.col.getName(), true,
+              cubeql.addOptionalDimTable(refCol.getChainName(), table, false, refer.col.getName(), true,
                 refCol.getRefColumn());
             }
             return true;

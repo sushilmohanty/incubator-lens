@@ -37,10 +37,10 @@ public interface CandidateTable {
   String getStorageString(String alias);
 
   /**
-   * Get storage table corresponding to this candidate
+   * Get storage tables corresponding to this candidate
    * @return
    */
-  String getStorageTable();
+  String getStorageName();
 
   /**
    * Get candidate table

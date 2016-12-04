@@ -121,7 +121,7 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
     }
     // all dim-attributes should be present.
     for (String col : queriedDimAttrs) {
-      if (!sc.getFactColumns().contains(col.toLowerCase())) {
+      if (!sc.getColumns().contains(col.toLowerCase())) {
         // check if it available as reference
         if (!cubeQl.getDeNormCtx().addRefUsage(sc, col, cubeQl.getCube().getName())) {
           log.info("column {} is not available in fact table:{} ", col, sc);
@@ -159,11 +159,11 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
 
   public static Date getFactColumnStartTime(StorageCandidate sc, String factCol) {
     Date startTime = null;
-      for (String key : sc.getFact().getProperties().keySet()) {
+      for (String key : sc.getTable().getProperties().keySet()) {
         if (key.contains(MetastoreConstants.FACT_COL_START_TIME_PFX)) {
           String propCol = StringUtils.substringAfter(key, MetastoreConstants.FACT_COL_START_TIME_PFX);
           if (factCol.equals(propCol)) {
-            startTime = sc.getFact().getDateFromProperty(key, false, true);
+            startTime = sc.getTable().getDateFromProperty(key, false, true);
           }
         }
       }
@@ -172,11 +172,11 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
 
   public static Date getFactColumnEndTime(StorageCandidate sc, String factCol) {
     Date endTime = null;
-      for (String key : sc.getFact().getProperties().keySet()) {
+      for (String key : sc.getTable().getProperties().keySet()) {
         if (key.contains(MetastoreConstants.FACT_COL_END_TIME_PFX)) {
           String propCol = StringUtils.substringAfter(key, MetastoreConstants.FACT_COL_END_TIME_PFX);
           if (factCol.equals(propCol)) {
-            endTime = sc.getFact().getDateFromProperty(key, false, true);
+            endTime = sc.getTable().getDateFromProperty(key, false, true);
           }
         }
       }
@@ -184,7 +184,7 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
   }
 
   static boolean checkForColumnExistsAndValidForRange(StorageCandidate sc, String column, CubeQueryContext cubeql) {
-    return (sc.getFactColumns().contains(column) &&  isFactColumnValidForRange(cubeql, sc, column));
+    return (sc.getColumns().contains(column) &&  isFactColumnValidForRange(cubeql, sc, column));
   }
 
 }

@@ -239,8 +239,8 @@ class StorageTableResolver implements ContextRewriter {
           continue;
         }
         // pick the first storage table
-        candidate.setStorageTable(storageTables.iterator().next());
-        candidate.setWhereClause(whereClauses.get(candidate.getStorageTable()));
+        candidate.setStorageName(storageTables.iterator().next());
+        candidate.setWhereClause(whereClauses.get(candidate.getStorageName()));
       }
     }
   }

@@ -57,9 +57,9 @@ class ExpressionResolver implements ContextRewriter {
     private final String srcAlias;
     @Getter
     private Set<ExprSpecContext> allExprs = new LinkedHashSet<ExprSpecContext>();
-    private Set<StorageCandidate> directlyAvailableIn = new HashSet<StorageCandidate>();
+    private Set<CandidateTable> directlyAvailableIn = new HashSet<CandidateTable>();
     @Getter
-    private Map<StorageCandidate, Set<ExprSpecContext>> evaluableExpressions = new HashMap<>();
+    private Map<CandidateTable, Set<ExprSpecContext>> evaluableExpressions = new HashMap<>();
     private boolean hasMeasures = false;
 
     public boolean hasMeasures() {
@@ -185,14 +185,14 @@ class ExpressionResolver implements ContextRewriter {
       return false;
     }
 
-    boolean isEvaluable(StorageCandidate sc) {
-      if (directlyAvailableIn.contains(sc)) {
+    boolean isEvaluable(CandidateTable cTable) {
+      if (directlyAvailableIn.contains(cTable)) {
         return true;
       }
-      if (evaluableExpressions.get(sc) == null) {
+      if (evaluableExpressions.get(cTable) == null) {
         return false;
       }
-      return !evaluableExpressions.get(sc).isEmpty();
+      return !evaluableExpressions.get(cTable).isEmpty();
     }
   }
 
@@ -374,9 +374,9 @@ class ExpressionResolver implements ContextRewriter {
     }
 
     // checks if expr is evaluable
-    public boolean isEvaluable(String expr, StorageCandidate sc) {
-      ExpressionContext ec = getExpressionContext(expr, cubeql.getAliasForTableName(sc.getCube().getName()));
-      return ec.isEvaluable(sc);
+    public boolean isEvaluable(String expr, CandidateTable cTable) {
+      ExpressionContext ec = getExpressionContext(expr, cubeql.getAliasForTableName(cTable.getBaseTable().getName()));
+      return ec.isEvaluable(cTable);
     }
 
     /**
@@ -384,19 +384,19 @@ class ExpressionResolver implements ContextRewriter {
      * @param exprs
      * @return
      */
-    public boolean allNotEvaluable(Set<String> exprs, StorageCandidate sc) {
+    public boolean allNotEvaluable(Set<String> exprs, CandidateTable cTable) {
       for (String expr : exprs) {
-        if (isEvaluable(expr, sc)) {
+        if (isEvaluable(expr, cTable)) {
           return false;
         }
       }
       return true;
     }
 
-    public Collection<String> coveringExpressions(Set<String> exprs, StorageCandidate sc) {
+    public Collection<String> coveringExpressions(Set<String> exprs, CandidateTable cTable) {
       Set<String> coveringSet = new HashSet<String>();
       for (String expr : exprs) {
-        if (isEvaluable(expr, sc)) {
+        if (isEvaluable(expr, cTable)) {
           coveringSet.add(expr);
         }
       }
@@ -406,13 +406,13 @@ class ExpressionResolver implements ContextRewriter {
     /**
      * Returns true if all passed expressions are evaluable
      *
-     * @param sc
+     * @param cTable
      * @param exprs
      * @return
      */
-    public boolean allEvaluable(StorageCandidate sc, Set<String> exprs) {
+    public boolean allEvaluable(CandidateTable cTable, Set<String> exprs) {
       for (String expr : exprs) {
-        if (!isEvaluable(expr, sc)) {
+        if (!isEvaluable(expr, cTable)) {
           return false;
         }
       }

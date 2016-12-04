@@ -1,10 +1,8 @@
 package org.apache.lens.cube.parse;
 
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.lens.cube.metadata.Storage;
+import org.apache.lens.cube.error.LensCubeErrorCode;
 import org.apache.lens.cube.metadata.TimeRange;
 
 import org.apache.lens.server.api.error.LensException;
@@ -12,18 +10,18 @@ import org.apache.lens.server.api.error.LensException;
 import java.util.*;
 
 @Slf4j
-public class CandidateCoveringSetsResolver implements ContextRewriter{
+public class CandidateCoveringSetsResolver implements ContextRewriter {
 
-  private Set<CandidateSets> rangeCoveringCandidates;
+  private List<StorageCandidate> storageCandidates = new ArrayList<>();
+  private List<UnionCandidate> unionCandidates = new ArrayList<>();
+  private List<JoinCandidate> joinCandidates = new ArrayList<>();
+  private List<Candidate> finalCandidates = new ArrayList<>();
 
-  public CandidateCoveringSetsResolver(Configuration conf) {}
+  public CandidateCoveringSetsResolver(Configuration conf) {
+  }
 
   @Override
   public void rewriteContext(CubeQueryContext cubeql) throws LensException {
-    List<TimeRange> ranges = cubeql.getTimeRanges();
-    for (TimeRange range : ranges) {
-      resolveRangeCoveringFactSet(cubeql, range);
-    }
 
     Set<QueriedPhraseContext> queriedMsrs = new HashSet<>();
     for (QueriedPhraseContext qur : cubeql.getQueriedPhrases()) {
@@ -31,25 +29,75 @@ public class CandidateCoveringSetsResolver implements ContextRewriter{
         queriedMsrs.add(qur);
       }
     }
-    findMeasureCoveringSets(rangeCoveringCandidates, queriedMsrs, cubeql);
-    //Set<Set<Candidate>> measureCoveringSets = new HashSet<>();
-    //pruneNonMeasureCoveringSets(rangeCoveringCandidates, queriedMsrs, cubeql);
-    //cubeql.getCandidateSet().addAll(measureCoveringSets);
+    // if no measures are queried, add all StorageCandidates individually as single covering sets
+    if (queriedMsrs.isEmpty()) {
+      finalCandidates.addAll(cubeql.getCandidateSet());
+    }
+
+    List<TimeRange> ranges = cubeql.getTimeRanges();
+    // considering single time range
+    for (TimeRange range : ranges) {
+      resolveRangeCoveringFactSet(cubeql, range, queriedMsrs);
+      List<List<UnionCandidate>> measureCoveringSets = resolveJoinCandidates(unionCandidates, queriedMsrs, cubeql);
+      updateFinalCandidates(measureCoveringSets);
+      log.info("Covering candidate sets :{}", finalCandidates);
+
+      String msrString = CandidateUtil.getColumns(queriedMsrs).toString();
+      if (finalCandidates.isEmpty()) {
+        throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
+      }
+      // update final candidate sets
+      cubeql.getCandidateSet().clear();
+      cubeql.getCandidateSet().addAll(finalCandidates);
+      // TODO : we might need to prune if we maintian two data structures in CubeQueryContext.
+      //cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCause.columnNotFound(getColumns(queriedMsrs)));
+
+      if (cubeql.getCandidateFacts().size() == 0) {
+        throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
+      }
+    }
   }
 
-  private void resolveRangeCoveringFactSet(CubeQueryContext cubeql, TimeRange range) throws LensException {
+  private Candidate createJoinCandidateFromUnionCandidates(List<UnionCandidate> ucs) {
+    Candidate cand;
+    if (ucs.size() >= 2) {
+      UnionCandidate first = ucs.get(0);
+      UnionCandidate second = ucs.get(1);
+      cand = new JoinCandidate(first, second);
+      for (int i = 2; i < ucs.size(); i++) {
+        cand = new JoinCandidate(cand, ucs.get(i));
+      }
+    } else {
+      cand = ucs.get(0);
+    }
+    return cand;
+  }
+
+  private void updateFinalCandidates(List<List<UnionCandidate>> jcs) {
+
+    for (Iterator<List<UnionCandidate>> itr = jcs.iterator(); itr.hasNext(); ) {
+      List<UnionCandidate> jc = itr.next();
+      if (jc.size() == 1 && jc.iterator().next().getChildCandidates().size() == 1) {
+        finalCandidates.add(jc.iterator().next().getChildCandidates().iterator().next());
+      } else {
+        finalCandidates.add(createJoinCandidateFromUnionCandidates(jc));
+      }
+    }
+  }
+
+  private void resolveRangeCoveringFactSet(CubeQueryContext cubeql, TimeRange range,
+                                           Set<QueriedPhraseContext> queriedMsrs) throws LensException {
     // All facts
-    Set<Candidate> allCandidates = cubeql.getCandidateSet();
+    List<Candidate> allCandidates = cubeql.getCandidateSet();
     // Partially valid facts
-    Set<Candidate> allCandidatesPartiallyValid = new HashSet<>();
-    //Set<CandidateSets> rangeCoveringCandidates  = new HashSet<>();
+    List<Candidate> allCandidatesPartiallyValid = new ArrayList<>();
     for (Candidate cand : allCandidates) {
       // Assuming initial list of candidates populated are StorageCandidate
       if (cand instanceof StorageCandidate) {
         StorageCandidate sc = (StorageCandidate) cand;
         if (sc.isValidForTimeRange(range)) {
-          Set<Candidate> one = new HashSet<>(Arrays.asList((Candidate) sc));
-          rangeCoveringCandidates.add(new CandidateSets(one));
+          List<Candidate> one = new ArrayList<Candidate>(Arrays.asList(sc));
+          unionCandidates.add(new UnionCandidate(one));
         } else if (sc.isPartiallyValidForTimeRange(range)) {
           allCandidatesPartiallyValid.add(sc);
         }
@@ -60,55 +108,72 @@ public class CandidateCoveringSetsResolver implements ContextRewriter{
     // Get all covering fact sets
     List<List<Candidate>> coveringFactSets =
         getCombinations(new ArrayList<Candidate>(allCandidatesPartiallyValid));
-    for (List<Candidate> sets : coveringFactSets) {
-      CandidateSets set  =  new CandidateSets(new HashSet<Candidate>(sets));
-      setMinAndMacDateForAllCandidateSets(set);
-      rangeCoveringCandidates.add(set);
-    }
+    // Sort the Collection based on size
+    Collections.sort(coveringFactSets, new Comparator<List<?>>() {
+      @Override
+      public int compare(List<?> o1, List<?> o2) {
+        return Integer.valueOf(o1.size()).compareTo(o2.size());
+      }
+    });
 
-    // Iterate over the covering set and remove the set which can't answer the time range
-    for (Iterator<CandidateSets> itr = rangeCoveringCandidates.iterator(); itr.hasNext();) {
-      CandidateSets set = itr.next();
-      if (!(set.getStartTime().before(range.getFromDate()) && set.getEndTime().after(range.getToDate()))) {
+    // iterate over the candidate set and remove the one which can't answer the range
+    for (Iterator<List<Candidate>> itr = coveringFactSets.iterator(); itr.hasNext(); ) {
+      List<Candidate> cand = itr.next();
+      if (!CandidateUtil.isTimeRangeCovered(cand, range.getFromDate(), range.getToDate())) {
         itr.remove();
       }
     }
-    // Remove redundant covering sets
-    removeRedundantCoveringSets(rangeCoveringCandidates);
+    // prune candidate set without common measure
+    pruneCoveringSetWithoutAnyCommonMeasure(coveringFactSets, queriedMsrs, cubeql);
+    // prune redundant covering sets
+    pruneRedundantCoveringSets(coveringFactSets);
+    // pruing done in the previous steps, now create union candidates
+    for (List<Candidate> set : coveringFactSets) {
+      UnionCandidate uc = new UnionCandidate(set);
+      unionCandidates.add(uc);
+    }
   }
 
+  private boolean isMeasureAnswerableForCandidates(QueriedPhraseContext msr, List<Candidate> candList,
+                                                   CubeQueryContext cubeql) throws LensException {
+    for (Candidate cand : candList) {
+      if (!msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
+        return false;
+      }
+    }
+    return true;
+  }
 
-
-  public void removeRedundantCoveringSets(Set<CandidateSets> candidates) {
-    Set<CandidateSets> set1 = new HashSet<>(candidates);
-    Set<CandidateSets> set2 = new HashSet<>(candidates);
-    for (CandidateSets set1Set : set1) {
-      for (CandidateSets set2Set : set2) {
-        if (set2Set.getCandidates().containsAll(set1Set.getCandidates())) {
-          set2.remove(set2Set);
+  private void pruneCoveringSetWithoutAnyCommonMeasure(List<List<Candidate>> candidates,
+                                                       Set<QueriedPhraseContext> queriedMsrs,
+                                                       CubeQueryContext cubeql) throws LensException {
+    for (ListIterator<List<Candidate>> itr = candidates.listIterator(); itr.hasNext(); ) {
+      boolean toRemove = true;
+      List<Candidate> cand = itr.next();
+      for (QueriedPhraseContext msr : queriedMsrs) {
+        if (isMeasureAnswerableForCandidates(msr, cand, cubeql)) {
+          toRemove = false;
+          break;
         }
+      }
+      if (toRemove) {
+        itr.remove();
       }
     }
   }
 
-/*
-  public Set<Set<CandidateFact>> pruneNonMeasureCoveringSets(Set<CandidateSets> rangeCoveringSets,
-                                      Set<QueriedPhraseContext> msrs, CubeQueryContext cubeql) throws LensException {
-      for (Iterator<CandidateSets> itr = rangeCoveringSets.iterator(); itr.hasNext();) {
-        CandidateSets set = itr.next();
-        for (QueriedPhraseContext msr : msrs) {
-          for (Candidate cand : set.getCandidates()) {
-            if (msr.isEvaluable(cubeql, cand)) {
-              break;
-            } else {
-              itr.remove();
-            }
-          }
+  private void pruneRedundantCoveringSets(List<List<Candidate>> candidates) {
+    for (int i = 0; i < candidates.size(); i++) {
+      List<Candidate> current = candidates.get(i);
+      int j = i + 1;
+      for (ListIterator<List<Candidate>> itr = candidates.listIterator(j); itr.hasNext(); ) {
+        List<Candidate> next = itr.next();
+        if (next.containsAll(current)) {
+          itr.remove();
         }
       }
-    return rangeCoveringSets;
+    }
   }
-*/
 
   public List<List<Candidate>> getCombinations(final List<Candidate> candidates) {
     List<List<Candidate>> combinations = new LinkedList<List<Candidate>>();
@@ -131,70 +196,53 @@ public class CandidateCoveringSetsResolver implements ContextRewriter{
     return combinations;
   }
 
-  private void setMinAndMacDateForAllCandidateSets(CandidateSets set) {
-    Set<Date> startDates = new HashSet<>();
-    Set<Date> endDates = new HashSet<>();
-      for (Candidate candidate : set.getCandidates()) {
-        startDates.add(candidate.getStartTime());
-        endDates.add(candidate.getEndTime());
+  private List<List<UnionCandidate>> resolveJoinCandidates(List<UnionCandidate> unionCandidates,
+                                                           Set<QueriedPhraseContext> msrs,
+                                                           CubeQueryContext cubeql) throws LensException {
+    List<List<UnionCandidate>> msrCoveringSets = new ArrayList<>();
+    List<UnionCandidate> ucSet = new ArrayList<>(unionCandidates);
+    boolean evaluable = false;
+    // Check if a single set can answer all the measures and exprsWithMeasures
+    for (Iterator<UnionCandidate> i = ucSet.iterator(); i.hasNext(); ) {
+      UnionCandidate uc = i.next();
+      for (QueriedPhraseContext msr : msrs) {
+        evaluable = isMeasureAnswerableForCandidates(msr, uc.getChildCandidates(), cubeql) ? true : false;
+        if (!evaluable) {
+          break;
+        }
       }
-      set.setStartTime(Collections.min(startDates));
-      set.setEndTime(Collections.max(endDates));
-  }
-
-  private class CandidateSets {
-    @Getter
-    Set<Candidate> candidates ;
-    @Getter
-    @Setter
-    Date startTime;
-    @Getter
-    @Setter
-    Date endTime;
-    public CandidateSets(Set<Candidate> candidates ) {
-      this.candidates = candidates;
-    }
-  }
-
-
-  static Set<Set<CandidateFact>> findMeasureCoveringSets(Set<CandidateSets> rangeCoveringSets,
-                                                          Set<QueriedPhraseContext> msrs,
-                                                          CubeQueryContext cubeql) throws LensException {
-    Set<CandidateSets> candSets = new HashSet<>();
-    //List<CandidateFact> cfacts = new ArrayList<>(cfactsPassed);
-    for (Iterator<CandidateSets> i = rangeCoveringSets.iterator(); i.hasNext();) {
-      CandidateSets candSet = i.next();
-      if (CandidateUtil.allEvaluableInSet(candSet.getCandidates(), msrs, cubeql)) {
-        // Set is answerable
-        candSets.add(candSet);
-        i.remove();
-      } else {
+      if (evaluable) {
+        // single set can answer all the measures as an UnionCandidate
+        List<UnionCandidate> one = new ArrayList<>();
+        one.add(uc);
+        msrCoveringSets.add(one);
         i.remove();
       }
     }
     // Sets that contain all measures or no measures are removed from iteration.
     // find other facts
-    for (Iterator<CandidateSets> i = rangeCoveringSets.iterator(); i.hasNext();) {
-      CandidateSets candSet = i.next();
+    for (Iterator<UnionCandidate> i = ucSet.iterator(); i.hasNext(); ) {
+      UnionCandidate uc = i.next();
       i.remove();
       // find the remaining measures in other facts
       if (i.hasNext()) {
         Set<QueriedPhraseContext> remainingMsrs = new HashSet<>(msrs);
-        Set<QueriedPhraseContext> coveredMsrs  = CandidateUtil.coveredMeasures(candSet, msrs, cubeql);
+        Set<QueriedPhraseContext> coveredMsrs = CandidateUtil.coveredMeasures(uc.getChildCandidates(), msrs, cubeql);
         remainingMsrs.removeAll(coveredMsrs);
 
-        Set<Set<CandidateFact>> coveringSets = findMeasureCoveringSets(rangeCoveringSets, remainingMsrs, cubeql);
+        List<List<UnionCandidate>> coveringSets = resolveJoinCandidates(ucSet, remainingMsrs, cubeql);
         if (!coveringSets.isEmpty()) {
-          //for (Set<CandidateFact> set : coveringSets) {
-            cfactset.add(candSet);
-         // }
+          for (List<UnionCandidate> candSet : coveringSets) {
+            candSet.add(uc);
+            msrCoveringSets.add(candSet);
+          }
         } else {
           log.info("Couldnt find any set containing remaining measures:{} {} in {}", remainingMsrs,
-              rangeCoveringSets);
+              ucSet);
         }
       }
     }
-    log.info("Covering set {} for measures {} with factsPassed {}", cfactset, msrs, rangeCoveringSets);
-    return cfactset;
+    log.info("Covering set {} for measures {} with factsPassed {}", msrCoveringSets, msrs, ucSet);
+    return msrCoveringSets;
   }
 }

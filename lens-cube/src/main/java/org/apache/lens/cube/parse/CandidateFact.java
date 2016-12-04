@@ -260,7 +260,7 @@ public class CandidateFact implements CandidateTable, QueryAST {
   }
 
   @Override
-  public String getStorageTable() {
+  public String getStorageName() {
     return null;
   }
 
