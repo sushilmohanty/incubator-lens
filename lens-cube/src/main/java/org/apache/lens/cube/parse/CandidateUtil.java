@@ -14,6 +14,11 @@ import org.apache.lens.server.api.error.LensException;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 
+import com.google.common.collect.BoundType;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
+
 /**
  * Placeholder for Util methods that will be required for {@link Candidate}
  */
@@ -70,49 +75,6 @@ public class CandidateUtil {
     return timePartDimensions;
   }
 
-  /*
-  static boolean checkForFactColumnExistsAndValidForRange(Set<CandidateFact> candidates,
-                                                          Collection<QueriedPhraseContext> colSet,
-                                                          CubeQueryContext cubeql) throws LensException {
-    if (colSet == null || colSet.isEmpty()) {
-      return true;
-    }
-    for (CandidateFact cfact : candidates) {
-      for (QueriedPhraseContext qur : colSet) {
-        if (!qur.isEvaluable(cubeql, cfact)) {
-        return false;
-        }
-      }
-    }
-    return true;
-  }
-*/
-  
-  static boolean allEvaluableInSet(Set<Candidate> candidates, Collection<QueriedPhraseContext> colSet,
-                              CubeQueryContext cubeql) throws LensException {
-
-    for (Candidate cand : candidates) {
-      if (!allEvaluableInSingleCandidate(cand, colSet, cubeql)) {
-          return false;
-      }
-      }
-    return true;
-  }
-
-
-  static boolean allEvaluableInSingleCandidate(Candidate cand, Collection<QueriedPhraseContext> colSet,
-                                               CubeQueryContext cubeql) throws LensException {
-      if (colSet == null || colSet.isEmpty()) {
-        return true;
-      }
-        for (QueriedPhraseContext qur : colSet) {
-          if (!qur.isEvaluable(cubeql, (StorageCandidate) cand)) {
-            return true;
-          }
-        }
-      return false;
-  }
-
   /**
    * Copy Query AST from sourceAst to targetAst
    *
@@ -131,41 +93,13 @@ public class CandidateUtil {
     }
   }
 
-  public static Set<StorageCandidate> getStorageCandidates(Candidate candidate) {
+  public static Set<StorageCandidate> getStorageCandidates(final Candidate candidate) {
+    return getStorageCandidates(new HashSet<Candidate>(1){{add(candidate);}});
+  }
+
+  public static Set<StorageCandidate> getStorageCandidates(Set<Candidate> candidates){
     //TODO union : add implementation
     return null;
-  }
-
-  public static boolean checkForFactColumnExistsAndValidForRange(Collection<Candidate> candSet,
-                                                                  Collection<QueriedPhraseContext> colSet,
-                                                                  CubeQueryContext cubeql) throws LensException {
-    if (colSet == null || colSet.isEmpty()) {
-      return true;
-    }
-    boolean colExists = false;
-    for (QueriedPhraseContext qur : colSet) {
-      for (Candidate c : candSet) {
-        if (!qur.isEvaluable(cubeql, (StorageCandidate) c)) {
-          break;
-        }
-      }
-    }
-    return true;
-  }
-
-
-
-  public static boolean allEvaluable(StorageCandidate sc, Collection<QueriedPhraseContext> colSet,
-                              CubeQueryContext cubeql) throws LensException {
-    if (colSet == null || colSet.isEmpty()) {
-      return true;
-    }
-    for (QueriedPhraseContext qur : colSet) {
-      if (!qur.isEvaluable(cubeql, sc)) {
-        return false;
-      }
-    }
-    return true;
   }
 
   public static Set<QueriedPhraseContext> coveredMeasures(List<Candidate> candSet, Collection<QueriedPhraseContext> msrs,
@@ -180,7 +114,7 @@ public class CandidateUtil {
     }
     return coveringSet;
   }
-  
+
   /**
    * Returns true is the Candidates cover the entire time range.
    * @param candidates
@@ -204,4 +138,18 @@ public class CandidateUtil {
     return cols;
   }
 
+  /**
+   * Filters Candidates that contain the filterCandidate
+   *
+   * @param candidates
+   * @param filterCandidate
+   */
+  public static void filterCandidates(Collection<Candidate> candidates, Candidate filterCandidate) {
+    Iterator<Candidate> itr = candidates.iterator();
+    while (itr.hasNext()) {
+      if(itr.next().contains(filterCandidate)) {
+        itr.remove();
+      }
+    }
+  }
 }

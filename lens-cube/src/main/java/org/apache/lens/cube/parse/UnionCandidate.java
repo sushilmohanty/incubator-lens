@@ -80,6 +80,24 @@ public class UnionCandidate implements Candidate {
     return 0;
   }
 
+  @Override
+  public String getAlias() {
+    return null;
+  }
+
+  @Override
+  public boolean contains(Candidate candidate) {
+    if (this.equals(candidate)) {
+      return true;
+    }
+
+    for (Candidate child : childCandidates) {
+      if(!child.contains((candidate)))
+        return false;
+    }
+    return true;
+  }
+
   /**
    * TODO union : break the timerange into candidate specific time ranges and call evaluateCompleteness() for them.
    * TODO union : If any of the candidates returns false, this method should return false.
@@ -87,7 +105,7 @@ public class UnionCandidate implements Candidate {
    * @return
    */
   @Override
-  public boolean evaluateCompleteness(TimeRange timeRange) {
+  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) {
     return false;
   }
 

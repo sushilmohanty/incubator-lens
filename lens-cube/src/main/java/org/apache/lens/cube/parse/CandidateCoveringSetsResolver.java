@@ -12,9 +12,7 @@ import java.util.*;
 @Slf4j
 public class CandidateCoveringSetsResolver implements ContextRewriter {
 
-  private List<StorageCandidate> storageCandidates = new ArrayList<>();
   private List<UnionCandidate> unionCandidates = new ArrayList<>();
-  private List<JoinCandidate> joinCandidates = new ArrayList<>();
   private List<Candidate> finalCandidates = new ArrayList<>();
 
   public CandidateCoveringSetsResolver(Configuration conf) {
@@ -36,25 +34,24 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
 
     List<TimeRange> ranges = cubeql.getTimeRanges();
     // considering single time range
-    for (TimeRange range : ranges) {
-      resolveRangeCoveringFactSet(cubeql, range, queriedMsrs);
-      List<List<UnionCandidate>> measureCoveringSets = resolveJoinCandidates(unionCandidates, queriedMsrs, cubeql);
-      updateFinalCandidates(measureCoveringSets);
-      log.info("Covering candidate sets :{}", finalCandidates);
+    TimeRange range = ranges.iterator().next();
+    resolveRangeCoveringFactSet(cubeql, range, queriedMsrs);
+    List<List<UnionCandidate>> measureCoveringSets = resolveJoinCandidates(unionCandidates, queriedMsrs, cubeql);
+    updateFinalCandidates(measureCoveringSets);
+    log.info("Covering candidate sets :{}", finalCandidates);
 
-      String msrString = CandidateUtil.getColumns(queriedMsrs).toString();
-      if (finalCandidates.isEmpty()) {
-        throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
-      }
-      // update final candidate sets
-      cubeql.getCandidateSet().clear();
-      cubeql.getCandidateSet().addAll(finalCandidates);
-      // TODO : we might need to prune if we maintian two data structures in CubeQueryContext.
-      //cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCause.columnNotFound(getColumns(queriedMsrs)));
+    String msrString = CandidateUtil.getColumns(queriedMsrs).toString();
+    if (finalCandidates.isEmpty()) {
+      throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
+    }
+    // update final candidate sets
+    cubeql.getCandidateSet().clear();
+    cubeql.getCandidateSet().addAll(finalCandidates);
+    // TODO : we might need to prune if we maintian two data structures in CubeQueryContext.
+    //cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCause.columnNotFound(getColumns(queriedMsrs)));
 
-      if (cubeql.getCandidateFacts().size() == 0) {
-        throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
-      }
+    if (cubeql.getCandidateFacts().size() == 0) {
+      throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
     }
   }
 

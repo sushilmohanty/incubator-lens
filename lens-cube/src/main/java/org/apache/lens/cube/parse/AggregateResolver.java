@@ -72,8 +72,9 @@ class AggregateResolver implements ContextRewriter {
       || hasMeasures(cubeql, cubeql.getWhereAST()) || hasMeasures(cubeql, cubeql.getGroupByAST())
       || hasMeasures(cubeql, cubeql.getOrderByAST())) {
 
-      //TODO union : Change the logic to consume List<Candidate> : List<StorageCandidate>
-      //TODO union : assert List<Candidate> has only StorageCandidate s
+      //TODO union : Change the logic to consume Set<Candidate>  (where each Candidate will be a StorageCandidate at this stage of query resolution)
+      //TODO union : assert Set<Candidate> has only StorageCandidate s
+      //TODO union : Note : Pending : cube segmentation design may change the above assumption and Set<Candidate> can contain and mix of StorageCandidate and UnionSegmentCandidate. This step can then ignore UnionSegmentCandidate
       Iterator<CandidateFact> factItr = cubeql.getCandidateFacts().iterator();
       while (factItr.hasNext()) {
         CandidateFact candidate = factItr.next();

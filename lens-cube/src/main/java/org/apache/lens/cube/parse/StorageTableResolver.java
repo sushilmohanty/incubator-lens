@@ -246,16 +246,29 @@ class StorageTableResolver implements ContextRewriter {
   }
 
   // Resolves all the storage table names, which are valid for each updatePeriod
+  /**
+   * 1. Prunes Storages that have no Update periods
+   * 2. Prunes Storages that are not supported on this driver {@link #isStorageSupported(String)}
+   * 3. Prunes Storages based on "lens.cube.query.valid.fact.${facttable}.storagetable" property value.
+   * {@link #getStorageTableName(CubeFactTable, String, List)}
+   * 4. Prunes Storages based on "lens.cube.query.valid.fact.${facttable}.storage.${storagename}.updateperiods"
+   * 5. Prunes Storages based on "lens.cube.query.max.interval" property
+   */
+
+
   private void resolveFactStorageTableNames(CubeQueryContext cubeql) throws LensException {
     Iterator<CandidateFact> i = cubeql.getCandidateFacts().iterator();
     skipStorageCausesPerFact = new HashMap<>();
     while (i.hasNext()) {
       CubeFactTable fact = i.next().fact;
+
+      //TODO  this will be moved to CandidateTableResolver
       if (fact.getUpdatePeriods().isEmpty()) {
         cubeql.addFactPruningMsgs(fact, new CandidateTablePruneCause(CandidateTablePruneCode.MISSING_STORAGES));
         i.remove();
         continue;
       }
+
       Map<UpdatePeriod, Set<String>> storageTableMap = new TreeMap<UpdatePeriod, Set<String>>();
       validStorageMap.put(fact, storageTableMap);
       String str = conf.get(CubeQueryConfUtil.getValidStorageTablesKey(fact.getName()));
@@ -652,6 +665,7 @@ class StorageTableResolver implements ContextRewriter {
     nonExistingPartitions.put(name, nonExistingParts);
   }
 
+
   private Set<FactPartition> getPartitions(CubeFactTable fact, TimeRange range,
     Map<String, SkipStorageCause> skipStorageCauses,
     PartitionRangesForPartitionColumns missingPartitions) throws LensException {
@@ -677,6 +691,42 @@ class StorageTableResolver implements ContextRewriter {
     }
   }
 
+  /**
+   * Gets FactPartitions for the given fact using the following logic
+   *
+   * 1. Find the max update interval that will be used for the query. Lets assume time range is 15 Sep to 15 Dec and the
+   * fact has two storage with update periods as MONTHLY,DAILY,HOURLY. In this case the data for
+   * [15 sep - 1 oct)U[1 Dec - 15 Dec) will be answered by DAILY partitions and [1 oct - 1Dec) will be answered by
+   * MONTHLY partitions. The max interavl for this query will be MONTHLY.
+   *
+   * 2.Prune Storgaes that do not fall in the queries time range.
+   * {@link CubeMetastoreClient#isStorageTableCandidateForRange(String, Date, Date)}
+   *
+   * 3. Iterate over max interavl . In out case it will give two months Oct and Nov. Find partitions for these two months.
+   * Check validity of FactPartitions for Oct and Nov via {@link #updateFactPartitionStorageTablesFrom(CubeFactTable, FactPartition, Set)}.
+   * If the partition is missing, try getting partitions for the time range form other update periods (DAILY,HOURLY).This
+   * is achieved by calling getPartitions() recursively but passing only 2 update periods (DAILY,HOURLY)
+   *
+   * 4.If the monthly partitions are found, check for lookahead partitions and call getPartitions recursively for the
+   * remaining time intervals i.e, [15 sep - 1 oct) and [1 Dec - 15 Dec)
+   *
+   *
+   *
+   * @param fact
+   * @param fromDate
+   * @param toDate
+   * @param partCol : partition column
+   * @param partitions : data structure to hold the partitions found by this method
+   * @param updatePeriods : input set of update periods which are used for finding partitions.
+   * @param addNonExistingParts
+   * @param failOnPartialData : if user allows querying partial data, then we should not fail the flow if some
+   *                          partitions are missing
+   * @param skipStorageCauses : data structure to hold  skipped stoarges and reason for skipping
+   * @param missingPartitions : data structure to hold missing partitions. This is populated only when
+   *                          addNonExistingParts = true
+   * @return
+   * @throws Exception
+   */
   private boolean getPartitions(CubeFactTable fact, Date fromDate, Date toDate, String partCol,
     Set<FactPartition> partitions, TreeSet<UpdatePeriod> updatePeriods,
     boolean addNonExistingParts, boolean failOnPartialData, Map<String, SkipStorageCause> skipStorageCauses,

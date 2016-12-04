@@ -61,6 +61,19 @@ public class JoinCandidate implements Candidate {
     return 0;
   }
 
+  @Override
+  public String getAlias() {
+    return null;
+  }
+
+  @Override
+  public boolean contains(Candidate candidate) {
+    if (this.equals(candidate)) {
+      return true;
+    }
+    else return childCandidate1.contains(candidate) && childCandidate2.contains(candidate);
+  }
+
 
   /**
    * TODO union : call evaluateCompleteness for child candidates and retrun false if either call returns false.
@@ -68,7 +81,7 @@ public class JoinCandidate implements Candidate {
    * @return
    */
   @Override
-  public boolean evaluateCompleteness(TimeRange timeRange) {
+  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) {
     return false;
   }
 

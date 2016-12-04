@@ -102,8 +102,18 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   // Mapping of a qualified column name to its table alias
   private final Map<String, String> colToTableAlias = new HashMap<>();
 
+  //TODO union: remove candidateFactSets and use
   @Getter
   private final Set<Set<CandidateFact>> candidateFactSets = new HashSet<>();
+
+  /**
+   * This is the set of working Candidates that gets updated during different phases of
+   * query resolution. Each {@link ContextRewriter} may add/remove/update Candiadtes in
+   * this working set and from the final set of Candidates single {@link #pickedCandidate}
+   * is chosen.
+   */
+  @Getter
+  private final Set<Candidate> candidates = new HashSet<>();
 
   @Getter
   private final List<Candidate> candidateSet = new ArrayList<>();
