@@ -13,48 +13,48 @@ import org.apache.lens.cube.metadata.TimeRange;
  */
 public class JoinCandidate implements Candidate {
 
-   /**
-    * Child candidates that will participate in the join
-    */
-   private Candidate childCandidate1;
-   private Candidate childCandidate2;
+  /**
+   * Child candidates that will participate in the join
+   */
+  private Candidate childCandidate1;
+  private Candidate childCandidate2;
 
-   public JoinCandidate(Candidate childCandidate1, Candidate childCandidate2) {
-      this.childCandidate1 = childCandidate1;
-      this.childCandidate2 = childCandidate2;
-   }
+  public JoinCandidate(Candidate childCandidate1, Candidate childCandidate2) {
+    this.childCandidate1 = childCandidate1;
+    this.childCandidate2 = childCandidate2;
+  }
 
-   private String getJoinCondition() {
-      return null;
-   }
+  private String getJoinCondition() {
+    return null;
+  }
 
 
-   @Override
-   public String toHQL() {
-      return null;
-   }
+  @Override
+  public String toHQL() {
+    return null;
+  }
 
-   @Override
-   public QueryAST getQueryAst() {
-      return null;
-   }
+  @Override
+  public QueryAST getQueryAst() {
+    return null;
+  }
 
-   @Override
-   public Collection<String> getColumns() {
-      return null;
-   }
+  @Override
+  public Collection<String> getColumns() {
+    return null;
+  }
 
-   @Override
-   public Date getStartTime() {
-      return childCandidate1.getStartTime().after(childCandidate2.getStartTime())
-          ? childCandidate1.getStartTime() : childCandidate2.getStartTime();
-   }
+  @Override
+  public Date getStartTime() {
+    return childCandidate1.getStartTime().after(childCandidate2.getStartTime())
+      ? childCandidate1.getStartTime() : childCandidate2.getStartTime();
+  }
 
-   @Override
-   public Date getEndTime() {
-      return childCandidate1.getEndTime().before(childCandidate2.getEndTime())
-          ? childCandidate1.getEndTime() : childCandidate2.getEndTime();
-   }
+  @Override
+  public Date getEndTime() {
+    return childCandidate1.getEndTime().before(childCandidate2.getEndTime())
+      ? childCandidate1.getEndTime() : childCandidate2.getEndTime();
+  }
 
   @Override
   public double getCost() {
@@ -70,8 +70,7 @@ public class JoinCandidate implements Candidate {
   public boolean contains(Candidate candidate) {
     if (this.equals(candidate)) {
       return true;
-    }
-    else return childCandidate1.contains(candidate) && childCandidate2.contains(candidate);
+    } else return childCandidate1.contains(candidate) && childCandidate2.contains(candidate);
   }
 
 

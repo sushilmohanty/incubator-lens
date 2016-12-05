@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import lombok.Getter;
+
 import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
 
@@ -92,7 +93,7 @@ public class UnionCandidate implements Candidate {
     }
 
     for (Candidate child : childCandidates) {
-      if(!child.contains((candidate)))
+      if (!child.contains((candidate)))
         return false;
     }
     return true;

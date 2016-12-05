@@ -112,7 +112,6 @@ public interface Candidate {
   // NO caller Set<String> getTimePartCols(CubeQueryContext query) throws LensException;
 
 
-
   //TODO add methods to update AST in this candidate in this class of in CandidateUtil.
   //void updateFromString(CubeQueryContext query) throws LensException;
 
