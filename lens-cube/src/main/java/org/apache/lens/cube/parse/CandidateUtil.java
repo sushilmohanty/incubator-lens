@@ -2,6 +2,10 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
+import com.google.common.collect.BoundType;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.TimeRange;
@@ -29,6 +33,7 @@ public class CandidateUtil {
    * @throws LensException
    */
   public static boolean isMeasureExpressionAnswerable(ASTNode exprNode, Candidate candidate, CubeQueryContext context)
+
     throws LensException {
     return candidate.getColumns().containsAll(HQLParser.getColsInExpr(
       context.getAliasForTableName(context.getCube()), exprNode));
@@ -40,9 +45,14 @@ public class CandidateUtil {
    * @param timeRange
    * @return
    */
-  public boolean isValidForTimeRange(Candidate candidate, TimeRange timeRange) {
+  public static boolean isValidForTimeRange(Candidate candidate, TimeRange timeRange) {
     return (!timeRange.getFromDate().before(candidate.getStartTime()))
-      && (!timeRange.getToDate().after(candidate.getEndTime()));
+        && (!timeRange.getToDate().after(candidate.getEndTime()));
+  }
+
+  public static boolean isPartiallyValidForTimeRange(Candidate cand, TimeRange timeRange) {
+    return  cand.getEndTime().after(timeRange.getToDate())
+        || cand.getStartTime().before(timeRange.getFromDate());
   }
 
   /**
@@ -55,7 +65,7 @@ public class CandidateUtil {
    * @throws LensException
    */
   public Set<String> getTimePartitionCols(StorageCandidate candidate, CubeMetastoreClient metastoreClient)
-    throws LensException {
+      throws LensException {
     Set<String> cubeTimeDimensions = candidate.getCube().getTimedDimensions();
     Set<String> timePartDimensions = new HashSet<String>();
     String singleStorageTable = candidate.getStorageName();
@@ -63,7 +73,7 @@ public class CandidateUtil {
     partitionKeys = metastoreClient.getTable(singleStorageTable).getPartitionKeys();
     for (FieldSchema fs : partitionKeys) {
       if (cubeTimeDimensions.contains(CubeQueryContext.getTimeDimOfPartitionColumn(candidate.getCube(),
-        fs.getName()))) {
+          fs.getName()))) {
         timePartDimensions.add(fs.getName());
       }
     }
@@ -97,6 +107,19 @@ public class CandidateUtil {
     return null;
   }
 
+  public static Set<QueriedPhraseContext> coveredMeasures(List<Candidate> candSet, Collection<QueriedPhraseContext> msrs,
+                                                   CubeQueryContext cubeql) throws LensException {
+    Set<QueriedPhraseContext> coveringSet = new HashSet<>();
+    for (QueriedPhraseContext msr : msrs) {
+      for (Candidate cand : candSet) {
+        if (msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
+          coveringSet.add(msr);
+        }
+      }
+    }
+    return coveringSet;
+  }
+
   /**
    * Returns true is the Candidates cover the entire time range.
    * @param candidates
@@ -110,6 +133,14 @@ public class CandidateUtil {
       set.add(Range.range(candidate.getStartTime(), BoundType.CLOSED, candidate.getEndTime(), BoundType.OPEN));
     }
     return set.encloses(Range.range(startTime, BoundType.CLOSED, endTime, BoundType.OPEN));
+  }
+
+  public static Set<String> getColumns(Collection<QueriedPhraseContext> queriedPhraseContexts) {
+    Set<String> cols = new HashSet<>();
+    for (QueriedPhraseContext qur : queriedPhraseContexts) {
+      cols.addAll(qur.getColumns());
+    }
+    return cols;
   }
 
   /**

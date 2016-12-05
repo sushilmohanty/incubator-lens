@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+import lombok.Getter;
 import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
 
@@ -21,7 +22,12 @@ public class UnionCandidate implements Candidate {
   /**
    * List of child candidates that will be union-ed
    */
+  @Getter
   private List<Candidate> childCandidates;
+
+  public UnionCandidate(List<Candidate> childCandidates) {
+    this.childCandidates = childCandidates;
+  }
 
   @Override
   public String toHQL() {

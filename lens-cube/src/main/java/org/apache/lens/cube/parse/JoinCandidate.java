@@ -2,6 +2,7 @@ package org.apache.lens.cube.parse;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lens.cube.metadata.FactPartition;
@@ -12,11 +13,16 @@ import org.apache.lens.cube.metadata.TimeRange;
  */
 public class JoinCandidate implements Candidate {
 
-  /**
-   * Child candidates that will participate in the join
-   */
+   /**
+    * Child candidates that will participate in the join
+    */
    private Candidate childCandidate1;
    private Candidate childCandidate2;
+
+   public JoinCandidate(Candidate childCandidate1, Candidate childCandidate2) {
+      this.childCandidate1 = childCandidate1;
+      this.childCandidate2 = childCandidate2;
+   }
 
    private String getJoinCondition() {
       return null;
@@ -41,13 +47,13 @@ public class JoinCandidate implements Candidate {
    @Override
    public Date getStartTime() {
       return childCandidate1.getStartTime().after(childCandidate2.getStartTime())
-        ? childCandidate1.getStartTime() : childCandidate2.getStartTime();
+          ? childCandidate1.getStartTime() : childCandidate2.getStartTime();
    }
 
    @Override
    public Date getEndTime() {
-     return childCandidate1.getEndTime().before(childCandidate2.getEndTime())
-       ? childCandidate1.getEndTime() : childCandidate2.getEndTime();
+      return childCandidate1.getEndTime().before(childCandidate2.getEndTime())
+          ? childCandidate1.getEndTime() : childCandidate2.getEndTime();
    }
 
   @Override
@@ -88,6 +94,4 @@ public class JoinCandidate implements Candidate {
   public boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr) {
     return false;
   }
-
-
 }
