@@ -92,10 +92,10 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       // Assuming initial list of candidates populated are StorageCandidate
       if (cand instanceof StorageCandidate) {
         StorageCandidate sc = (StorageCandidate) cand;
-        if (sc.isValidForTimeRange(range)) {
+        if (CandidateUtil.isValidForTimeRange(sc, range)) {
           List<Candidate> one = new ArrayList<Candidate>(Arrays.asList(sc));
           unionCandidates.add(new UnionCandidate(one));
-        } else if (sc.isPartiallyValidForTimeRange(range)) {
+        } else if (CandidateUtil.isPartiallyValidForTimeRange(sc, range)) {
           allCandidatesPartiallyValid.add(sc);
         }
       } else {

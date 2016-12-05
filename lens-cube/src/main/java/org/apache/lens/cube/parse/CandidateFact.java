@@ -120,18 +120,6 @@ public class CandidateFact implements CandidateTable, QueryAST {
     return (!timeRange.getFromDate().before(fact.getStartTime())) && (!timeRange.getToDate().after(fact.getEndTime()));
   }
 
-  private boolean isValidBeforeTimeRange(TimeRange timeRange) {
-    return fact.getStartTime().before(timeRange.getFromDate());
-  }
-
-  private boolean isValidAfterTimeRange(TimeRange timeRange) {
-    return fact.getEndTime().after(timeRange.getToDate());
-  }
-
-  public boolean isPartiallyValidForTimeRange(TimeRange range) {
-    return  isValidAfterTimeRange(range) || isValidBeforeTimeRange(range);
-  }
-
   public void addToHaving(ASTNode ast) {
     if (getHavingAST() == null) {
       setHavingAST(new ASTNode(new CommonToken(TOK_HAVING, "TOK_HAVING")));

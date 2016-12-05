@@ -40,9 +40,9 @@ public class StorageCandidate implements Candidate,CandidateTable {
   private String storageName;
   private Map<Dimension, CandidateDim> dimensions;
 
-  public StorageCandidate(CubeFactTable fact,CubeInterface cube, String storageName ) {
-    this.fact = fact;
+  public StorageCandidate(CubeInterface cube, CubeFactTable fact,String storageName ) {
     this.cube = cube;
+    this.fact = fact;
     this.storageName = storageName;
   }
 
@@ -111,22 +111,6 @@ public class StorageCandidate implements Candidate,CandidateTable {
   @Override
   public Date getEndTime() {
     return fact.getEndTime();
-  }
-
-  public boolean isValidForTimeRange(TimeRange timeRange) {
-    return (!timeRange.getFromDate().before(fact.getStartTime())) && (!timeRange.getToDate().after(fact.getEndTime()));
-  }
-
-  private boolean isValidBeforeTimeRange(TimeRange timeRange) {
-    return fact.getStartTime().before(timeRange.getFromDate());
-  }
-
-  private boolean isValidAfterTimeRange(TimeRange timeRange) {
-    return fact.getEndTime().after(timeRange.getToDate());
-  }
-
-  public boolean isPartiallyValidForTimeRange(TimeRange range) {
-    return  isValidAfterTimeRange(range) || isValidBeforeTimeRange(range);
   }
 
   @Override

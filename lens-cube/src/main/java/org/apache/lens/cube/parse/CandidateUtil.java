@@ -45,9 +45,14 @@ public class CandidateUtil {
    * @param timeRange
    * @return
    */
-  public boolean isValidForTimeRange(Candidate candidate, TimeRange timeRange) {
+  public static boolean isValidForTimeRange(Candidate candidate, TimeRange timeRange) {
     return (!timeRange.getFromDate().before(candidate.getStartTime()))
         && (!timeRange.getToDate().after(candidate.getEndTime()));
+  }
+
+  public static boolean isPartiallyValidForTimeRange(Candidate cand, TimeRange timeRange) {
+    return  cand.getEndTime().after(timeRange.getToDate())
+        || cand.getStartTime().before(timeRange.getFromDate());
   }
 
   /**
@@ -125,7 +130,7 @@ public class CandidateUtil {
   public static boolean isTimeRangeCovered(Collection<Candidate> candidates, Date startTime, Date endTime) {
     RangeSet<Date> set = TreeRangeSet.create();
     for (Candidate candidate : candidates) {
-      set.add(Range.range(candidate.getStartTime(), BoundType.CLOSED, candidate.getEndTime(), BoundType.CLOSED));
+      set.add(Range.range(candidate.getStartTime(), BoundType.CLOSED, candidate.getEndTime(), BoundType.OPEN));
     }
     return set.encloses(Range.range(startTime, BoundType.CLOSED, endTime, BoundType.OPEN));
   }
