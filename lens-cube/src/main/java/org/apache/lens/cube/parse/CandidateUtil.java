@@ -9,6 +9,7 @@ import com.google.common.collect.TreeRangeSet;
 
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.MetastoreUtil;
+import org.apache.lens.cube.metadata.Storage;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
@@ -104,10 +105,6 @@ public class CandidateUtil {
     }});
   }
 
-  public static Set<StorageCandidate> getStorageCandidates(Set<Candidate> candidates) {
-    //TODO union : add implementation
-    return null;
-  }
 
   public static Set<QueriedPhraseContext> coveredMeasures(List<Candidate> candSet, Collection<QueriedPhraseContext> msrs,
     CubeQueryContext cubeql) throws LensException {
@@ -156,6 +153,29 @@ public class CandidateUtil {
     while (itr.hasNext()) {
       if (itr.next().contains(filterCandidate)) {
         itr.remove();
+      }
+    }
+  }
+
+  /**
+   * Gets all the Storage Candidates that participate in the collection of passed candidates
+   * @param candidates
+   * @return
+   */
+  public static Set<StorageCandidate> getStorageCandidates(Collection<Candidate> candidates) {
+    Set<StorageCandidate> storageCandidateSet = new HashSet<>();
+    getStorageCandidates(candidates, storageCandidateSet);
+    return storageCandidateSet;
+  }
+
+  private static void getStorageCandidates(Collection<Candidate> candidates,
+    Set<StorageCandidate> storageCandidateSet) {
+    for (Candidate candidate : candidates) {
+      if (candidate.getChildren() == null) {
+        //Expecting this to be a StorageCandidate as it has no children.
+        storageCandidateSet.add((StorageCandidate)candidate);
+      } else {
+        getStorageCandidates(candidate.getChildren(), storageCandidateSet);
       }
     }
   }

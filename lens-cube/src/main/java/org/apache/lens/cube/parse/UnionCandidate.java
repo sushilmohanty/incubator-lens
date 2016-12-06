@@ -93,10 +93,15 @@ public class UnionCandidate implements Candidate {
     }
 
     for (Candidate child : childCandidates) {
-      if (!child.contains((candidate)))
-        return false;
+      if (child.contains((candidate)))
+        return true;
     }
-    return true;
+    return false;
+  }
+
+  @Override
+  public Collection<Candidate> getChildren() {
+    return childCandidates;
   }
 
   /**

@@ -40,7 +40,10 @@ public class StorageCandidate implements Candidate,CandidateTable {
   private String storageName;
   private Map<Dimension, CandidateDim> dimensions;
 
-  public StorageCandidate(CubeInterface cube, CubeFactTable fact,String storageName ) {
+  public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName) {
+    if ((cube == null) || (fact == null) || (storageName == null)) {
+      throw new IllegalArgumentException("Cube,fact and storageName should be non null");
+    }
     this.cube = cube;
     this.fact = fact;
     this.storageName = storageName;
@@ -130,6 +133,11 @@ public class StorageCandidate implements Candidate,CandidateTable {
   }
 
   @Override
+  public Collection<Candidate> getChildren() {
+    return null;
+  }
+
+  @Override
   public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) {
     return false;
   }
@@ -144,4 +152,25 @@ public class StorageCandidate implements Candidate,CandidateTable {
     return expr.isEvaluable(this);
   }
 
+  @Override
+  public boolean equals(Object obj) {
+    if (super.equals(obj)) {
+      return true;
+    }
+
+    if (obj == null || !(obj instanceof StorageCandidate)) {
+      return false;
+    }
+
+    StorageCandidate storageCandidateObj = (StorageCandidate) obj;
+    //Assuming that same instance of cube and fact will be used across StorageCandidate s and hence relying directly
+    //on == check for these.
+    return (this.cube == storageCandidateObj.cube && this.fact == storageCandidateObj.fact
+      && this.storageName.equals(storageCandidateObj.storageName));
+  }
+
+  @Override
+  public int hashCode() {
+    return this.cube.hashCode() + this.fact.hashCode() + this.storageName.hashCode();
+  }
 }
