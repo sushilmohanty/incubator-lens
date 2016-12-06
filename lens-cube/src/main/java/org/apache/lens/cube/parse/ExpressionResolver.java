@@ -654,7 +654,7 @@ class ExpressionResolver implements ContextRewriter {
           for (ExpressionContext ec : ecSet) {
             if (ec.getSrcTable().getName().equals(cubeql.getCube().getName())) {
               if (cubeql.getQueriedExprsWithMeasures().contains(expr)) {
-                for (Iterator<Candidate> sItr = cubeql.getCandidates().iterator(); sItr.hasNext();) {
+                for (Iterator<Candidate> sItr = cubeql.getCandidates().iterator(); sItr.hasNext(); ) {
                   Candidate cand = sItr.next();
                   if (!cand.isExpressionEvaluable(ec)) {
                     log.info("Not considering Candidate :{} as {} is not evaluable", cand, ec.exprCol.getName());
@@ -666,24 +666,21 @@ class ExpressionResolver implements ContextRewriter {
                 Set<StorageCandidate> storageCandidates = CandidateUtil.getStorageCandidates(cubeql.getCandidates());
                 for (StorageCandidate sc : storageCandidates) {
                   if (!sc.isExpressionEvaluable(ec)) {
-                    for (Iterator<Candidate> i = cubeql.getCandidates().iterator(); i.hasNext();) {
-                      Candidate cand = i.next();
-                      if (cand.contains(sc)) {
-                        log.info("Not considering Candidate :{} as expr :{} in storage :{} is not evaluable",
-                            cand, ec.exprCol.getName(), sc);
-                        cubeql.addFactPruningMsgs(sc.getFact(),
-                            CandidateTablePruneCause.expressionNotEvaluable(ec.exprCol.getName()));
-                        i.remove();
-                      }
-                    }
+                    Collection<Candidate> prunedCandidate =
+                        CandidateUtil.filterCandidates(cubeql.getCandidates(), sc);
+                    log.info("Not considering candidate(s) :{} as expr :{} in storage :{} is not evaluable",
+                        prunedCandidate, ec.exprCol.getName(), sc);
+                    cubeql.addFactPruningMsgs(sc.getFact(),
+                        CandidateTablePruneCause.expressionNotEvaluable(ec.exprCol.getName()));
                   }
                 }
               }
             }
           }
         }
-        cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCode.EXPRESSION_NOT_EVALUABLE);
       }
+      cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCode.EXPRESSION_NOT_EVALUABLE);
+    }
       // prune candidate dims without any valid expressions
       if (cubeql.getDimensions() != null && !cubeql.getDimensions().isEmpty()) {
         for (Dimension dim : cubeql.getDimensions()) {
