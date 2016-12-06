@@ -666,13 +666,17 @@ class ExpressionResolver implements ContextRewriter {
                   }
                 }
               } else {
-                for (Iterator<CandidateFact> i = cubeql.getCandidateFacts().iterator(); i.hasNext();) {
-                  CandidateFact cfact = i.next();
-                  if (!ec.isEvaluable(cfact)) {
-                    log.info("Not considering fact table:{} as {} is not evaluable", cfact, ec.exprCol.getName());
-                    cubeql.addFactPruningMsgs(cfact.fact,
-                      CandidateTablePruneCause.expressionNotEvaluable(ec.exprCol.getName()));
-                    i.remove();
+                for (Iterator<Candidate> i = cubeql.getCandidates().iterator(); i.hasNext();) {
+                  Candidate cand = i.next();
+                  Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(cand);
+                  for (StorageCandidate sc : scSet) {
+                    if (!sc.isExpressionEvaluable(ec)) {
+                      i.remove();
+                      log.info("Not considering Candidate as:{} as {} in {} is not evaluable",
+                          cand, ec.exprCol.getName(), sc);
+                      cubeql.addFactPruningMsgs(sc.getFact(),
+                          CandidateTablePruneCause.expressionNotEvaluable(ec.exprCol.getName()));
+                    }
                   }
                 }
               }
