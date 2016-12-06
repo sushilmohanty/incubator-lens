@@ -123,13 +123,12 @@ public class UnionCandidate implements Candidate {
 
   @Override
   public boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr) {
-    boolean isEvaluable = true;
     for (Candidate cand : childCandidates) {
       if (!cand.isExpressionEvaluable(expr)) {
-        isEvaluable = false;
+        return false;
       }
     }
-    return isEvaluable;
+    return true;
   }
 
   @Override

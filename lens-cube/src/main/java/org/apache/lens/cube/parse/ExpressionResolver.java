@@ -670,15 +670,16 @@ class ExpressionResolver implements ContextRewriter {
                         CandidateUtil.filterCandidates(cubeql.getCandidates(), sc);
                     log.info("Not considering candidate(s) :{} as expr :{} in storage :{} is not evaluable",
                         prunedCandidate, ec.exprCol.getName(), sc);
+                    //TODO union: Move this to storage skip cause
                     cubeql.addFactPruningMsgs(sc.getFact(),
                         CandidateTablePruneCause.expressionNotEvaluable(ec.exprCol.getName()));
                   }
                 }
-              }
             }
           }
         }
       }
+      //TODO union: Not required any more
       cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCode.EXPRESSION_NOT_EVALUABLE);
     }
       // prune candidate dims without any valid expressions
