@@ -84,19 +84,19 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
 
   private void resolveRangeCoveringFactSet(CubeQueryContext cubeql, TimeRange range,
                                            Set<QueriedPhraseContext> queriedMsrs) throws LensException {
-    // All facts
+    // All Candidates
     List<Candidate> allCandidates = new ArrayList<Candidate>(cubeql.getCandidates());
-    // Partially valid facts
+    // Partially valid candidates
     List<Candidate> allCandidatesPartiallyValid = new ArrayList<>();
     for (Candidate cand : allCandidates) {
       // Assuming initial list of candidates populated are StorageCandidate
       if (cand instanceof StorageCandidate) {
         StorageCandidate sc = (StorageCandidate) cand;
         if (CandidateUtil.isValidForTimeRange(sc, range)) {
-          List<Candidate> one = new ArrayList<Candidate>(Arrays.asList(sc));
+          List<Candidate> one = new ArrayList<Candidate>(Arrays.asList(CandidateUtil.cloneStorageCandidate(sc)));
           unionCandidates.add(new UnionCandidate(one));
         } else if (CandidateUtil.isPartiallyValidForTimeRange(sc, range)) {
-          allCandidatesPartiallyValid.add(sc);
+          allCandidatesPartiallyValid.add(CandidateUtil.cloneStorageCandidate(sc));
         }
       } else {
         throw new LensException("Not a StorageCandidate!!");
