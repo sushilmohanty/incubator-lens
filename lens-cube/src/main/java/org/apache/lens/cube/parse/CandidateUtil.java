@@ -147,14 +147,18 @@ public class CandidateUtil {
    *
    * @param candidates
    * @param filterCandidate
+   * @return pruned Candidates
    */
-  public static void filterCandidates(Collection<Candidate> candidates, Candidate filterCandidate) {
+  public static Collection<Candidate> filterCandidates(Collection<Candidate> candidates, Candidate filterCandidate) {
+    List<Candidate> prunedCandidates = new ArrayList<>();
     Iterator<Candidate> itr = candidates.iterator();
     while (itr.hasNext()) {
       if (itr.next().contains(filterCandidate)) {
+        prunedCandidates.add(itr.next());
         itr.remove();
       }
     }
+    return prunedCandidates;
   }
 
   /**
