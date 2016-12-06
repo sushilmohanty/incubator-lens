@@ -91,6 +91,7 @@ public class JoinCandidate implements Candidate {
 
   @Override
   public boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr) {
-    return false;
+    return childCandidate1.isExpressionEvaluable(expr)
+        || childCandidate1.isExpressionEvaluable(expr);
   }
 }

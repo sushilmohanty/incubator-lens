@@ -29,7 +29,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     }
     // if no measures are queried, add all StorageCandidates individually as single covering sets
     if (queriedMsrs.isEmpty()) {
-      finalCandidates.addAll(cubeql.getCandidateSet());
+      finalCandidates.addAll(cubeql.getCandidates());
     }
 
     List<TimeRange> ranges = cubeql.getTimeRanges();
@@ -45,8 +45,8 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
     }
     // update final candidate sets
-    cubeql.getCandidateSet().clear();
-    cubeql.getCandidateSet().addAll(finalCandidates);
+    cubeql.getCandidates().clear();
+    cubeql.getCandidates().addAll(finalCandidates);
     // TODO : we might need to prune if we maintian two data structures in CubeQueryContext.
     //cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCause.columnNotFound(getColumns(queriedMsrs)));
 
@@ -85,7 +85,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   private void resolveRangeCoveringFactSet(CubeQueryContext cubeql, TimeRange range,
                                            Set<QueriedPhraseContext> queriedMsrs) throws LensException {
     // All facts
-    List<Candidate> allCandidates = cubeql.getCandidateSet();
+    List<Candidate> allCandidates = new ArrayList<Candidate>(cubeql.getCandidates());
     // Partially valid facts
     List<Candidate> allCandidatesPartiallyValid = new ArrayList<>();
     for (Candidate cand : allCandidates) {

@@ -647,26 +647,21 @@ class ExpressionResolver implements ContextRewriter {
       // prune invalid expressions
       cubeql.getExprCtx().pruneExpressions();
       // prune candidate facts without any valid expressions
-      if (cubeql.getCube() != null && !cubeql.getCandidateFacts().isEmpty()) {
+      if (cubeql.getCube() != null && !cubeql.getCandidates().isEmpty()) {
         for (Map.Entry<String, Set<ExpressionContext>> ecEntry : exprCtx.allExprsQueried.entrySet()) {
           String expr = ecEntry.getKey();
           Set<ExpressionContext> ecSet = ecEntry.getValue();
           for (ExpressionContext ec : ecSet) {
             if (ec.getSrcTable().getName().equals(cubeql.getCube().getName())) {
               if (cubeql.getQueriedExprsWithMeasures().contains(expr)) {
-                for (Iterator<Set<CandidateFact>> sItr = cubeql.getCandidateFactSets().iterator(); sItr.hasNext();) {
-                  Set<CandidateFact> factSet = sItr.next();
+                for (Iterator<Candidate> sItr = cubeql.getCandidates().iterator(); sItr.hasNext();) {
+                  Candidate cand = sItr.next();
                   boolean evaluableInSet = false;
-                  for (CandidateFact cfact : factSet) {
-                    if (ec.isEvaluable(cfact)) {
-                      //TODO union: in case of join , one of the candidates should be able to answer the mesaure expression
-                      //TODO union: In case of union, all the candidates should answer the expression
-                      //TODO union : add isExpresionEvaluable() to Candidate
-                      evaluableInSet = true;
-                    }
+                  if (cand.isExpressionEvaluable(ec)) {
+                    evaluableInSet = true;
                   }
                   if (!evaluableInSet) {
-                    log.info("Not considering fact table set:{} as {} is not evaluable", factSet, ec.exprCol.getName());
+                    log.info("Not considering Candidate :{} as {} is not evaluable", cand, ec.exprCol.getName());
                     sItr.remove();
                   }
                 }

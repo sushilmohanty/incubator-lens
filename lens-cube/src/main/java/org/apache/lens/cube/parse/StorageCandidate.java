@@ -141,7 +141,7 @@ public class StorageCandidate implements Candidate,CandidateTable {
 
   @Override
   public boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr) {
-    return false;
+    return expr.isEvaluable(this);
   }
 
 }
