@@ -20,6 +20,7 @@ public class UnionCandidate implements Candidate {
    */
   Date startTime = null;
   Date endTime = null;
+  String toStr;
   /**
    * List of child candidates that will be union-ed
    */
@@ -131,4 +132,23 @@ public class UnionCandidate implements Candidate {
     return isEvaluable;
   }
 
+  @Override
+  public String toString() {
+    if (this.toStr == null) {
+      this.toStr = getToString();
+    }
+    return this.toStr;
+  }
+
+  private String getToString() {
+    StringBuilder builder = new StringBuilder(10 * childCandidates.size());
+    builder.append("UNION[");
+    for (Candidate candidate : childCandidates) {
+      builder.append(candidate.toString());
+      builder.append(", ");
+    }
+    builder.delete(builder.length()-2, builder.length());
+    builder.append("]");
+    return builder.toString();
+  }
 }

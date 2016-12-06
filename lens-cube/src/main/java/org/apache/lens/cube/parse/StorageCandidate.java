@@ -39,6 +39,7 @@ public class StorageCandidate implements Candidate,CandidateTable {
   @Getter
   private String storageName;
   private Map<Dimension, CandidateDim> dimensions;
+  private String name;
 
   public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName) {
     if ((cube == null) || (fact == null) || (storageName == null)) {
@@ -47,6 +48,8 @@ public class StorageCandidate implements Candidate,CandidateTable {
     this.cube = cube;
     this.fact = fact;
     this.storageName = storageName;
+
+    this.name = cube.getName() + "." + fact.getName() + "." + storageName;
   }
 
   @Getter
@@ -92,7 +95,7 @@ public class StorageCandidate implements Candidate,CandidateTable {
 
   @Override
   public String getName() {
-    return null;
+    return this.name;
   }
 
   @Override
@@ -128,7 +131,6 @@ public class StorageCandidate implements Candidate,CandidateTable {
 
   @Override
   public boolean contains(Candidate candidate) {
-    //TODO union : decide if we need to override equals and hashcode for StorageCandidate
     return this.equals(candidate);
   }
 
@@ -172,5 +174,10 @@ public class StorageCandidate implements Candidate,CandidateTable {
   @Override
   public int hashCode() {
     return this.cube.hashCode() + this.fact.hashCode() + this.storageName.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return getName();
   }
 }

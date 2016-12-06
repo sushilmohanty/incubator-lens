@@ -15,6 +15,7 @@ public class JoinCandidate implements Candidate {
    */
   private Candidate childCandidate1;
   private Candidate childCandidate2;
+  private String toStr;
 
   public JoinCandidate(Candidate childCandidate1, Candidate childCandidate2) {
     this.childCandidate1 = childCandidate1;
@@ -98,5 +99,17 @@ public class JoinCandidate implements Candidate {
   public boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr) {
     return childCandidate1.isExpressionEvaluable(expr)
         || childCandidate1.isExpressionEvaluable(expr);
+  }
+
+  @Override
+  public String toString() {
+    if (this.toStr == null) {
+      this.toStr = getToString();
+    }
+    return this.toStr;
+  }
+
+  private String getToString() {
+    return this.toStr = "JOIN[" + childCandidate1.toString() + ", " + childCandidate2.toString() + "]";
   }
 }
