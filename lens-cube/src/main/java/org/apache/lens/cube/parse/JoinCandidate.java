@@ -1,9 +1,6 @@
 package org.apache.lens.cube.parse;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
@@ -70,7 +67,15 @@ public class JoinCandidate implements Candidate {
   public boolean contains(Candidate candidate) {
     if (this.equals(candidate)) {
       return true;
-    } else return childCandidate1.contains(candidate) && childCandidate2.contains(candidate);
+    } else return childCandidate1.contains(candidate) || childCandidate2.contains(candidate);
+  }
+
+  @Override
+  public Collection<Candidate> getChildren() {
+    return new ArrayList<Candidate>() {{
+      add(childCandidate1);
+      add(childCandidate2);
+    }};
   }
 
 

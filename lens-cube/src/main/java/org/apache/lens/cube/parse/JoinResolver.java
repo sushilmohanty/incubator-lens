@@ -43,7 +43,10 @@ import lombok.extern.slf4j.Slf4j;
 class JoinResolver implements ContextRewriter {
   private Map<AbstractCubeTable, JoinType> tableJoinTypeMap;
   private AbstractCubeTable target;
-  private HashMap<Dimension, List<JoinChain>> dimensionInJoinChain = new HashMap<Dimension, List<JoinChain>>();
+  /**
+   * Dimension as key and all the participating join chains for this dimension as value.
+   */
+  private HashMap<Dimension, List<JoinChain>> dimensionToJoinChainsMap = new HashMap<Dimension, List<JoinChain>>();
 
   public JoinResolver(Configuration conf) {
   }
@@ -95,10 +98,10 @@ class JoinResolver implements ContextRewriter {
       dims.add(chain.getDestTable());
       for (String dim : dims) {
         Dimension dimension = cubeql.getMetastoreClient().getDimension(dim);
-        if (dimensionInJoinChain.get(dimension) == null) {
-          dimensionInJoinChain.put(dimension, new ArrayList<JoinChain>());
+        if (dimensionToJoinChainsMap.get(dimension) == null) {
+          dimensionToJoinChainsMap.put(dimension, new ArrayList<JoinChain>());
         }
-        dimensionInJoinChain.get(dimension).add(chain);
+        dimensionToJoinChainsMap.get(dimension).add(chain);
       }
     }
   }

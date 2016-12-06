@@ -76,6 +76,13 @@ public interface Candidate {
    */
   boolean contains(Candidate candidate);
 
+  /**
+   * Returns child candidates of this candidate if any.
+   * Note: StorageCandidate will return null
+   * @return
+   */
+  Collection<Candidate> getChildren();
+
 
   /**
    * Calculates if this candidate can answer the query for given time range based on actual data registered with
