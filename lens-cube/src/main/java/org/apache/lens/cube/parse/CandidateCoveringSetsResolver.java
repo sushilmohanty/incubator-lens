@@ -1,5 +1,6 @@
 package org.apache.lens.cube.parse;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.lens.cube.error.LensCubeErrorCode;
@@ -34,8 +35,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
 
     List<TimeRange> ranges = cubeql.getTimeRanges();
     // considering single time range
-    TimeRange range = ranges.iterator().next();
-    resolveRangeCoveringFactSet(cubeql, range, queriedMsrs);
+    resolveRangeCoveringFactSet(cubeql, ranges, queriedMsrs);
     List<List<UnionCandidate>> measureCoveringSets = resolveJoinCandidates(unionCandidates, queriedMsrs, cubeql);
     updateFinalCandidates(measureCoveringSets);
     log.info("Covering candidate sets :{}", finalCandidates);
@@ -82,30 +82,63 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     }
   }
 
-  private void resolveRangeCoveringFactSet(CubeQueryContext cubeql, TimeRange range,
+  private boolean isCandidateCoversTimeRanges(List<Candidate> candList, List<TimeRange> ranges) {
+    for (Iterator<TimeRange> itr = ranges.iterator(); itr.hasNext(); ) {
+      TimeRange range = itr.next();
+      if (!CandidateUtil.isTimeRangeCovered(candList, range.getFromDate(), range.getToDate())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private void pruneCandidateSetNotCoveringAllRanges(List<List<Candidate>> candLists, List<TimeRange> ranges) {
+    for (Iterator<List<Candidate>> itr = candLists.iterator(); itr.hasNext(); ) {
+      List<Candidate> cand = itr.next();
+      if (!isCandidateCoversTimeRanges(cand, ranges)) {
+        itr.remove();
+      }
+    }
+  }
+
+  private void resolveRangeCoveringFactSet(CubeQueryContext cubeql, List<TimeRange> ranges,
                                            Set<QueriedPhraseContext> queriedMsrs) throws LensException {
     // All Candidates
     List<Candidate> allCandidates = new ArrayList<Candidate>(cubeql.getCandidates());
     // Partially valid candidates
     List<Candidate> allCandidatesPartiallyValid = new ArrayList<>();
-    for (Candidate cand : allCandidates) {
+    for (Iterator<Candidate> itr = allCandidates.iterator(); itr.hasNext(); ) {
+      Candidate cand = itr.next();
+      List<TimeRange> invalidTimeRanges = Lists.newArrayList();
       // Assuming initial list of candidates populated are StorageCandidate
       if (cand instanceof StorageCandidate) {
         StorageCandidate sc = (StorageCandidate) cand;
-        if (CandidateUtil.isValidForTimeRange(sc, range)) {
-          List<Candidate> one = new ArrayList<Candidate>(Arrays.asList(CandidateUtil.cloneStorageCandidate(sc)));
-          unionCandidates.add(new UnionCandidate(one));
-        } else if (CandidateUtil.isPartiallyValidForTimeRange(sc, range)) {
-          allCandidatesPartiallyValid.add(CandidateUtil.cloneStorageCandidate(sc));
+        for (TimeRange range : ranges) {
+          if (CandidateUtil.isValidForTimeRange(sc, range)) {
+            List<Candidate> one = new ArrayList<Candidate>(Arrays.asList(CandidateUtil.cloneStorageCandidate(sc)));
+            unionCandidates.add(new UnionCandidate(one));
+          } else if (CandidateUtil.isPartiallyValidForTimeRange(sc, range)) {
+            allCandidatesPartiallyValid.add(CandidateUtil.cloneStorageCandidate(sc));
+          } else {
+            invalidTimeRanges.add(range);
+          }
+          if (!invalidTimeRanges.isEmpty()) {
+            // TODO union: Check fact pruning message
+            cubeql.addFactPruningMsgs(sc.getFact(), CandidateTablePruneCause.factNotAvailableInRange(invalidTimeRanges));
+            log.info("Invalid time ranges specified in query: {}", invalidTimeRanges);
+            itr.remove();
+          }
         }
-      } else {
+      }  else {
         throw new LensException("Not a StorageCandidate!!");
       }
     }
+
     // Get all covering fact sets
     List<List<Candidate>> coveringFactSets =
         getCombinations(new ArrayList<Candidate>(allCandidatesPartiallyValid));
-    // Sort the Collection based on size
+
+    // Sort the Collection based on no of elements
     Collections.sort(coveringFactSets, new Comparator<List<?>>() {
       @Override
       public int compare(List<?> o1, List<?> o2) {
@@ -113,13 +146,8 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       }
     });
 
-    // iterate over the candidate set and remove the one which can't answer the range
-    for (Iterator<List<Candidate>> itr = coveringFactSets.iterator(); itr.hasNext(); ) {
-      List<Candidate> cand = itr.next();
-      if (!CandidateUtil.isTimeRangeCovered(cand, range.getFromDate(), range.getToDate())) {
-        itr.remove();
-      }
-    }
+    // prune non covering sets
+    pruneCandidateSetNotCoveringAllRanges(coveringFactSets, ranges);
     // prune candidate set without common measure
     pruneCoveringSetWithoutAnyCommonMeasure(coveringFactSets, queriedMsrs, cubeql);
     // prune redundant covering sets

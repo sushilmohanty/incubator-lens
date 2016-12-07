@@ -48,12 +48,12 @@ public class CandidateUtil {
    */
   public static boolean isValidForTimeRange(Candidate candidate, TimeRange timeRange) {
     return (!timeRange.getFromDate().before(candidate.getStartTime()))
-      && (!timeRange.getToDate().after(candidate.getEndTime()));
+        && (!timeRange.getToDate().after(candidate.getEndTime()));
   }
 
   public static boolean isPartiallyValidForTimeRange(Candidate cand, TimeRange timeRange) {
     return cand.getEndTime().after(timeRange.getToDate())
-      || cand.getStartTime().before(timeRange.getFromDate());
+        || cand.getStartTime().before(timeRange.getFromDate());
   }
 
   /**
