@@ -82,6 +82,8 @@ class AggregateResolver implements ContextRewriter {
                 CandidateTablePruneCause.missingDefaultAggregate());
             candItr.remove();
           }
+        } else {
+          throw new LensException("Not a storage candidate!!");
         }
       }
       nonDefaultAggregates = true;
