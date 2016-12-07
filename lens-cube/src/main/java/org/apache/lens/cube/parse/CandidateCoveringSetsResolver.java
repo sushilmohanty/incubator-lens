@@ -107,29 +107,18 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     List<Candidate> allCandidates = new ArrayList<Candidate>(cubeql.getCandidates());
     // Partially valid candidates
     List<Candidate> allCandidatesPartiallyValid = new ArrayList<>();
-    for (Iterator<Candidate> itr = allCandidates.iterator(); itr.hasNext(); ) {
-      Candidate cand = itr.next();
-      List<TimeRange> invalidTimeRanges = Lists.newArrayList();
+    for (Candidate cand : allCandidates) {
       // Assuming initial list of candidates populated are StorageCandidate
       if (cand instanceof StorageCandidate) {
         StorageCandidate sc = (StorageCandidate) cand;
-        for (TimeRange range : ranges) {
-          if (CandidateUtil.isValidForTimeRange(sc, range)) {
-            List<Candidate> one = new ArrayList<Candidate>(Arrays.asList(CandidateUtil.cloneStorageCandidate(sc)));
-            unionCandidates.add(new UnionCandidate(one));
-          } else if (CandidateUtil.isPartiallyValidForTimeRange(sc, range)) {
-            allCandidatesPartiallyValid.add(CandidateUtil.cloneStorageCandidate(sc));
-          } else {
-            invalidTimeRanges.add(range);
-          }
-          if (!invalidTimeRanges.isEmpty()) {
-            // TODO union: Check fact pruning message
-            cubeql.addFactPruningMsgs(sc.getFact(), CandidateTablePruneCause.factNotAvailableInRange(invalidTimeRanges));
-            log.info("Invalid time ranges specified in query: {}", invalidTimeRanges);
-            itr.remove();
-          }
+        if (CandidateUtil.isValidForTimeRange(sc, ranges)) {
+          List<Candidate> one = new ArrayList<Candidate>(Arrays.asList(CandidateUtil.cloneStorageCandidate(sc)));
+          unionCandidates.add(new UnionCandidate(one));
+          continue;
+        } else if (CandidateUtil.isPartiallyValidForTimeRange(sc, ranges)) {
+          allCandidatesPartiallyValid.add(CandidateUtil.cloneStorageCandidate(sc));
         }
-      }  else {
+      } else {
         throw new LensException("Not a StorageCandidate!!");
       }
     }

@@ -98,9 +98,9 @@ class CandidateTableResolver implements ContextRewriter {
       }
       for (CubeFactTable fact : factTables) {
         StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact, fact.getStorages().iterator().next());
-        cubeql.getCandidateSet().add(sc);
+        cubeql.getCandidates().add(sc);
       }
-      log.info("Populated storage candidates: {}", cubeql.getCandidateSet());
+      log.info("Populated storage candidates: {}", cubeql.getCandidates());
     }
 
     if (cubeql.getDimensions().size() != 0) {
@@ -246,7 +246,7 @@ class CandidateTableResolver implements ContextRewriter {
         }
       }
       // Remove storage candidates based on whether they are valid or not.
-      for (Iterator<Candidate> i = cubeql.getCandidateSet().iterator(); i.hasNext(); ) {
+      for (Iterator<Candidate> i = cubeql.getCandidates().iterator(); i.hasNext(); ) {
         Candidate cand = i.next();
         if (cand instanceof StorageCandidate) {
           StorageCandidate sc = (StorageCandidate) cand;
@@ -312,7 +312,7 @@ class CandidateTableResolver implements ContextRewriter {
         } else {
           throw new LensException("Not a storage candidate!!");
         }
-        if (cubeql.getCandidateSet().size() == 0) {
+        if (cubeql.getCandidates().size() == 0) {
           throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(),
               getColumns(cubeql.getQueriedPhrases()).toString());
         }

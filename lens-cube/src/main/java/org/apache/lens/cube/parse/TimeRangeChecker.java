@@ -222,7 +222,6 @@ public class TimeRangeChecker implements ContextRewriter {
     } // End column loop
   }
 
-
   private void throwException(CubeColumn column) throws ColUnAvailableInTimeRangeException {
 
     final Long availabilityStartTime = (column.getStartTimeMillisSinceEpoch().isPresent())
