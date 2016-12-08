@@ -190,9 +190,12 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   @Getter
   @Setter
   private DenormalizationResolver.DenormalizationContext deNormCtx;
+  //TODO union : deprecate factPruningMsgs
   @Getter
-  private PruneCauses<CubeFactTable> factPruningMsgs =
-    new PruneCauses<CubeFactTable>();
+  @Deprecated
+  private PruneCauses<CubeFactTable> factPruningMsgs = new PruneCauses<>();
+  @Getter
+  private PruneCauses<StorageCandidate>  storagePruningMsgs = new PruneCauses<>();
   @Getter
   private Map<Dimension, PruneCauses<CubeDimensionTable>> dimPruningMsgs =
     new HashMap<Dimension, PruneCauses<CubeDimensionTable>>();
@@ -493,9 +496,27 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     return candidateDims;
   }
 
+  /**
+   * TODO union : deprecate this method and use
+   * {@link #addFactPruningMsg(CubeInterface, CubeFactTable, CandidateTablePruneCause)}
+   * or
+   * {@link #addStoragePruningMsg(StorageCandidate, CandidateTablePruneCause)}
+   * */
+  @Deprecated
   public void addFactPruningMsgs(CubeFactTable fact, CandidateTablePruneCause factPruningMsg) {
+    throw new IllegalStateException("This method is deprecate");
+  }
+
+  public void addFactPruningMsg(CubeInterface cube, CubeFactTable fact, CandidateTablePruneCause factPruningMsg) {
     log.info("Pruning fact {} with cause: {}", fact, factPruningMsg);
-    factPruningMsgs.addPruningMsg(fact, factPruningMsg);
+    for (String storageName : fact.getStorages()) {
+      addStoragePruningMsg(new StorageCandidate(cube, fact, storageName), factPruningMsg);
+    }
+  }
+
+  public void addStoragePruningMsg(StorageCandidate sc, CandidateTablePruneCause factPruningMsg) {
+    log.info("Pruning Storage {} with cause: {}", sc, factPruningMsg);
+    storagePruningMsgs.addPruningMsg(sc, factPruningMsg);
   }
 
   public void addDimPruningMsgs(Dimension dim, CubeDimensionTable dimtable, CandidateTablePruneCause msg) {
