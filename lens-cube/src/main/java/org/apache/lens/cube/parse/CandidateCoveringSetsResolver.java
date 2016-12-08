@@ -50,7 +50,6 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     cubeql.getCandidates().addAll(finalCandidates);
     // TODO : we might need to prune if we maintian two data structures in CubeQueryContext.
     //cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCause.columnNotFound(getColumns(queriedMsrs)));
-
     if (cubeql.getCandidateFacts().size() == 0) {
       throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
     }
@@ -127,7 +126,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     List<UnionCandidate> unionCoveringSet =
         getCombinations(new ArrayList<Candidate>(allCandidatesPartiallyValid));
     // Sort the Collection based on no of elements
-    Collections.sort(unionCoveringSet);
+    Collections.sort(unionCoveringSet, new UnionCandidateComparator<UnionCandidate>());
     // prune non covering sets
     pruneUnionCandidatesNotCoveringAllRanges(unionCoveringSet, ranges);
     // prune candidate set without common measure
