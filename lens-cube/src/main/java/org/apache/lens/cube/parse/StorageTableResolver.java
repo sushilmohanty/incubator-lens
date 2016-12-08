@@ -401,7 +401,7 @@ class StorageTableResolver implements ContextRewriter {
         for (String storage : cfact.fact.getStorages()) {
           String storageTableName = getFactOrDimtableStorageTableName(cfact.fact.getName(), storage).toLowerCase();
           partColNotSupported &= skipStorageCauses.containsKey(storageTableName)
-            && skipStorageCauses.get(storageTableName).getCause().equals(PART_COL_DOES_NOT_EXIST)
+            && skipStorageCauses.get(storageTableName).getCause().equals(SkipStorageCode.PART_COL_DOES_NOT_EXIST)
             && skipStorageCauses.get(storageTableName).getNonExistantPartCols().contains(partCol);
         }
         TimeRange prevRange = range;
