@@ -350,7 +350,7 @@ public class DenormalizationResolver implements ContextRewriter {
           Candidate cand = i.next();
           if (cand instanceof StorageCandidate) {
             StorageCandidate sc = (StorageCandidate) cand;
-            if (denormCtx.tableToRefCols.containsKey(sc)) {
+            if (denormCtx.tableToRefCols.containsKey(sc.getFact().getName())) {
               for (ReferencedQueriedColumn refcol : denormCtx.tableToRefCols.get(sc.getFact().getName())) {
                 if (denormCtx.getReferencedCols().get(refcol.col.getName()).isEmpty()) {
                   log.info("Not considering storage candidate :{} as column {} is not available", sc, refcol.col);

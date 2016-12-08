@@ -71,15 +71,14 @@ class AggregateResolver implements ContextRewriter {
       || hasMeasuresNotInDefaultAggregates(cubeql, cubeql.getHavingAST(), null, aggregateResolverDisabled)
       || hasMeasures(cubeql, cubeql.getWhereAST()) || hasMeasures(cubeql, cubeql.getGroupByAST())
       || hasMeasures(cubeql, cubeql.getOrderByAST())) {
-
       //TODO union : Note : Pending : cube segmentation design may change the above assumption and Set<Candidate> can contain and mix of StorageCandidate and UnionSegmentCandidate. This step can then ignore UnionSegmentCandidate
       Iterator<Candidate> candItr = cubeql.getCandidates().iterator();
       while (candItr.hasNext()) {
         Candidate candidate = candItr.next();
         if (candidate instanceof StorageCandidate) {
-          if (((StorageCandidate) candidate).getFact().isAggregated()) {
-            cubeql.addFactPruningMsgs(((StorageCandidate) candidate).getFact(),
-                CandidateTablePruneCause.missingDefaultAggregate());
+          StorageCandidate sc = (StorageCandidate) candidate;
+          if (sc.getFact().isAggregated()) {
+            cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.missingDefaultAggregate());
             candItr.remove();
           }
         } else {

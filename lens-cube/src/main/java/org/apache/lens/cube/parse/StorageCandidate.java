@@ -40,14 +40,17 @@ public class StorageCandidate implements Candidate,CandidateTable {
   private String storageName;
   private Map<Dimension, CandidateDim> dimensions;
   private String name;
+  @Getter
+  private String alias;
 
-  public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName) {
-    if ((cube == null) || (fact == null) || (storageName == null)) {
+  public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName, String alias) {
+    if ((cube == null) || (fact == null) || (storageName == null) || (alias == null)) {
       throw new IllegalArgumentException("Cube,fact and storageName should be non null");
     }
     this.cube = cube;
     this.fact = fact;
     this.storageName = storageName;
+    this.alias = alias;
 
     this.name = cube.getName() + "." + fact.getName() + "." + storageName;
   }
@@ -122,11 +125,6 @@ public class StorageCandidate implements Candidate,CandidateTable {
   @Override
   public double getCost() {
     return fact.weight();
-  }
-
-  @Override
-  public String getAlias() {
-    return null;
   }
 
   @Override

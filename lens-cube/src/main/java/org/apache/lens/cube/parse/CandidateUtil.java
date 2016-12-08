@@ -195,6 +195,6 @@ public class CandidateUtil {
   }
 
   public static StorageCandidate cloneStorageCandidate(StorageCandidate sc) {
-    return new StorageCandidate(sc.getCube(), sc.getFact(), sc.getStorageName());
+    return new StorageCandidate(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getAlias());
   }
 }

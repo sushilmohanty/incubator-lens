@@ -663,8 +663,8 @@ class ExpressionResolver implements ContextRewriter {
                 }
               } else {
                 // prune dimension only expressions
-                Set<StorageCandidate> storageCandidates = CandidateUtil.getStorageCandidates(cubeql.getCandidates());
-                for (StorageCandidate sc : storageCandidates) {
+                Set<StorageCandidate> prunedCandidates = CandidateUtil.getStorageCandidates(cubeql.getCandidates());
+                for (StorageCandidate sc : prunedCandidates) {
                   if (!sc.isExpressionEvaluable(ec)) {
                     Collection<Candidate> prunedCandidate =
                         CandidateUtil.filterCandidates(cubeql.getCandidates(), sc);
@@ -679,8 +679,6 @@ class ExpressionResolver implements ContextRewriter {
           }
         }
       }
-      //TODO union: Handle pruning cause
-      cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCode.EXPRESSION_NOT_EVALUABLE);
     }
       // prune candidate dims without any valid expressions
       if (cubeql.getDimensions() != null && !cubeql.getDimensions().isEmpty()) {

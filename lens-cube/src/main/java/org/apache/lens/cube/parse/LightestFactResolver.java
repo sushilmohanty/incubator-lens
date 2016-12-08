@@ -42,7 +42,7 @@ public class LightestFactResolver implements ContextRewriter {
       Map<Candidate, Double> factWeightMap = new HashMap<Candidate, Double>();
 
       for (Candidate cand : cubeql.getCandidates()) {
-        factWeightMap.put(cand, getWeight(cand));
+        factWeightMap.put(cand, cand.getCost());
       }
 
       double minWeight = Collections.min(factWeightMap.values());
@@ -52,14 +52,10 @@ public class LightestFactResolver implements ContextRewriter {
         if (factWeightMap.get(cand) > minWeight) {
           log.info("Not considering candidate:{} from final candidates as it has more fact weight:{} minimum:{}",
             cand, factWeightMap.get(cand), minWeight);
+          cubeql.addCandidatePruningMsg(cand, new CandidateTablePruneCause(CandidateTablePruneCode.MORE_WEIGHT));
           i.remove();
         }
       }
-      cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCode.MORE_WEIGHT);
     }
-  }
-
-  private Double getWeight(Candidate cand) {
-    return cand.getCost();
   }
 }

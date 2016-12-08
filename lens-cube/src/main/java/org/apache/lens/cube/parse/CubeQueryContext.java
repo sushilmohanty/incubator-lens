@@ -504,10 +504,19 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     throw new IllegalStateException("This method is deprecate");
   }
 
+  //TODO union : not required as all the pruning happening at StorageCandidate
+  /*
   public void addFactPruningMsg(CubeInterface cube, CubeFactTable fact, CandidateTablePruneCause factPruningMsg) {
     log.info("Pruning fact {} with cause: {}", fact, factPruningMsg);
     for (String storageName : fact.getStorages()) {
       addStoragePruningMsg(new StorageCandidate(cube, fact, storageName), factPruningMsg);
+    }
+  }
+*/
+  public void addCandidatePruningMsg(Candidate cand, CandidateTablePruneCause factPruningMsg) {
+    Set<StorageCandidate> scs = CandidateUtil.getStorageCandidates(cand);
+    for (StorageCandidate sc : scs) {
+      addStoragePruningMsg(sc, factPruningMsg);
     }
   }
 
@@ -1294,6 +1303,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       }
     }
   }
+
 
   public void addQueriedTimeDimensionCols(final String timeDimColName) {
 

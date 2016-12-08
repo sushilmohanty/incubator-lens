@@ -13,7 +13,7 @@ import org.apache.lens.cube.metadata.TimeRange;
 /**
  * Represents a union of two candidates
  */
-public class UnionCandidate implements Candidate {
+public class UnionCandidate implements Candidate, Comparable<UnionCandidate> {
 
   /**
    * Caching start and end time calculated for this candidate as it may have many child candidates.
@@ -21,14 +21,17 @@ public class UnionCandidate implements Candidate {
   Date startTime = null;
   Date endTime = null;
   String toStr;
+  @Getter
+  String alias;
   /**
    * List of child candidates that will be union-ed
    */
   @Getter
   private List<Candidate> childCandidates;
 
-  public UnionCandidate(List<Candidate> childCandidates) {
+  public UnionCandidate(List<Candidate> childCandidates, String alias) {
     this.childCandidates = childCandidates;
+    this.alias = alias;
   }
 
   @Override
@@ -84,11 +87,6 @@ public class UnionCandidate implements Candidate {
       cost += cand.getCost();
     }
     return cost;
-  }
-
-  @Override
-  public String getAlias() {
-    return null;
   }
 
   @Override
@@ -153,5 +151,10 @@ public class UnionCandidate implements Candidate {
     builder.delete(builder.length()-2, builder.length());
     builder.append("]");
     return builder.toString();
+  }
+
+  @Override
+  public int compareTo(UnionCandidate o) {
+    return Integer.valueOf(this.getChildCandidates().size() - o.getChildCandidates().size());
   }
 }
