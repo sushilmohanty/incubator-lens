@@ -56,7 +56,7 @@ public class JoinCandidate implements Candidate {
 
   @Override
   public double getCost() {
-    return 0;
+    return childCandidate1.getCost() + childCandidate2.getCost();
   }
 
   @Override

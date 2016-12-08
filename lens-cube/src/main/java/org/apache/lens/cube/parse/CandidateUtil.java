@@ -41,24 +41,25 @@ public class CandidateUtil {
   }
 
   /**
-   * Returns true if the Candidate is valid for the given time range based on its start and end times.
+   * Returns true if the Candidate is valid for all the timeranges based on its start and end times.
    * @param candidate
    * @param timeRanges
    * @return
    */
-  public static boolean isValidForTimeRange(Candidate candidate, List<TimeRange> timeRanges) {
+  public static boolean isValidForTimeRanges(Candidate candidate, List<TimeRange> timeRanges) {
     for (TimeRange timeRange : timeRanges) {
-      if (!(!timeRange.getFromDate().before(candidate.getStartTime()))
-          && (!timeRange.getToDate().after(candidate.getEndTime())));
-      return false;
+      if (!(timeRange.getFromDate().after(candidate.getStartTime())
+          && timeRange.getToDate().before(candidate.getEndTime()))) {
+        return false;
+      }
     }
     return true;
   }
 
-  public static boolean isPartiallyValidForTimeRange(Candidate cand, List<TimeRange> timeRanges) {
+  public static boolean isPartiallyValidForTimeRanges(Candidate cand, List<TimeRange> timeRanges) {
     for (TimeRange timeRange : timeRanges) {
-      if (cand.getEndTime().after(timeRange.getToDate())
-          || cand.getStartTime().before(timeRange.getFromDate())) {
+      if ((cand.getStartTime().before(timeRange.getFromDate()) && cand.getEndTime().after(timeRange.getFromDate()))
+          || (cand.getStartTime().before(timeRange.getToDate()) && cand.getEndTime().after(timeRange.getToDate()))) {
         return true;
       }
     }

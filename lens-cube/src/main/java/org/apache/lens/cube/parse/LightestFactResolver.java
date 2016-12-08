@@ -60,11 +60,6 @@ public class LightestFactResolver implements ContextRewriter {
   }
 
   private Double getWeight(Candidate cand) {
-    Double weight = 0.0;
-    Set<StorageCandidate> storageCandidates = CandidateUtil.getStorageCandidates(cand);
-    for (StorageCandidate sc : storageCandidates) {
-      weight += sc.getFact().weight();
-    }
-    return weight;
+    return cand.getCost();
   }
 }

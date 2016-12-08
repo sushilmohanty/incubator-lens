@@ -34,7 +34,6 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     }
 
     List<TimeRange> ranges = cubeql.getTimeRanges();
-    // considering single time range
     resolveRangeCoveringFactSet(cubeql, ranges, queriedMsrs);
     List<List<UnionCandidate>> measureCoveringSets = resolveJoinCandidates(unionCandidates, queriedMsrs, cubeql);
     updateFinalCandidates(measureCoveringSets);
@@ -82,7 +81,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     }
   }
 
-  private boolean isCandidateCoversTimeRanges(List<Candidate> candList, List<TimeRange> ranges) {
+  private boolean isCandidateCoveringTimeRanges(List<Candidate> candList, List<TimeRange> ranges) {
     for (Iterator<TimeRange> itr = ranges.iterator(); itr.hasNext(); ) {
       TimeRange range = itr.next();
       if (!CandidateUtil.isTimeRangeCovered(candList, range.getFromDate(), range.getToDate())) {
@@ -95,7 +94,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   private void pruneCandidateSetNotCoveringAllRanges(List<List<Candidate>> candLists, List<TimeRange> ranges) {
     for (Iterator<List<Candidate>> itr = candLists.iterator(); itr.hasNext(); ) {
       List<Candidate> cand = itr.next();
-      if (!isCandidateCoversTimeRanges(cand, ranges)) {
+      if (!isCandidateCoveringTimeRanges(cand, ranges)) {
         itr.remove();
       }
     }
@@ -111,11 +110,11 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       // Assuming initial list of candidates populated are StorageCandidate
       if (cand instanceof StorageCandidate) {
         StorageCandidate sc = (StorageCandidate) cand;
-        if (CandidateUtil.isValidForTimeRange(sc, ranges)) {
+        if (CandidateUtil.isValidForTimeRanges(sc, ranges)) {
           List<Candidate> one = new ArrayList<Candidate>(Arrays.asList(CandidateUtil.cloneStorageCandidate(sc)));
           unionCandidates.add(new UnionCandidate(one));
           continue;
-        } else if (CandidateUtil.isPartiallyValidForTimeRange(sc, ranges)) {
+        } else if (CandidateUtil.isPartiallyValidForTimeRanges(sc, ranges)) {
           allCandidatesPartiallyValid.add(CandidateUtil.cloneStorageCandidate(sc));
         }
       } else {

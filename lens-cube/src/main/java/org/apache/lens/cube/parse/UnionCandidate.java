@@ -79,7 +79,11 @@ public class UnionCandidate implements Candidate {
 
   @Override
   public double getCost() {
-    return 0;
+    double cost = 0.0;
+    for (Candidate cand : childCandidates) {
+      cost += cand.getCost();
+    }
+    return cost;
   }
 
   @Override

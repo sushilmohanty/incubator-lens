@@ -679,7 +679,7 @@ class ExpressionResolver implements ContextRewriter {
           }
         }
       }
-      //TODO union: Not required any more
+      //TODO union: Handle pruning cause
       cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCode.EXPRESSION_NOT_EVALUABLE);
     }
       // prune candidate dims without any valid expressions
