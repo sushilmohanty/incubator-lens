@@ -90,6 +90,7 @@ class CandidateTableResolver implements ContextRewriter {
   }
 
   private void populateCandidateTables(CubeQueryContext cubeql) throws LensException {
+    int aliasCounter = 0;
     if (cubeql.getCube() != null) {
       List<CubeFactTable> factTables = cubeql.getMetastoreClient().getAllFacts(cubeql.getCube());
       if (factTables.isEmpty()) {
@@ -97,10 +98,11 @@ class CandidateTableResolver implements ContextRewriter {
             cubeql.getCube().getName() + " does not have any facts");
       }
       for (CubeFactTable fact : factTables) {
-        StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact, fact.getStorages().iterator().next());
-        cubeql.getCandidateSet().add(sc);
+        StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact,
+            fact.getStorages().iterator().next(), "sc" + aliasCounter++);
+        cubeql.getCandidates().add(sc);
       }
-      log.info("Populated storage candidates: {}", cubeql.getCandidateSet());
+      log.info("Populated storage candidates: {}", cubeql.getCandidates());
     }
 
     if (cubeql.getDimensions().size() != 0) {
@@ -160,10 +162,10 @@ class CandidateTableResolver implements ContextRewriter {
     OptionalDimCtx optdim = cubeql.getOptionalDimensionMap().remove(dim);
     // remove all the depending candidate table as well
     for (CandidateTable candidate : optdim.requiredForCandidates) {
-      if (candidate instanceof CandidateFact) {
-        log.info("Not considering fact:{} as refered table does not have any valid dimtables", candidate);
+      if (candidate instanceof StorageCandidate) {
+        log.info("Not considering storage candidate:{} as refered table does not have any valid dimtables", candidate);
         cubeql.getCandidateFacts().remove(candidate);
-        cubeql.addFactPruningMsgs(((CandidateFact) candidate).fact, new CandidateTablePruneCause(
+        cubeql.addStoragePruningMsg(((StorageCandidate) candidate), new CandidateTablePruneCause(
           CandidateTablePruneCode.INVALID_DENORM_TABLE));
       } else {
         log.info("Not considering dimtable:{} as refered table does not have any valid dimtables", candidate);
@@ -246,15 +248,14 @@ class CandidateTableResolver implements ContextRewriter {
         }
       }
       // Remove storage candidates based on whether they are valid or not.
-      for (Iterator<Candidate> i = cubeql.getCandidateSet().iterator(); i.hasNext(); ) {
+      for (Iterator<Candidate> i = cubeql.getCandidates().iterator(); i.hasNext(); ) {
         Candidate cand = i.next();
         if (cand instanceof StorageCandidate) {
           StorageCandidate sc = (StorageCandidate) cand;
           if (validFactTables != null) {
             if (!validFactTables.contains(sc.getName().toLowerCase())) {
-              log.info("Not considering fact table:{} as it is not a valid fact", sc);
-              cubeql
-                  .addFactPruningMsgs(sc.getFact(), new CandidateTablePruneCause(CandidateTablePruneCode.INVALID));
+              log.info("Not considering storage candidate:{} as it is not a valid candidate", sc);
+              cubeql.addStoragePruningMsg(sc, new CandidateTablePruneCause(CandidateTablePruneCode.INVALID));
               i.remove();
               continue;
             }
@@ -273,8 +274,8 @@ class CandidateTableResolver implements ContextRewriter {
           boolean toRemove = false;
           for (QueriedPhraseContext qur : dimExprs) {
             if (!qur.isEvaluable(cubeql, sc)) {
-              log.info("Not considering fact table:{} as columns {} are not available", sc, qur.getColumns());
-              cubeql.addFactPruningMsgs(sc.getFact(), CandidateTablePruneCause.columnNotFound(qur.getColumns()));
+              log.info("Not considering storage candidate:{} as columns {} are not available", sc, qur.getColumns());
+              cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.columnNotFound(qur.getColumns()));
               toRemove = true;
               break;
             }
@@ -285,8 +286,8 @@ class CandidateTableResolver implements ContextRewriter {
           // part of measure covering set
           if (!checkForFactColumnExistsAndValidForRange(sc, queriedMsrs, cubeql)) {
             Set<String> columns = getColumns(queriedMsrs);
-            log.info("Not considering fact table:{} as columns {} is not available", sc, columns);
-            cubeql.addFactPruningMsgs(sc.getFact(), CandidateTablePruneCause.columnNotFound(columns));
+            log.info("Not considering storage candidate:{} as columns {} is not available", sc, columns);
+            cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.columnNotFound(columns));
             toRemove = true;
           }
 
@@ -297,9 +298,9 @@ class CandidateTableResolver implements ContextRewriter {
             if (!checkForFactColumnExistsAndValidForRange(sc, chain.getSourceColumns(), cubeql)) {
               // check if chain is optional or not
               if (optdim == null) {
-                log.info("Not considering fact table:{} as columns {} are not available", sc,
+                log.info("Not considering storage candidate:{} as columns {} are not available", sc,
                     chain.getSourceColumns());
-                cubeql.addFactPruningMsgs(sc.getFact(), CandidateTablePruneCause.columnNotFound(chain.getSourceColumns()));
+                cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.columnNotFound(chain.getSourceColumns()));
                 toRemove = true;
                 break;
               }
@@ -312,7 +313,7 @@ class CandidateTableResolver implements ContextRewriter {
         } else {
           throw new LensException("Not a storage candidate!!");
         }
-        if (cubeql.getCandidateSet().size() == 0) {
+        if (cubeql.getCandidates().size() == 0) {
           throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(),
               getColumns(cubeql.getQueriedPhrases()).toString());
         }

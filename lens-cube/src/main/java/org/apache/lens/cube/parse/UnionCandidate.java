@@ -21,14 +21,16 @@ public class UnionCandidate implements Candidate {
   Date startTime = null;
   Date endTime = null;
   String toStr;
+  @Getter
+  String alias;
   /**
    * List of child candidates that will be union-ed
    */
-  @Getter
   private List<Candidate> childCandidates;
 
-  public UnionCandidate(List<Candidate> childCandidates) {
+  public UnionCandidate(List<Candidate> childCandidates, String alias) {
     this.childCandidates = childCandidates;
+    this.alias = alias;
   }
 
   @Override
@@ -79,12 +81,11 @@ public class UnionCandidate implements Candidate {
 
   @Override
   public double getCost() {
-    return 0;
-  }
-
-  @Override
-  public String getAlias() {
-    return null;
+    double cost = 0.0;
+    for (Candidate cand : childCandidates) {
+      cost += cand.getCost();
+    }
+    return cost;
   }
 
   @Override
@@ -123,7 +124,12 @@ public class UnionCandidate implements Candidate {
 
   @Override
   public boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr) {
-    return false;
+    for (Candidate cand : childCandidates) {
+      if (!cand.isExpressionEvaluable(expr)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override

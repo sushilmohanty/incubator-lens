@@ -41,19 +41,29 @@ public class CandidateUtil {
   }
 
   /**
-   * Returns true if the Candidate is valid for the given time range based on its start and end times.
+   * Returns true if the Candidate is valid for all the timeranges based on its start and end times.
    * @param candidate
-   * @param timeRange
+   * @param timeRanges
    * @return
    */
-  public static boolean isValidForTimeRange(Candidate candidate, TimeRange timeRange) {
-    return (!timeRange.getFromDate().before(candidate.getStartTime()))
-      && (!timeRange.getToDate().after(candidate.getEndTime()));
+  public static boolean isValidForTimeRanges(Candidate candidate, List<TimeRange> timeRanges) {
+    for (TimeRange timeRange : timeRanges) {
+      if (!(timeRange.getFromDate().after(candidate.getStartTime())
+          && timeRange.getToDate().before(candidate.getEndTime()))) {
+        return false;
+      }
+    }
+    return true;
   }
 
-  public static boolean isPartiallyValidForTimeRange(Candidate cand, TimeRange timeRange) {
-    return cand.getEndTime().after(timeRange.getToDate())
-      || cand.getStartTime().before(timeRange.getFromDate());
+  public static boolean isPartiallyValidForTimeRanges(Candidate cand, List<TimeRange> timeRanges) {
+    for (TimeRange timeRange : timeRanges) {
+      if ((cand.getStartTime().before(timeRange.getFromDate()) && cand.getEndTime().after(timeRange.getFromDate()))
+          || (cand.getStartTime().before(timeRange.getToDate()) && cand.getEndTime().after(timeRange.getToDate()))) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -106,15 +116,21 @@ public class CandidateUtil {
   }
 
 
-  public static Set<QueriedPhraseContext> coveredMeasures(List<Candidate> candSet, Collection<QueriedPhraseContext> msrs,
+  public static Set<QueriedPhraseContext> coveredMeasures(Candidate candSet, Collection<QueriedPhraseContext> msrs,
     CubeQueryContext cubeql) throws LensException {
     Set<QueriedPhraseContext> coveringSet = new HashSet<>();
     for (QueriedPhraseContext msr : msrs) {
-      for (Candidate cand : candSet) {
-        if (msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
+      if (candSet.getChildren() == null) {
+        if (msr.isEvaluable(cubeql, (StorageCandidate) candSet)) {
           coveringSet.add(msr);
         }
-      }
+      } else {
+          for (Candidate cand : candSet.getChildren()) {
+            if (msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
+              coveringSet.add(msr);
+            }
+          }
+        }
     }
     return coveringSet;
   }
@@ -147,14 +163,18 @@ public class CandidateUtil {
    *
    * @param candidates
    * @param filterCandidate
+   * @return pruned Candidates
    */
-  public static void filterCandidates(Collection<Candidate> candidates, Candidate filterCandidate) {
+  public static Collection<Candidate> filterCandidates(Collection<Candidate> candidates, Candidate filterCandidate) {
+    List<Candidate> prunedCandidates = new ArrayList<>();
     Iterator<Candidate> itr = candidates.iterator();
     while (itr.hasNext()) {
       if (itr.next().contains(filterCandidate)) {
+        prunedCandidates.add(itr.next());
         itr.remove();
       }
     }
+    return prunedCandidates;
   }
 
   /**
@@ -181,6 +201,14 @@ public class CandidateUtil {
   }
 
   public static StorageCandidate cloneStorageCandidate(StorageCandidate sc) {
-    return new StorageCandidate(sc.getCube(), sc.getFact(), sc.getStorageName());
+    return new StorageCandidate(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getAlias());
+  }
+
+  public static class UnionCandidateComparator<T> implements Comparator<UnionCandidate> {
+
+    @Override
+    public int compare(UnionCandidate o1, UnionCandidate o2) {
+      return Integer.valueOf(o1.getChildren().size() - o2.getChildren().size());
+    }
   }
 }

@@ -2,6 +2,7 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
+import lombok.Getter;
 import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
 
@@ -16,10 +17,13 @@ public class JoinCandidate implements Candidate {
   private Candidate childCandidate1;
   private Candidate childCandidate2;
   private String toStr;
+  @Getter
+  private String alias;
 
-  public JoinCandidate(Candidate childCandidate1, Candidate childCandidate2) {
+  public JoinCandidate(Candidate childCandidate1, Candidate childCandidate2, String alias) {
     this.childCandidate1 = childCandidate1;
     this.childCandidate2 = childCandidate2;
+    this.alias = alias;
   }
 
   private String getJoinCondition() {
@@ -56,12 +60,7 @@ public class JoinCandidate implements Candidate {
 
   @Override
   public double getCost() {
-    return 0;
-  }
-
-  @Override
-  public String getAlias() {
-    return null;
+    return childCandidate1.getCost() + childCandidate2.getCost();
   }
 
   @Override
@@ -97,7 +96,8 @@ public class JoinCandidate implements Candidate {
 
   @Override
   public boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr) {
-    return false;
+    return childCandidate1.isExpressionEvaluable(expr)
+        || childCandidate1.isExpressionEvaluable(expr);
   }
 
   @Override
