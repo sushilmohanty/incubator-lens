@@ -162,10 +162,10 @@ class CandidateTableResolver implements ContextRewriter {
     OptionalDimCtx optdim = cubeql.getOptionalDimensionMap().remove(dim);
     // remove all the depending candidate table as well
     for (CandidateTable candidate : optdim.requiredForCandidates) {
-      if (candidate instanceof CandidateFact) {
-        log.info("Not considering fact:{} as refered table does not have any valid dimtables", candidate);
+      if (candidate instanceof StorageCandidate) {
+        log.info("Not considering storage candidate:{} as refered table does not have any valid dimtables", candidate);
         cubeql.getCandidateFacts().remove(candidate);
-        cubeql.addFactPruningMsgs(((CandidateFact) candidate).fact, new CandidateTablePruneCause(
+        cubeql.addStoragePruningMsg(((StorageCandidate) candidate), new CandidateTablePruneCause(
           CandidateTablePruneCode.INVALID_DENORM_TABLE));
       } else {
         log.info("Not considering dimtable:{} as refered table does not have any valid dimtables", candidate);

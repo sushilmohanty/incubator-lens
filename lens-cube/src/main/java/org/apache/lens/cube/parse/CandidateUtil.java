@@ -116,15 +116,21 @@ public class CandidateUtil {
   }
 
 
-  public static Set<QueriedPhraseContext> coveredMeasures(List<Candidate> candSet, Collection<QueriedPhraseContext> msrs,
+  public static Set<QueriedPhraseContext> coveredMeasures(Candidate candSet, Collection<QueriedPhraseContext> msrs,
     CubeQueryContext cubeql) throws LensException {
     Set<QueriedPhraseContext> coveringSet = new HashSet<>();
     for (QueriedPhraseContext msr : msrs) {
-      for (Candidate cand : candSet) {
-        if (msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
+      if (candSet.getChildren() == null) {
+        if (msr.isEvaluable(cubeql, (StorageCandidate) candSet)) {
           coveringSet.add(msr);
         }
-      }
+      } else {
+          for (Candidate cand : candSet.getChildren()) {
+            if (msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
+              coveringSet.add(msr);
+            }
+          }
+        }
     }
     return coveringSet;
   }
@@ -196,5 +202,13 @@ public class CandidateUtil {
 
   public static StorageCandidate cloneStorageCandidate(StorageCandidate sc) {
     return new StorageCandidate(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getAlias());
+  }
+
+  public static class UnionCandidateComparator<T> implements Comparator<UnionCandidate> {
+
+    @Override
+    public int compare(UnionCandidate o1, UnionCandidate o2) {
+      return Integer.valueOf(o1.getChildren().size() - o2.getChildren().size());
+    }
   }
 }

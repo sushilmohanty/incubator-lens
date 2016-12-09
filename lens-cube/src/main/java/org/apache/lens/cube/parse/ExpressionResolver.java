@@ -663,15 +663,14 @@ class ExpressionResolver implements ContextRewriter {
                 }
               } else {
                 // prune dimension only expressions
-                Set<StorageCandidate> prunedCandidates = CandidateUtil.getStorageCandidates(cubeql.getCandidates());
-                for (StorageCandidate sc : prunedCandidates) {
+                Set<StorageCandidate> storageCandidates = CandidateUtil.getStorageCandidates(cubeql.getCandidates());
+                for (StorageCandidate sc : storageCandidates) {
                   if (!sc.isExpressionEvaluable(ec)) {
-                    Collection<Candidate> prunedCandidate =
+                    Collection<Candidate> prunedCandidates =
                         CandidateUtil.filterCandidates(cubeql.getCandidates(), sc);
                     log.info("Not considering candidate(s) :{} as expr :{} in storage :{} is not evaluable",
-                        prunedCandidate, ec.exprCol.getName(), sc);
-                    //TODO union: Move this to storage skip cause
-                    cubeql.addFactPruningMsgs(sc.getFact(),
+                        prunedCandidates, ec.exprCol.getName(), sc);
+                    cubeql.addStoragePruningMsg(sc,
                         CandidateTablePruneCause.expressionNotEvaluable(ec.exprCol.getName()));
                   }
                 }

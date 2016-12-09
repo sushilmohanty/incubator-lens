@@ -354,8 +354,7 @@ public class DenormalizationResolver implements ContextRewriter {
               for (ReferencedQueriedColumn refcol : denormCtx.tableToRefCols.get(sc.getFact().getName())) {
                 if (denormCtx.getReferencedCols().get(refcol.col.getName()).isEmpty()) {
                   log.info("Not considering storage candidate :{} as column {} is not available", sc, refcol.col);
-                  //TODO union : handle
-                  cubeql.addFactPruningMsgs(sc.getFact(), CandidateTablePruneCause.columnNotFound(refcol.col.getName()));
+                  cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.columnNotFound(refcol.col.getName()));
                   i.remove();
                 }
               }
