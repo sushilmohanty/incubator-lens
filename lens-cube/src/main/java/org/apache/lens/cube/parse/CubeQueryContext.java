@@ -1262,6 +1262,8 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
    *
    * @param pruneCause
    */
+  //TODO union : deprecated
+  @Deprecated
   public void pruneCandidateFactSet(CandidateTablePruneCode pruneCause) {
     // remove candidate fact sets that have missing facts
     for (Iterator<Set<CandidateFact>> i = candidateFactSets.iterator(); i.hasNext();) {
@@ -1288,6 +1290,8 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     pruneCandidateFactWithCandidateSet(new CandidateTablePruneCause(pruneCause));
   }
 
+  //TODO union : deprecated
+  @Deprecated
   public void pruneCandidateFactWithCandidateSet(CandidateTablePruneCause pruneCause) {
     // remove candidate facts that are not part of any covering set
     Set<CandidateFact> allCoveringFacts = new HashSet<CandidateFact>();
