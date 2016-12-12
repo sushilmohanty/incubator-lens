@@ -1,14 +1,12 @@
 package org.apache.lens.cube.parse;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-
-import lombok.Getter;
+import java.util.*;
 
 import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
+import org.apache.lens.server.api.error.LensException;
+
+import lombok.Getter;
 
 /**
  * Represents a union of two candidates
@@ -107,14 +105,22 @@ public class UnionCandidate implements Candidate {
   }
 
   /**
-   * TODO union : break the timerange into candidate specific time ranges and call evaluateCompleteness() for them.
-   * TODO union : If any of the candidates returns false, this method should return false.
+   *
    * @param timeRange
    * @return
    */
   @Override
-  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) {
-    return false;
+  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) throws LensException {
+    List<TimeRange> candidateRange = getTimeRangeForChildren(timeRange);
+    boolean ret = true;
+    for (int i = 0; i < childCandidates.size(); i++) {
+      ret &= childCandidates.get(i).evaluateCompleteness(candidateRange.get(i), failOnPartialData);
+    }
+    return ret;
+  }
+
+  private List<TimeRange> getRangeForCandidates(List<Candidate> childCandidates, TimeRange timeRange) {
+    return null;
   }
 
   @Override
@@ -147,8 +153,19 @@ public class UnionCandidate implements Candidate {
       builder.append(candidate.toString());
       builder.append(", ");
     }
-    builder.delete(builder.length()-2, builder.length());
+    builder.delete(builder.length() - 2, builder.length());
     builder.append("]");
     return builder.toString();
   }
+
+  private List<TimeRange> getTimeRangeForChildren(TimeRange timeRange) {
+    Collections.sort(childCandidates, new Comparator<Candidate>() {
+      @Override
+      public int compare(Candidate o1, Candidate o2) {
+        return o1.getCost() < o2.getCost() ? -1 : o1.getCost() == o2.getCost() ? 0 : 1;
+      }
+    });
+    return getRangeForCandidates(childCandidates, timeRange);
+  }
+
 }

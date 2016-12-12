@@ -2,14 +2,8 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
-import com.google.common.collect.BoundType;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
-
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.MetastoreUtil;
-import org.apache.lens.cube.metadata.Storage;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
@@ -201,7 +195,7 @@ public class CandidateUtil {
   }
 
   public static StorageCandidate cloneStorageCandidate(StorageCandidate sc) {
-    return new StorageCandidate(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getAlias());
+    return new StorageCandidate(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getAlias(), sc.getCubeql());
   }
 
   public static class UnionCandidateComparator<T> implements Comparator<UnionCandidate> {
