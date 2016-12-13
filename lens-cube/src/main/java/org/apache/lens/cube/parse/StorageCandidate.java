@@ -66,7 +66,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Getter
   private String storageName;
   private Map<Dimension, CandidateDim> dimensions;
-  private Map<TimeRange, String> rangeToWhere = new LinkedHashMap<>();
+  private Map<TimeRange, String> whereClauseForFallback = new LinkedHashMap<>();
   @Getter
   private CubeInterface cube;
   /**
@@ -185,6 +185,25 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
   }
 
+  /**
+   * Gets FactPartitions for the given fact using the following logic
+   *
+   * 1. Find the max update interval that will be used for the query. Lets assume time range is 15 Sep to 15 Dec and the
+   * fact has two storage with update periods as MONTHLY,DAILY,HOURLY. In this case the data for
+   * [15 sep - 1 oct)U[1 Dec - 15 Dec) will be answered by DAILY partitions and [1 oct - 1Dec) will be answered by
+   * MONTHLY partitions. The max interavl for this query will be MONTHLY.
+   *
+   * 2.Prune Storgaes that do not fall in the queries time range.
+   * {@link CubeMetastoreClient#isStorageTableCandidateForRange(String, Date, Date)}
+   *
+   * 3. Iterate over max interavl . In out case it will give two months Oct and Nov. Find partitions for these two months.
+   * Check validity of FactPartitions for Oct and Nov via {@link #updatePartitionStorage(FactPartition)}.
+   * If the partition is missing, try getting partitions for the time range form other update periods (DAILY,HOURLY).This
+   * is achieved by calling getPartitions() recursively but passing only 2 update periods (DAILY,HOURLY)
+   *
+   * 4.If the monthly partitions are found, check for lookahead partitions and call getPartitions recursively for the
+   * remaining time intervals i.e, [15 sep - 1 oct) and [1 Dec - 15 Dec)
+   */
   private boolean getPartitions(Date fromDate, Date toDate, String partCol, Set<FactPartition> partitions,
     TreeSet<UpdatePeriod> updatePeriods, boolean addNonExistingParts, boolean failOnPartialData,
     PartitionRangesForPartitionColumns missingPartitions) throws LensException {
@@ -356,7 +375,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
     Set<String> unsupportedTimeDims = Sets.newHashSet();
     Set<String> partColsQueried = Sets.newHashSet();
     partColsQueried.add(timeRange.getPartitionColumn());
-    StringBuilder extraWhereClause = new StringBuilder();
+    StringBuilder extraWhereClauseFallback = new StringBuilder();
     Set<FactPartition> rangeParts = getPartitions(timeRange, validUpdatePeriods, true, failOnPartialData, missingParts);
     String partCol = timeRange.getPartitionColumn();
     boolean partColNotSupported = rangeParts.isEmpty();
@@ -385,7 +404,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
       }
       partColsQueried.add(fallBackRange.getPartitionColumn());
       rangeParts = getPartitions(fallBackRange, validUpdatePeriods, true, failOnPartialData, missingParts);
-      extraWhereClause.append(sep)
+      extraWhereClauseFallback.append(sep)
         .append(prevRange.toTimeDimWhereClause(cubeql.getAliasForTableName(cubeql.getCube()), timeDim));
       sep = " AND ";
       prevRange = fallBackRange;
@@ -407,13 +426,13 @@ public class StorageCandidate implements Candidate, CandidateTable {
       log.info("No partitions for fallback range:{}", timeRange);
       return false;
     }
-    String extraWhere = extraWhereClause.toString();
+    String extraWhere = extraWhereClauseFallback.toString();
     if (!StringUtils.isEmpty(extraWhere)) {
-      rangeToWhere.put(timeRange, "((" + rangeWriter
+      whereClauseForFallback.put(timeRange, "((" + rangeWriter
         .getTimeRangeWhereClause(cubeql, cubeql.getAliasForTableName(cubeql.getCube().getName()), rangeParts)
         + ") and  (" + extraWhere + "))");
     } else {
-      rangeToWhere.put(timeRange, rangeWriter
+      whereClauseForFallback.put(timeRange, rangeWriter
         .getTimeRangeWhereClause(cubeql, cubeql.getAliasForTableName(cubeql.getCube().getName()), rangeParts));
     }
     // Add all the partitions. storagePartitions contains all the partitions for previous time ranges also.

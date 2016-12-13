@@ -105,22 +105,17 @@ public class UnionCandidate implements Candidate {
   }
 
   /**
-   *
    * @param timeRange
    * @return
    */
   @Override
   public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) throws LensException {
-    List<TimeRange> candidateRange = getTimeRangeForChildren(timeRange);
+    Map<Candidate, TimeRange> candidateRange = getTimeRangeForChildren(timeRange);
     boolean ret = true;
-    for (int i = 0; i < childCandidates.size(); i++) {
-      ret &= childCandidates.get(i).evaluateCompleteness(candidateRange.get(i), failOnPartialData);
+    for (Map.Entry<Candidate, TimeRange> entry : candidateRange.entrySet()) {
+      ret &= entry.getKey().evaluateCompleteness(entry.getValue(), failOnPartialData);
     }
     return ret;
-  }
-
-  private List<TimeRange> getRangeForCandidates(List<Candidate> childCandidates, TimeRange timeRange) {
-    return null;
   }
 
   @Override
@@ -158,14 +153,38 @@ public class UnionCandidate implements Candidate {
     return builder.toString();
   }
 
-  private List<TimeRange> getTimeRangeForChildren(TimeRange timeRange) {
+  private Map<Candidate, TimeRange> getTimeRangeForChildren(TimeRange timeRange) {
     Collections.sort(childCandidates, new Comparator<Candidate>() {
       @Override
       public int compare(Candidate o1, Candidate o2) {
         return o1.getCost() < o2.getCost() ? -1 : o1.getCost() == o2.getCost() ? 0 : 1;
       }
     });
-    return getRangeForCandidates(childCandidates, timeRange);
+
+    Map<Candidate, TimeRange> candidateTimeRangeMap = new HashMap<>();
+    // Sorted list based on the weights.
+    List<TimeRange> ranges = new ArrayList<>();
+    ranges.add(timeRange);
+    for (Candidate c : childCandidates) {
+      boolean valid = resolveTimeRange(c, ranges);
+      if (valid) {
+        // take the first element and add it to the map
+        candidateTimeRangeMap.put(c, ranges.get(0));
+        ranges.remove(0);
+      }
+    }
+    return candidateTimeRangeMap;
   }
 
+  private boolean resolveTimeRange(Candidate c, List<TimeRange> ranges) {
+    for (TimeRange range : ranges) {
+      // Check for out of range
+      if (c.getStartTime().getTime() >= range.getToDate().getTime() || c.getEndTime().getTime() <= range.getFromDate()
+        .getTime()) {
+        continue;
+        // This means overlap.
+      }
+    }
+    return false;
+  }
 }

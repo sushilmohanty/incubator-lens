@@ -123,8 +123,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   @Getter
   private final Map<String, AbstractCubeTable> cubeTbls = new HashMap<>();
 
-  private Map<String, CandidateTablePruneCause.SkipStorageCause> skipStorageCauses;
-
   void addSelectPhrase(SelectPhraseContext sel) {
     selectPhrases.add(sel);
     addQueriedPhrase(sel);
@@ -391,11 +389,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       refColToDim.put(col.toLowerCase(), refDims);
     }
     refDims.add(dim);
-  }
-
-
-  public Map<String, CandidateTablePruneCause.SkipStorageCause> getSkipStorageCauses() {
-    return skipStorageCauses;
   }
 
   @Data
