@@ -163,28 +163,85 @@ public class UnionCandidate implements Candidate {
 
     Map<Candidate, TimeRange> candidateTimeRangeMap = new HashMap<>();
     // Sorted list based on the weights.
-    List<TimeRange> ranges = new ArrayList<>();
+    Set<TimeRange> ranges = new HashSet<>();
+
     ranges.add(timeRange);
     for (Candidate c : childCandidates) {
-      boolean valid = resolveTimeRange(c, ranges);
-      if (valid) {
-        // take the first element and add it to the map
-        candidateTimeRangeMap.put(c, ranges.get(0));
-        ranges.remove(0);
+      TimeRange.TimeRangeBuilder builder = getClonedBuiler(timeRange);
+      TimeRange tr = resolveTimeRange(c, ranges, builder);
+      if (tr != null) {
+        // If the time range is not null it means this child candidate is valid for this union candidate.
+        candidateTimeRangeMap.put(c, tr);
       }
     }
     return candidateTimeRangeMap;
   }
 
-  private boolean resolveTimeRange(Candidate c, List<TimeRange> ranges) {
-    for (TimeRange range : ranges) {
+  private TimeRange resolveTimeRange(Candidate c, Set<TimeRange> ranges, TimeRange.TimeRangeBuilder builder) {
+    Iterator<TimeRange> it = ranges.iterator();
+    Set<TimeRange> newTimeRanges = new HashSet<>();
+    TimeRange ret = null;
+    while (it.hasNext()) {
+      TimeRange range = it.next();
       // Check for out of range
       if (c.getStartTime().getTime() >= range.getToDate().getTime() || c.getEndTime().getTime() <= range.getFromDate()
         .getTime()) {
         continue;
-        // This means overlap.
       }
+      // This means overlap.
+      if (c.getStartTime().getTime() <= range.getFromDate().getTime()) {
+        // Start time of the new time range will be range.getFromDate()
+        builder.fromDate(range.getFromDate());
+        if (c.getEndTime().getTime() <= range.getToDate().getTime()) {
+          // End time is in the middle of the range is equal to c.getEndTime().
+          builder.toDate(c.getEndTime());
+        } else {
+          // End time will be range.getToDate()
+          builder.toDate(range.getToDate());
+        }
+      } else {
+        builder.fromDate(c.getStartTime());
+        if (c.getEndTime().getTime() <= range.getToDate().getTime()) {
+          builder.toDate(c.getEndTime());
+        } else {
+          builder.toDate(range.getToDate());
+        }
+      }
+      // Remove the time range and add more time ranges.
+      it.remove();
+      ret = builder.build();
+      if (ret.getFromDate().getTime() == range.getFromDate().getTime()) {
+        if (ret.getToDate().getTime() < range.getToDate().getTime()) {
+          // The end time is the start time of the new range.
+          TimeRange.TimeRangeBuilder b1 = getClonedBuiler(ret);
+          b1.fromDate(ret.getFromDate());
+          b1.toDate(range.getToDate());
+          newTimeRanges.add(b1.build());
+        }
+      } else {
+        TimeRange.TimeRangeBuilder b1 = getClonedBuiler(ret);
+        b1.fromDate(range.getFromDate());
+        b1.toDate(ret.getFromDate());
+        newTimeRanges.add(b1.build());
+        if (ret.getToDate().getTime() < range.getToDate().getTime()) {
+          TimeRange.TimeRangeBuilder b2 = getClonedBuiler(ret);
+          b2.fromDate(ret.getToDate());
+          b2.toDate(range.getToDate());
+          newTimeRanges.add(b2.build());
+        }
+      }
+      break;
     }
-    return false;
+    ranges.addAll(newTimeRanges);
+    return ret;
+  }
+
+  private TimeRange.TimeRangeBuilder getClonedBuiler(TimeRange timeRange) {
+    TimeRange.TimeRangeBuilder builder = new TimeRange.TimeRangeBuilder();
+    builder.astNode(timeRange.getAstNode());
+    builder.childIndex(timeRange.getChildIndex());
+    builder.parent(timeRange.getParent());
+    builder.partitionColumn(timeRange.getPartitionColumn());
+    return builder;
   }
 }
