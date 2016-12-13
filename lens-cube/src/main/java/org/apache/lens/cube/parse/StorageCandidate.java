@@ -54,6 +54,9 @@ public class StorageCandidate implements Candidate, CandidateTable {
   private final float completenessThreshold;
   @Getter
   private final String name;
+  /**
+   * Valid udpate periods populated by Phase 1.
+   */
   private TreeSet<UpdatePeriod> validUpdatePeriods = new TreeSet<>();
   private Configuration conf = null;
   private Map<String, Map<String, Float>> incompleteMeasureData = new HashMap<>();
@@ -66,7 +69,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Getter
   private String storageName;
   private Map<Dimension, CandidateDim> dimensions;
-  private Map<TimeRange, String> whereClauseForFallback = new LinkedHashMap<>();
+  private Map<TimeRange, String> rangeToWhere = new LinkedHashMap<>();
   @Getter
   private CubeInterface cube;
   /**
@@ -80,8 +83,13 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Getter
   @Setter
   private Map<String, Map<String, Float>> incompleteDataDetails;
-  //  private Map<String, CandidateTablePruneCause.SkipStorageCause> skipStorageCauses = new HashMap<>();
+  /**
+   * Partition calculated by getPartition() method.
+   */
   private Set<FactPartition> storagePartitions = new HashSet<>();
+  /**
+   * Non existing partitions
+   */
   private Set<String> nonExistingPartitions = new HashSet<>();
   @Getter
   private String alias = null;
@@ -420,7 +428,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
       return false;
     }
     Set<String> nonExistingParts = missingParts.toSet(partColsQueried);
-    // Adding it to cubeql.
+    // TODO union : Relook at this.
     nonExistingPartitions.addAll(nonExistingParts);
     if (rangeParts.size() == 0 || (failOnPartialData && !nonExistingParts.isEmpty())) {
       log.info("No partitions for fallback range:{}", timeRange);
@@ -428,11 +436,11 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
     String extraWhere = extraWhereClauseFallback.toString();
     if (!StringUtils.isEmpty(extraWhere)) {
-      whereClauseForFallback.put(timeRange, "((" + rangeWriter
+      rangeToWhere.put(timeRange, "((" + rangeWriter
         .getTimeRangeWhereClause(cubeql, cubeql.getAliasForTableName(cubeql.getCube().getName()), rangeParts)
         + ") and  (" + extraWhere + "))");
     } else {
-      whereClauseForFallback.put(timeRange, rangeWriter
+      rangeToWhere.put(timeRange, rangeWriter
         .getTimeRangeWhereClause(cubeql, cubeql.getAliasForTableName(cubeql.getCube().getName()), rangeParts));
     }
     // Add all the partitions. storagePartitions contains all the partitions for previous time ranges also.

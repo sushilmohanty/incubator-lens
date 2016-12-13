@@ -204,7 +204,8 @@ public final class StorageUtil {
   }
 
   /**
-   * Checks how much data is completed on a particular measure.
+   * Checks how much data is completed for a column.
+   * See this: {@link org.apache.lens.server.api.metastore.DataCompletenessChecker}
    * @param cubeql
    * @param cubeCol
    * @param alias
@@ -233,6 +234,12 @@ public final class StorageUtil {
     return false;
   }
 
+  /**
+   * Extract the expression for the measure.
+   * @param cubeql
+   * @param measureTag
+   * @param tagToMeasureOrExprMap
+   */
   public static void processMeasuresFromExprMeasures(CubeQueryContext cubeql, Set<String> measureTag,
     Map<String, String> tagToMeasureOrExprMap) {
     boolean isExprProcessed;
