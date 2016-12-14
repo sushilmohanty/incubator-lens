@@ -150,13 +150,13 @@ public class CubeQueryRewriter {
     // Resolve candidate fact tables and dimension tables for columns queried
     rewriters.add(candidateTblResolver);
     // Resolve aggregations and generate base select tree
+    rewriters.add(new AggregateResolver());
+    rewriters.add(new GroupbyResolver(conf));
+    rewriters.add(new FieldValidator());
     rewriters.add(new CandidateCoveringSetsResolver(conf));
 
     //TODO union: Add CoveringSetResolver which creates UnionCandidates and JoinCandidates. Some code form candidateTblResolver(phase 2) to be moved to CoveringSetResolver
     //TODO union: AggregateResolver,GroupbyResolver,FieldValidator before CoveringSetResolver
-    rewriters.add(new AggregateResolver());
-    rewriters.add(new GroupbyResolver(conf));
-    rewriters.add(new FieldValidator());
     // Resolve joins and generate base join tree
     rewriters.add(new JoinResolver(conf));
     // Do col life validation

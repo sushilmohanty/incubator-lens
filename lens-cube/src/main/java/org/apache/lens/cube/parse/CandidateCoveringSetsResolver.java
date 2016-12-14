@@ -69,11 +69,10 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   }
 
   private void updateFinalCandidates(List<List<Candidate>> jcs) {
-    int aliasCounter = 0;
     for (Iterator<List<Candidate>> itr = jcs.iterator(); itr.hasNext(); ) {
       List<Candidate> jc = itr.next();
-      if (jc.size() == 1 && jc.iterator().next().getChildren().size() == 1) {
-        finalCandidates.add(jc.iterator().next().getChildren().iterator().next());
+      if (jc.size() == 1) {
+        finalCandidates.add(jc.iterator().next());
       } else {
         finalCandidates.add(createJoinCandidateFromUnionCandidates(jc));
       }
@@ -111,7 +110,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       if (cand instanceof StorageCandidate) {
         StorageCandidate sc = (StorageCandidate) cand;
         if (CandidateUtil.isValidForTimeRanges(sc, ranges)) {
-          candidateSet.add(sc);
+          candidateSet.add(CandidateUtil.cloneStorageCandidate(sc));
           continue;
         } else if (CandidateUtil.isPartiallyValidForTimeRanges(sc, ranges)) {
           allCandidatesPartiallyValid.add(CandidateUtil.cloneStorageCandidate(sc));

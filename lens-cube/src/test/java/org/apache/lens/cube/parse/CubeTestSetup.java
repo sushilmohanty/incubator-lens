@@ -1313,6 +1313,7 @@ public class CubeTestSetup {
     factColumns.add(new FieldSchema(prefix + "cityid", "int", "city id"));
     // add fact start and end time property
     Map<String, String> properties = Maps.newHashMap(factValidityProperties);
+    properties.put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, "false");
     properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 90 days"));
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day - 30 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
@@ -1323,6 +1324,7 @@ public class CubeTestSetup {
     properties.clear();
     //factColumns.add(new ColumnMeasure(new FieldSchema(prefix + "msr2", "int", "second measure")).getColumn());
     // add fact start and end time property
+    properties.put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, "false");
     properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 31 days"));
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
@@ -1337,6 +1339,7 @@ public class CubeTestSetup {
     factColumns.add(new FieldSchema(prefix + "cityid", "int", "city id"));
     properties.clear();
     // add fact start and end time property
+    properties.put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, "false");
     properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 90 days"));
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
@@ -1346,6 +1349,7 @@ public class CubeTestSetup {
     factName = prefix + "fact4";
     factColumns.add(new ColumnMeasure(new FieldSchema(prefix + "msr1", "int", "first measure")).getColumn());
     properties.clear();
+    properties.put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, "false");
     properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 90 days"));
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
@@ -1359,6 +1363,7 @@ public class CubeTestSetup {
     factColumns.add(new FieldSchema(prefix + "cityid", "int", "city id"));
     factColumns.add(new ColumnMeasure(new FieldSchema(prefix + "msr3", "int", "third measure")).getColumn());
     properties.clear();
+    properties.put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, "false");
     properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 90 days"));
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day -30 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
@@ -1366,6 +1371,7 @@ public class CubeTestSetup {
 
     factName = prefix + "fact6";
     properties.clear();
+    properties.put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, "false");
     properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day -31 days"));
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,

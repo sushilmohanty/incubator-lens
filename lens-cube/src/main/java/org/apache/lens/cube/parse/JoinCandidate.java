@@ -43,7 +43,10 @@ public class JoinCandidate implements Candidate {
 
   @Override
   public Collection<String> getColumns() {
-    return null;
+    Set<String> columns = new HashSet<>();
+    columns.addAll(childCandidate1.getColumns());
+    columns.addAll(childCandidate2.getColumns());
+    return columns;
   }
 
   @Override

@@ -20,16 +20,26 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
+import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
+import org.antlr.runtime.CommonToken;
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.hive.ql.parse.ASTNode;
+import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.lens.cube.metadata.*;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.lens.server.api.error.LensException;
+
+import static org.apache.hadoop.hive.ql.parse.HiveParser.Identifier;
 
 /**
  * Represents a fact on a storage table and the dimensions it needs to be joined with to answer the query
  *
  */
-public class StorageCandidate implements Candidate,CandidateTable {
+@Slf4j
+public class StorageCandidate implements Candidate, CandidateTable {
 
   /**
    * Participating fact, storage and dimensions for this StorageCandidate
@@ -42,6 +52,19 @@ public class StorageCandidate implements Candidate,CandidateTable {
   private String name;
   @Getter
   private String alias;
+  @Getter
+  private final Map<String, String> storgeWhereStringMap = new HashMap<>();
+  @Getter
+  private final Map<TimeRange, Map<String, String>> rangeToStorageWhereMap = new HashMap<>();
+  @Getter
+  private final Map<String, ASTNode> storgeWhereClauseMap = new HashMap<>();
+  @Getter
+  @Setter
+  private QueryAST queryAst;
+  private final List<Integer> selectIndices = Lists.newArrayList();
+  private final List<Integer> dimFieldIndices = Lists.newArrayList();
+  @Getter
+  private String fromString;
 
   public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName, String alias) {
     if ((cube == null) || (fact == null) || (storageName == null) || (alias == null)) {
@@ -70,16 +93,6 @@ public class StorageCandidate implements Candidate,CandidateTable {
   @Getter
   @Setter
   private Map<String, Map<String, Float>> incompleteDataDetails;
-
-  @Override
-  public String toHQL() {
-    return null;
-  }
-
-  @Override
-  public QueryAST getQueryAst() {
-    return null;
-  }
 
   @Override
   public String getStorageString(String alias) {
@@ -178,4 +191,137 @@ public class StorageCandidate implements Candidate,CandidateTable {
   public String toString() {
     return getName();
   }
+
+  public String getStorageWhereString(String storageTable) {
+    return storgeWhereStringMap.get(storageTable);
+  }
+  /**
+   * Update the ASTs to include only the fields queried from this fact, in all the expressions
+   *
+   * @param cubeql
+   * @throws LensException
+   */
+  public void updateASTs(CubeQueryContext cubeql) throws LensException {
+    // update select AST with selected fields
+    int currentChild = 0;
+    for (int i = 0; i < cubeql.getSelectAST().getChildCount(); i++) {
+      ASTNode selectExpr = (ASTNode) queryAst.getSelectAST().getChild(currentChild);
+      Set<String> exprCols = HQLParser.getColsInExpr(cubeql.getAliasForTableName(cubeql.getCube()), selectExpr);
+      if (getColumns().containsAll(exprCols)) {
+        selectIndices.add(i);
+        if (exprCols.isEmpty() // no direct fact columns
+            // does not have measure names
+            || (!containsAny(cubeql.getCube().getMeasureNames(), exprCols))) {
+          dimFieldIndices.add(i);
+        }
+        ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
+        String alias = cubeql.getSelectPhrases().get(i).getSelectAlias();
+        if (aliasNode != null) {
+          String queryAlias = aliasNode.getText();
+          if (!queryAlias.equals(alias)) {
+            // replace the alias node
+            ASTNode newAliasNode = new ASTNode(new CommonToken(HiveParser.Identifier, alias));
+            queryAst.getSelectAST().getChild(currentChild).replaceChildren(selectExpr.getChildCount() - 1,
+                selectExpr.getChildCount() - 1, newAliasNode);
+          }
+        } else {
+          // add column alias
+          ASTNode newAliasNode = new ASTNode(new CommonToken(HiveParser.Identifier, alias));
+          queryAst.getSelectAST().getChild(currentChild).addChild(newAliasNode);
+        }
+      } else {
+        queryAst.getSelectAST().deleteChild(currentChild);
+        currentChild--;
+      }
+      currentChild++;
+    }
+
+    // don't need to update where ast, since where is only on dim attributes and dim attributes
+    // are assumed to be common in multi fact queries.
+
+    // push down of having clauses happens just after this call in cubequerycontext
+  }
+
+  static boolean containsAny(Collection<String> srcSet, Collection<String> colSet) {
+    if (colSet == null || colSet.isEmpty()) {
+      return true;
+    }
+    for (String column : colSet) {
+      if (srcSet.contains(column)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public void updateFromString(CubeQueryContext query, Set<Dimension> queryDims,
+                               Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
+    fromString = "%s"; // to update the storage alias later
+    if (query.isAutoJoinResolved()) {
+      fromString =
+          query.getAutoJoinCtx().getFromString(fromString, this, queryDims, dimsToQuery,
+              query, this.getQueryAst());
+    }
+  }
+  public ASTNode getStorageWhereClause(String storageTable) {
+    return storgeWhereClauseMap.get(storageTable);
+  }
+
+
+  public String toHQL() throws LensException {
+    //setMissingExpressions();
+    String qfmt = getQueryFormat();
+    Object[] queryTreeStrings = getQueryTreeStrings();
+    if (log.isDebugEnabled()) {
+      log.debug("qfmt: {} Query strings: {}", qfmt, Arrays.toString(queryTreeStrings));
+    }
+    String baseQuery = String.format(qfmt, queryTreeStrings);
+    return baseQuery;
+  }
+
+  private String[] getQueryTreeStrings() throws LensException {
+    List<String> qstrs = new ArrayList<String>();
+    qstrs.add(queryAst.getSelectString());
+    qstrs.add(queryAst.getFromString());
+    if (!StringUtils.isBlank(queryAst.getWhereString())) {
+      qstrs.add(queryAst.getWhereString());
+    }
+    if (!StringUtils.isBlank(queryAst.getGroupByString())) {
+      qstrs.add(queryAst.getGroupByString());
+    }
+    if (!StringUtils.isBlank(queryAst.getHavingString())) {
+      qstrs.add(queryAst.getHavingString());
+    }
+    if (!StringUtils.isBlank(queryAst.getOrderByString())) {
+      qstrs.add(queryAst.getOrderByString());
+    }
+    if (queryAst.getLimitValue() != null) {
+      qstrs.add(String.valueOf(queryAst.getLimitValue()));
+    }
+    return qstrs.toArray(new String[0]);
+  }
+
+  private final String baseQueryFormat = "SELECT %s FROM %s";
+
+  private String getQueryFormat() {
+    StringBuilder queryFormat = new StringBuilder();
+    queryFormat.append(baseQueryFormat);
+    if (!StringUtils.isBlank(queryAst.getWhereString())) {
+      queryFormat.append(" WHERE %s");
+    }
+    if (!StringUtils.isBlank(queryAst.getGroupByString())) {
+      queryFormat.append(" GROUP BY %s");
+    }
+    if (!StringUtils.isBlank(queryAst.getHavingString())) {
+      queryFormat.append(" HAVING %s");
+    }
+    if (!StringUtils.isBlank(queryAst.getOrderByString())) {
+      queryFormat.append(" ORDER BY %s");
+    }
+    if (queryAst.getLimitValue() != null) {
+      queryFormat.append(" LIMIT %s");
+    }
+    return queryFormat.toString();
+  }
+
 }

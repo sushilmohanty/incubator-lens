@@ -47,13 +47,18 @@ public class TestUnionAndJoinCandidates extends TestQueryRewrite {
           getValidUpdatePeriodsKey(prefix + "fact1", "C1"), "DAILY",
           getValidUpdatePeriodsKey(prefix + "fact2", "C1"), "DAILY",
           getValidUpdatePeriodsKey(prefix + "fact3", "C1"), "DAILY");
+       // Single storage candidate
 
       String colsSelected = prefix + "cityid , " + prefix + "zipcode , " + "sum(" + prefix + "msr1) , "
-          + "sum(" + prefix + "msr2), " + "sum(" + prefix + "msr3) ";
-
+          + "sum(" + prefix + "msr2) ";
       String whereCond = prefix + "zipcode = 'a' and " + prefix + "cityid = 'b' and " +
           "(" + TWO_MONTHS_RANGE_UPTO_DAYS + ")";
+
       String hqlQuery = rewrite("select " + colsSelected + " from " + cubeName + " where " + whereCond, conf);
+
+      colsSelected = prefix + "cityid , " + prefix + "zipcode , " + "sum(" + prefix + "msr1) , "
+          + "sum(" + prefix + "msr2), " + "sum(" + prefix + "msr3) ";
+
 
       System.out.println(hqlQuery);
 

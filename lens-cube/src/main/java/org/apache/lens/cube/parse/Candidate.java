@@ -29,7 +29,7 @@ public interface Candidate {
    * TODO decide if this method should be moved to QueryAST instead
    * @return
    */
-  String toHQL();
+  String toHQL() throws LensException;
 
   /**
    * Returns Query AST

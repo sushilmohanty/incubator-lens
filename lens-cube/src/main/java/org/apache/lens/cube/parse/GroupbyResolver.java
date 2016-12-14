@@ -79,7 +79,7 @@ class GroupbyResolver implements ContextRewriter {
                 groupbyAST.addChild(exprAST);
               } else {
                 // no group by ast exist, create one
-                ASTNode newAST = new ASTNode(new CommonToken(TOK_GROUPBY));
+                ASTNode newAST = new ASTNode(new CommonToken(TOK_GROUPBY, "TOK_GROUPBY"));
                 newAST.addChild(exprAST);
                 cubeql.setGroupByAST(newAST);
               }

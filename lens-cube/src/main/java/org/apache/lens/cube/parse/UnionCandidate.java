@@ -1,9 +1,6 @@
 package org.apache.lens.cube.parse;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import lombok.Getter;
 
@@ -45,7 +42,11 @@ public class UnionCandidate implements Candidate {
 
   @Override
   public Collection<String> getColumns() {
-    return null;
+    Set<String> columns = new HashSet<>();
+    for (Candidate cand : childCandidates) {
+      columns.addAll(cand.getColumns());
+    }
+    return columns;
   }
 
   @Override

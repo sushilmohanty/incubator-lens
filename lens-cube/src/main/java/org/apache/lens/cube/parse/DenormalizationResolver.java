@@ -169,14 +169,14 @@ public class DenormalizationResolver implements ContextRewriter {
       return null;
     }
 
-    public Set<Dimension> rewriteDenormctx(CandidateFact cfact, Map<Dimension, CandidateDim> dimsToQuery,
+    public Set<Dimension> rewriteDenormctx(StorageCandidate sc, Map<Dimension, CandidateDim> dimsToQuery,
       boolean replaceFact) throws LensException {
       Set<Dimension> refTbls = new HashSet<>();
 
       if (!tableToRefCols.isEmpty()) {
         // pick referenced columns for fact
-        if (cfact != null) {
-          pickColumnsForTable(cfact.getName());
+        if (sc != null) {
+          pickColumnsForTable(sc.getName());
         }
         // pick referenced columns for dimensions
         if (dimsToQuery != null && !dimsToQuery.isEmpty()) {
@@ -185,11 +185,11 @@ public class DenormalizationResolver implements ContextRewriter {
           }
         }
         // Replace picked reference in all the base trees
-        replaceReferencedColumns(cfact, replaceFact);
+        replaceReferencedColumns(sc, replaceFact);
 
         // Add the picked references to dimsToQuery
         for (PickedReference picked : pickedRefs) {
-          if (isPickedFor(picked, cfact, dimsToQuery)) {
+          if (isPickedFor(picked, sc, dimsToQuery)) {
             refTbls.add((Dimension) cubeql.getCubeTableForAlias(picked.getChainRef().getChainName()));
             cubeql.addColumnsQueried(picked.getChainRef().getChainName(), picked.getChainRef().getRefColumn());
           }
@@ -199,8 +199,8 @@ public class DenormalizationResolver implements ContextRewriter {
     }
 
     // checks if the reference if picked for facts and dimsToQuery passed
-    private boolean isPickedFor(PickedReference picked, CandidateFact cfact, Map<Dimension, CandidateDim> dimsToQuery) {
-      if (cfact != null && picked.pickedFor.equalsIgnoreCase(cfact.getName())) {
+    private boolean isPickedFor(PickedReference picked, StorageCandidate sc, Map<Dimension, CandidateDim> dimsToQuery) {
+      if (sc != null && picked.pickedFor.equalsIgnoreCase(sc.getName())) {
         return true;
       }
       if (dimsToQuery != null) {
@@ -237,16 +237,16 @@ public class DenormalizationResolver implements ContextRewriter {
       }
     }
 
-    private void replaceReferencedColumns(CandidateFact cfact, boolean replaceFact) throws LensException {
+    private void replaceReferencedColumns(StorageCandidate sc, boolean replaceFact) throws LensException {
       QueryAST ast = cubeql;
-      boolean factRefExists = cfact != null && tableToRefCols.get(cfact.getName()) != null && !tableToRefCols.get(cfact
+      boolean factRefExists = sc != null && tableToRefCols.get(sc.getName()) != null && !tableToRefCols.get(sc
         .getName()).isEmpty();
       if (replaceFact && factRefExists) {
-        ast = cfact;
+        ast = sc.getQueryAst();
       }
       resolveClause(cubeql, ast.getSelectAST());
       if (factRefExists) {
-        for (ASTNode storageWhereClauseAST : cfact.getStorgeWhereClauseMap().values()) {
+        for (ASTNode storageWhereClauseAST : sc.getStorgeWhereClauseMap().values()) {
           resolveClause(cubeql, storageWhereClauseAST);
         }
       } else {

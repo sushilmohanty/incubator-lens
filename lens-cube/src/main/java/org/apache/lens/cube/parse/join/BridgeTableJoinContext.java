@@ -41,7 +41,7 @@ public class BridgeTableJoinContext {
   private final String bridgeTableFieldAggr;
   private final String arrayFilter;
   private final CubeQueryContext cubeql;
-  private final CandidateFact fact;
+  private final StorageCandidate sc;
   private final QueryAST queryAST;
   private final boolean doFlatteningEarly;
   private boolean initedBridgeClauses = false;
@@ -51,11 +51,11 @@ public class BridgeTableJoinContext {
   private final StringBuilder bridgeJoinClause = new StringBuilder();
   private final StringBuilder bridgeGroupbyClause = new StringBuilder();
 
-  public BridgeTableJoinContext(CubeQueryContext cubeql, CandidateFact fact, QueryAST queryAST,
+  public BridgeTableJoinContext(CubeQueryContext cubeql, StorageCandidate sc, QueryAST queryAST,
     String bridgeTableFieldAggr, String arrayFilter, boolean doFlatteningEarly) {
     this.cubeql = cubeql;
     this.queryAST = queryAST;
-    this.fact = fact;
+    this.sc = sc;
     this.bridgeTableFieldAggr = bridgeTableFieldAggr;
     this.arrayFilter = arrayFilter;
     this.doFlatteningEarly = doFlatteningEarly;
@@ -140,7 +140,7 @@ public class BridgeTableJoinContext {
     if (!doFlatteningEarly) {
       BridgeTableSelectCtx selectCtx = new BridgeTableSelectCtx(bridgeTableFieldAggr, arrayFilter, toAlias);
       selectCtx.processSelectAST(queryAST.getSelectAST());
-      selectCtx.processWhereClauses(fact);
+      selectCtx.processWhereClauses(sc);
       selectCtx.processGroupbyAST(queryAST.getGroupByAST());
       selectCtx.processOrderbyAST(queryAST.getOrderByAST());
       clause.append(",").append(StringUtils.join(selectCtx.getSelectedBridgeExprs(), ","));
@@ -236,9 +236,9 @@ public class BridgeTableJoinContext {
       }
     }
 
-    void processWhereClauses(CandidateFact fact) throws LensException {
+    void processWhereClauses(StorageCandidate sc) throws LensException {
 
-      for (Map.Entry<String, ASTNode> whereEntry : fact.getStorgeWhereClauseMap().entrySet()) {
+      for (Map.Entry<String, ASTNode> whereEntry : sc.getStorgeWhereClauseMap().entrySet()) {
         ASTNode whereAST = whereEntry.getValue();
         processWhereAST(whereAST, null, 0);
       }

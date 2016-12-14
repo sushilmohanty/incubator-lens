@@ -98,7 +98,7 @@ public class CandidateUtil {
    * @param targetAst
    * @throws LensException
    */
-  public void copyASTs(QueryAST sourceAst, QueryAST targetAst) throws LensException {
+  public static void copyASTs(QueryAST sourceAst, QueryAST targetAst) throws LensException {
     targetAst.setSelectAST(MetastoreUtil.copyAST(sourceAst.getSelectAST()));
     targetAst.setWhereAST(MetastoreUtil.copyAST(sourceAst.getWhereAST()));
     if (sourceAst.getJoinAST() != null) {
