@@ -814,6 +814,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     }
   }
 
+  // TODO union : Reevaluate this method.
   void setNonexistingParts(Map<String, Set<String>> nonExistingParts) throws LensException {
     if (!nonExistingParts.isEmpty()) {
       ByteArrayOutputStream out = null;
