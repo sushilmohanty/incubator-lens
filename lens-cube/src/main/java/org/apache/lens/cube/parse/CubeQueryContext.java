@@ -814,6 +814,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     }
   }
 
+  // TODO union : Reevaluate this method.
   void setNonexistingParts(Map<String, Set<String>> nonExistingParts) throws LensException {
     if (!nonExistingParts.isEmpty()) {
       ByteArrayOutputStream out = null;
@@ -933,17 +934,14 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     if (sc != null) {
       // resolve timerange positions and replace it by corresponding where clause
       for (TimeRange range : getTimeRanges()) {
-        for (Map.Entry<String, String> entry : sc.getRangeToStorageWhereMap().get(range).entrySet()) {
-          String table = entry.getKey();
-          String rangeWhere = entry.getValue();
+        String rangeWhere = sc.getRangeToWhere().get(range);
           if (!StringUtils.isBlank(rangeWhere)) {
             ASTNode rangeAST = HQLParser.parseExpr(rangeWhere, conf);
             range.getParent().setChild(range.getChildIndex(), rangeAST);
           }
-          sc.getStorgeWhereClauseMap().put(table, HQLParser.parseExpr(getWhereString(), conf));
+          sc.getQueryAst().setWhereAST(HQLParser.parseExpr(getWhereString(), conf));
         }
       }
-    }
   }
 
   public String toHQL() throws LensException {
@@ -959,18 +957,15 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
     Map<StorageCandidate, Set<Dimension>> factDimMap = new HashMap<>();
     if (cand != null) {
-      //if (scSet.size() > 1) {
-        // copy ASTs for each fact
+        // copy ASTs for each storage candidate
         for (StorageCandidate sc : scSet) {
           sc.setQueryAst(DefaultQueryAST.fromCandidateStorage(sc, sc.getStorageName(), this));
-          CandidateUtil.copyASTs(this, sc.getQueryAst());
+          //CandidateUtil.copyASTs(this, sc.getQueryAst());
           factDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
         }
-     // }
-      //TODO rewrite : merge after lavkesh's change
-     // for (StorageCandidate sc : scSet) {
-     //   addRangeClauses(sc);
-     // }
+        for (StorageCandidate sc : scSet) {
+         addRangeClauses(sc);
+     }
     }
 
     // pick dimension tables required during expression expansion for the picked fact and dimensions
@@ -1033,21 +1028,23 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     pickedDimTables = dimsToQuery.values();
     pickedCandidate = cand;
     if (scSet != null) {
-      if (scSet.size() > 1) {
+     // if (scSet.size() > 1) {
         // Update ASTs for each fact
         for (StorageCandidate sc : scSet) {
-          sc.updateASTs(this);
+          sc.updateAnswerableColumnsQueried(this);
         }
         // TODO rewrite: Handle this in join candidates
         //whereAST = MultiFactHQLContext.convertHavingToWhere(havingAST, this, cfacts, new DefaultAliasDecider());
         for (StorageCandidate sc : scSet) {
           sc.updateFromString(this, factDimMap.get(sc), dimsToQuery);
         }
-      }
+     // }
     }
+    /*
     if (scSet == null || scSet.size() == 1) {
       updateFromString(scSet == null ? null : scSet.iterator().next(), dimsToQuery);
     }
+    */
     //update dim filter with fact filter
     if (scSet != null && scSet.size() > 0) {
       for (StorageCandidate sc : scSet) {
@@ -1055,44 +1052,14 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
           String qualifiedStorageTable = sc.getStorageName();
             String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1);
             String where = getWhere(sc, autoJoinCtx,
-                sc.getStorageWhereClause(storageTable), getAliasForTableName(sc.getBaseTable().getName()),
+                sc.getQueryAst().getWhereAST(), getAliasForTableName(sc.getBaseTable().getName()),
                 shouldReplaceDimFilterWithFactFilter(), storageTable, dimsToQuery);
-            sc.getStorgeWhereStringMap().put(storageTable, where);
+            sc.setWhereString(where);
         }
       }
     }
-    //hqlContext = createHQLContext(cand, dimsToQuery, factDimMap);
     return cand.toHQL();
   }
-
-  /*
-  private HQLContextInterface createHQLContext(Candidate cand, Map<Dimension, CandidateDim> dimsToQuery,
-                                               Map<StorageCandidate, Set<Dimension>> factDimMap) throws LensException {
-    if (CandidateUtil.getStorageCandidates(cand).size() == 1) {
-
-      return new SingleFactSingleStorageHQLContext(sc, null,
-          dimsToQuery, this, DefaultQueryAST.fromCandidateFact(fact, fact.getStorageTables().iterator().next(), this));
-    }
-    return null;
-  }
-  */
-  /*private HQLContextInterface createHQLContext(Set<CandidateFact> facts, Map<Dimension, CandidateDim> dimsToQuery,
-    Map<CandidateFact, Set<Dimension>> factDimMap) throws LensException {
-    if (facts == null || facts.size() == 0) {
-      return new DimOnlyHQLContext(dimsToQuery, this, this);
-    } else if (facts.size() == 1 && facts.iterator().next().getStorageTables().size() > 1) {
-      //create single fact with multiple storage context
-      return new SingleFactMultiStorageHQLContext(facts.iterator().next(), dimsToQuery, this, this);
-    } else if (facts.size() == 1 && facts.iterator().next().getStorageTables().size() == 1) {
-      CandidateFact fact = facts.iterator().next();
-      // create single fact context
-      return new SingleFactSingleStorageHQLContext(fact, null,
-        dimsToQuery, this, DefaultQueryAST.fromCandidateFact(fact, fact.getStorageTables().iterator().next(), this));
-    } else {
-      return new MultiFactHQLContext(facts, dimsToQuery, factDimMap, this);
-    }
-  }
-*/
 
   public ASTNode toAST(Context ctx) throws LensException {
     String hql = toHQL();
@@ -1280,6 +1247,8 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
    *
    * @param pruneCause
    */
+  //TODO union : deprecated
+  @Deprecated
   public void pruneCandidateFactSet(CandidateTablePruneCode pruneCause) {
     // remove candidate fact sets that have missing facts
     for (Iterator<Set<CandidateFact>> i = candidateFactSets.iterator(); i.hasNext();) {
@@ -1306,6 +1275,8 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     pruneCandidateFactWithCandidateSet(new CandidateTablePruneCause(pruneCause));
   }
 
+  //TODO union : deprecated
+  @Deprecated
   public void pruneCandidateFactWithCandidateSet(CandidateTablePruneCause pruneCause) {
     // remove candidate facts that are not part of any covering set
     Set<CandidateFact> allCoveringFacts = new HashSet<CandidateFact>();
@@ -1343,7 +1314,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       getAllFilters(node, cubeAlias, allfilters, autoJoinCtx.getJoinClause(sc), dimToQuery);
       whereString = StringUtils.join(allfilters, " and ");
     } else {
-      whereString = HQLParser.getString(sc.getStorageWhereClause(storageTable));
+      whereString = HQLParser.getString(sc.getQueryAst().getWhereAST());
     }
     return whereString;
   }

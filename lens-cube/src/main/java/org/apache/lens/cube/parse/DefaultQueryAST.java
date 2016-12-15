@@ -74,6 +74,7 @@ public class DefaultQueryAST implements QueryAST {
         null,
         ast.getGroupByAST(), ast.getHavingAST(), ast.getJoinAST(), ast.getOrderByAST(), ast.getLimitValue(),
         ast.getFromString(),
-        sc.getStorageWhereString(storageTable.substring(storageTable.indexOf(".") + 1)));
+        //sc.getStorgeWhereStringMap().get(storageTable.substring(storageTable.indexOf(".") + 1)));
+        sc.getWhereString());
   }
 }

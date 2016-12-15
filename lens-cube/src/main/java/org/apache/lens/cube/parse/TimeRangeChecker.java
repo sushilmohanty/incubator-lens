@@ -42,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TimeRangeChecker implements ContextRewriter {
   public TimeRangeChecker(Configuration conf) {
+
   }
   @Override
   public void rewriteContext(CubeQueryContext cubeql) throws LensException {
@@ -136,7 +137,7 @@ public class TimeRangeChecker implements ContextRewriter {
     cubeql.getTimeRanges().add(range);
   }
 
-  //TODO union: can do this check to ColumnResolver
+  //TODO union: This can be executed before finding CoveringSets but after denormresolver and joinresolver
   private void doColLifeValidation(CubeQueryContext cubeql) throws LensException,
       ColUnAvailableInTimeRangeException {
     Set<String> cubeColumns = cubeql.getColumnsQueriedForTable(cubeql.getCube().getName());

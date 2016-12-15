@@ -246,9 +246,7 @@ public class DenormalizationResolver implements ContextRewriter {
       }
       resolveClause(cubeql, ast.getSelectAST());
       if (factRefExists) {
-        for (ASTNode storageWhereClauseAST : sc.getStorgeWhereClauseMap().values()) {
-          resolveClause(cubeql, storageWhereClauseAST);
-        }
+          resolveClause(cubeql, sc.getQueryAst().getWhereAST());
       } else {
         resolveClause(cubeql, ast.getWhereAST());
       }
@@ -348,6 +346,8 @@ public class DenormalizationResolver implements ContextRewriter {
       if (cubeql.getCube() != null && !cubeql.getCandidates().isEmpty()) {
         for (Iterator<Candidate> i = cubeql.getCandidates().iterator(); i.hasNext();) {
           Candidate cand = i.next();
+          //TODO union : is this happening in pahse 1 or 2 ?
+          //TODO Union : If phase 2, the below code will not work. Move to phase1 in that case
           if (cand instanceof StorageCandidate) {
             StorageCandidate sc = (StorageCandidate) cand;
             if (denormCtx.tableToRefCols.containsKey(sc.getFact().getName())) {

@@ -237,11 +237,7 @@ public class BridgeTableJoinContext {
     }
 
     void processWhereClauses(StorageCandidate sc) throws LensException {
-
-      for (Map.Entry<String, ASTNode> whereEntry : sc.getStorgeWhereClauseMap().entrySet()) {
-        ASTNode whereAST = whereEntry.getValue();
-        processWhereAST(whereAST, null, 0);
-      }
+      processWhereAST(sc.getQueryAst().getWhereAST(), null, 0);
     }
 
     void processWhereAST(ASTNode ast, ASTNode parent, int childPos)

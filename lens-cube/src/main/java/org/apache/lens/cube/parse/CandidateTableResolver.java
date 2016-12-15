@@ -27,14 +27,12 @@ import org.apache.lens.cube.parse.CubeQueryContext.OptionalDimCtx;
 import org.apache.lens.cube.parse.CubeQueryContext.QueriedExprColumn;
 import org.apache.lens.cube.parse.ExpressionResolver.ExprSpecContext;
 import org.apache.lens.cube.parse.ExpressionResolver.ExpressionContext;
-import org.apache.lens.server.api.LensService;
 import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.collect.Sets;
-
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -100,7 +98,7 @@ class CandidateTableResolver implements ContextRewriter {
       }
       for (CubeFactTable fact : factTables) {
         StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact,
-            fact.getStorages().iterator().next(), "sc" + aliasCounter++);
+            fact.getStorages().iterator().next(), "sc" + aliasCounter++, cubeql);
         cubeql.getCandidates().add(sc);
       }
       log.info("Populated storage candidates: {}", cubeql.getCandidates());

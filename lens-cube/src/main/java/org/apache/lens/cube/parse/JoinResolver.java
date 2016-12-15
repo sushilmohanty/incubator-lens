@@ -146,7 +146,7 @@ class JoinResolver implements ContextRewriter {
 
     Map<Aliased<Dimension>, List<JoinPath>> multipleJoinPaths = new LinkedHashMap<>();
 
-    // populate paths from joinchains
+    // populate paths from joinchains. For a destination Dimension get all the join paths that lead to it.
     for (JoinChain chain : cubeql.getJoinchains().values()) {
       Dimension dimension = cubeql.getMetastoreClient().getDimension(chain.getDestTable());
       Aliased<Dimension> aliasedDimension = Aliased.create(dimension, chain.getName());
@@ -156,6 +156,7 @@ class JoinResolver implements ContextRewriter {
       multipleJoinPaths.get(aliasedDimension).addAll(
         chain.getRelationEdges(cubeql.getMetastoreClient()));
     }
+
     boolean flattenBridgeTables = cubeql.getConf().getBoolean(CubeQueryConfUtil.ENABLE_FLATTENING_FOR_BRIDGETABLES,
       CubeQueryConfUtil.DEFAULT_ENABLE_FLATTENING_FOR_BRIDGETABLES);
     String bridgeTableFieldAggr = cubeql.getConf().get(CubeQueryConfUtil.BRIDGE_TABLE_FIELD_AGGREGATOR,

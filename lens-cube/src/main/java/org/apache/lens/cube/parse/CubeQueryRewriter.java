@@ -153,6 +153,7 @@ public class CubeQueryRewriter {
     rewriters.add(new AggregateResolver());
     rewriters.add(new GroupbyResolver(conf));
     rewriters.add(new FieldValidator());
+    rewriters.add(storageTableResolver);
     rewriters.add(new CandidateCoveringSetsResolver(conf));
 
     //TODO union: Add CoveringSetResolver which creates UnionCandidates and JoinCandidates. Some code form candidateTblResolver(phase 2) to be moved to CoveringSetResolver
@@ -168,7 +169,6 @@ public class CubeQueryRewriter {
 
     // Phase 1: resolve fact tables.
     //TODO union: This phase 1 of storageTableResolver should happen before CoveringSetResolver
-    rewriters.add(storageTableResolver);
     if (lightFactFirst) {
       // Prune candidate tables for which denorm column references do not exist
       //TODO union: phase 2 of denormResolver needs to be moved before CoveringSetResolver

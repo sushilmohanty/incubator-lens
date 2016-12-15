@@ -2,14 +2,9 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
-import com.google.common.collect.BoundType;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
-
+import org.apache.commons.lang.StringUtils;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.MetastoreUtil;
-import org.apache.lens.cube.metadata.Storage;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
@@ -201,7 +196,7 @@ public class CandidateUtil {
   }
 
   public static StorageCandidate cloneStorageCandidate(StorageCandidate sc) {
-    return new StorageCandidate(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getAlias());
+    return new StorageCandidate(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getAlias(), sc.getCubeql());
   }
 
   public static class UnionCandidateComparator<T> implements Comparator<UnionCandidate> {
@@ -210,5 +205,49 @@ public class CandidateUtil {
     public int compare(UnionCandidate o1, UnionCandidate o2) {
       return Integer.valueOf(o1.getChildren().size() - o2.getChildren().size());
     }
+  }
+
+  private static final String baseQueryFormat = "SELECT %s FROM %s";
+
+  public static String createHQLQuery(String select, String from, String where, String groupby, String orderby, String having,
+                                      Integer limit) {
+
+    List<String> qstrs = new ArrayList<String>();
+    qstrs.add(select);
+    qstrs.add(from);
+    if (!StringUtils.isBlank(where)) {
+      qstrs.add(where);
+    }
+    if (!StringUtils.isBlank(groupby)) {
+      qstrs.add(groupby);
+    }
+    if (!StringUtils.isBlank(having)) {
+      qstrs.add(having);
+    }
+    if (!StringUtils.isBlank(orderby)) {
+      qstrs.add(orderby);
+    }
+    if (limit != null) {
+      qstrs.add(String.valueOf(limit));
+    }
+
+    StringBuilder queryFormat = new StringBuilder();
+    queryFormat.append(baseQueryFormat);
+    if (!StringUtils.isBlank(where)) {
+      queryFormat.append(" WHERE %s");
+    }
+    if (!StringUtils.isBlank(groupby)) {
+      queryFormat.append(" GROUP BY %s");
+    }
+    if (!StringUtils.isBlank(having)) {
+      queryFormat.append(" HAVING %s");
+    }
+    if (!StringUtils.isBlank(orderby)) {
+      queryFormat.append(" ORDER BY %s");
+    }
+    if (limit != null) {
+      queryFormat.append(" LIMIT %s");
+    }
+    return String.format(queryFormat.toString(), qstrs.toArray(new String[0]));
   }
 }

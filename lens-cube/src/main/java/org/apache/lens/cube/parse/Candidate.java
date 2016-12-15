@@ -27,43 +27,49 @@ public interface Candidate {
   /**
    * Returns String representation of this Candidate
    * TODO decide if this method should be moved to QueryAST instead
+   *
    * @return
    */
   String toHQL() throws LensException;
 
   /**
    * Returns Query AST
+   *
    * @return
    */
   QueryAST getQueryAst();
 
   /**
    * Returns all the fact columns
+   *
    * @return
    */
   Collection<String> getColumns();
 
   /**
    * Start Time for this candidate (calculated based on schema)
+   *
    * @return
    */
   Date getStartTime();
 
   /**
    * End Time for this candidate (calculated based on schema)
+   *
    * @return
    */
   Date getEndTime();
 
   /**
    * Returns the cost of this candidate
+   *
    * @return
    */
   double getCost();
 
-
   /**
    * Alias used for this candidate.
+   *
    * @return
    */
   String getAlias();
@@ -89,17 +95,19 @@ public interface Candidate {
    * the underlying candidate storages. This method will also update any internal candidate data structures that are
    * required for writing the re-written query and to answer {@link #getParticipatingPartitions()}.
    *
-   * @param timeRange : TimeRange to check completeness for. TimeRange consists of start time, end time and the
-   *                  partition column
+   * @param timeRange         : TimeRange to check completeness for. TimeRange consists of start time, end time and the
+   *                          partition column
    * @param failOnPartialData : fail fast if the candidate can answer the query only partially
    * @return true if this Candidate can answer query for the given time range.
    */
-  boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData);
-
+  boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData)
+    throws LensException;
 
   /**
    * Returns the set of fact partitions that will participate in this candidate.
-   * Note: This method can be called only after call to {@link #evaluateCompleteness(TimeRange, boolean)}
+   * Note: This method can be called only after call to
+   * {@link #evaluateCompleteness(TimeRange, boolean)}
+   *
    * @return
    */
   Set<FactPartition> getParticipatingPartitions();
@@ -108,16 +116,21 @@ public interface Candidate {
    * TODO union: in case of join , one of the candidates should be able to answer the mesaure expression
    * TODO union: In case of union, all the candidates should answer the expression
    * TODO union : add isExpresionEvaluable() to Candidate
+   *
    * @param expr
    * @return
    */
   boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr);
 
+  /**
+   * Updates the columns queried for a candidate
+   * @param cubeql
+   */
+  void updateAnswerableColumnsQueried(CubeQueryContext cubeql) throws LensException;
 
   // Moved to CandidateUtil boolean isValidForTimeRange(TimeRange timeRange);
   // Moved to CandidateUtil boolean isExpressionAnswerable(ASTNode node, CubeQueryContext context) throws LensException;
   // NO caller Set<String> getTimePartCols(CubeQueryContext query) throws LensException;
-
 
   //TODO add methods to update AST in this candidate in this class of in CandidateUtil.
   //void updateFromString(CubeQueryContext query) throws LensException;

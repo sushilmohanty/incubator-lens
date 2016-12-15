@@ -2,9 +2,11 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
-import lombok.Getter;
 import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
+import org.apache.lens.server.api.error.LensException;
+
+import lombok.Getter;
 
 /**
  * Represents a join of two candidates
@@ -30,7 +32,6 @@ public class JoinCandidate implements Candidate {
     return null;
   }
 
-
   @Override
   public String toHQL() {
     return null;
@@ -52,13 +53,15 @@ public class JoinCandidate implements Candidate {
   @Override
   public Date getStartTime() {
     return childCandidate1.getStartTime().after(childCandidate2.getStartTime())
-      ? childCandidate1.getStartTime() : childCandidate2.getStartTime();
+           ? childCandidate1.getStartTime()
+           : childCandidate2.getStartTime();
   }
 
   @Override
   public Date getEndTime() {
     return childCandidate1.getEndTime().before(childCandidate2.getEndTime())
-      ? childCandidate1.getEndTime() : childCandidate2.getEndTime();
+           ? childCandidate1.getEndTime()
+           : childCandidate2.getEndTime();
   }
 
   @Override
@@ -70,26 +73,26 @@ public class JoinCandidate implements Candidate {
   public boolean contains(Candidate candidate) {
     if (this.equals(candidate)) {
       return true;
-    } else return childCandidate1.contains(candidate) || childCandidate2.contains(candidate);
+    } else
+      return childCandidate1.contains(candidate) || childCandidate2.contains(candidate);
   }
 
   @Override
   public Collection<Candidate> getChildren() {
-    return new ArrayList<Candidate>() {{
+    return new ArrayList() {{
       add(childCandidate1);
       add(childCandidate2);
     }};
   }
 
-
   /**
-   * TODO union : call evaluateCompleteness for child candidates and retrun false if either call returns false.
    * @param timeRange
    * @return
    */
   @Override
-  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) {
-    return false;
+  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) throws LensException {
+    return this.childCandidate1.evaluateCompleteness(timeRange, failOnPartialData) && this.childCandidate2
+      .evaluateCompleteness(timeRange, failOnPartialData);
   }
 
   @Override
@@ -99,8 +102,12 @@ public class JoinCandidate implements Candidate {
 
   @Override
   public boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr) {
-    return childCandidate1.isExpressionEvaluable(expr)
-        || childCandidate1.isExpressionEvaluable(expr);
+    return childCandidate1.isExpressionEvaluable(expr) || childCandidate1.isExpressionEvaluable(expr);
+  }
+
+  @Override
+  public void updateAnswerableColumnsQueried(CubeQueryContext cubeql) {
+
   }
 
   @Override

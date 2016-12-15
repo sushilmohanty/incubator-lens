@@ -450,9 +450,7 @@ class ExpressionResolver implements ContextRewriter {
       throws LensException {
       replaceAST(cubeql, queryAST.getSelectAST());
       if (sc != null) {
-        for (ASTNode storageWhereClauseAST : sc.getStorgeWhereClauseMap().values()) {
-          replaceAST(cubeql, storageWhereClauseAST);
-        }
+          replaceAST(cubeql, sc.getQueryAst().getWhereAST());
       } else {
         replaceAST(cubeql, queryAST.getWhereAST());
       }
