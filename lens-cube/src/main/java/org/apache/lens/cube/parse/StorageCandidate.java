@@ -631,11 +631,16 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   public void updateFromString(CubeQueryContext query, Set<Dimension> queryDims,
                                Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
-    fromString = getName();
+    fromString = getFromTable();
     if (query.isAutoJoinResolved()) {
       fromString =
           query.getAutoJoinCtx().getFromString(fromString, this, queryDims, dimsToQuery,
               query, cubeql);
     }
+  }
+
+  protected String getFromTable() throws LensException {
+    String alias = cubeql.getAliasForTableName(cubeql.getCube().getName());
+    return name + " " + alias;
   }
 }

@@ -975,9 +975,9 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
         Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery,
             scSet.size() > 1 ? sc.getQueryAst() : this);
         exprDimensions.addAll(factExprDimTables);
-        if (scSet.size() > 1) {
+       // if (scSet.size() > 1) {
           factDimMap.get(sc).addAll(factExprDimTables);
-        }
+       // }
       }
       if (scSet.size() > 1) {
         //TODO rewrite: Handle the having  pushdown in case of join candidates
@@ -996,9 +996,9 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       for (StorageCandidate sc : scSet) {
         Set<Dimension> factDenormTables = deNormCtx.rewriteDenormctx(sc, dimsToQuery, scSet.size() > 1);
         denormTables.addAll(factDenormTables);
-        if (scSet.size() > 1) {
+        //if (scSet.size() > 1) {
           factDimMap.get(sc).addAll(factDenormTables);
-        }
+        //}
       }
     } else {
       denormTables.addAll(deNormCtx.rewriteDenormctx(null, dimsToQuery, false));

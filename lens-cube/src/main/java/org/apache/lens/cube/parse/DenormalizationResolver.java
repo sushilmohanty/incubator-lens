@@ -344,12 +344,11 @@ public class DenormalizationResolver implements ContextRewriter {
       // candidate tables which require denorm fields and the refernces are no
       // more valid will be pruned
       if (cubeql.getCube() != null && !cubeql.getCandidates().isEmpty()) {
-        for (Iterator<Candidate> i = cubeql.getCandidates().iterator(); i.hasNext();) {
-          Candidate cand = i.next();
+        for (Iterator<StorageCandidate> i =
+             CandidateUtil.getStorageCandidates(cubeql.getCandidates()).iterator(); i.hasNext();) {
+          StorageCandidate sc = i.next();
           //TODO union : is this happening in pahse 1 or 2 ?
-          //TODO Union : If phase 2, the below code will not work. Move to phase1 in that case
-          if (cand instanceof StorageCandidate) {
-            StorageCandidate sc = (StorageCandidate) cand;
+          //TODO union : If phase 2, the below code will not work. Move to phase1 in that case
             if (denormCtx.tableToRefCols.containsKey(sc.getFact().getName())) {
               for (ReferencedQueriedColumn refcol : denormCtx.tableToRefCols.get(sc.getFact().getName())) {
                 if (denormCtx.getReferencedCols().get(refcol.col.getName()).isEmpty()) {
@@ -358,9 +357,6 @@ public class DenormalizationResolver implements ContextRewriter {
                   i.remove();
                 }
               }
-            }
-          } else {
-            throw new LensException("Not a storage candidate!!");
           }
         }
         if (cubeql.getCandidates().size() == 0) {

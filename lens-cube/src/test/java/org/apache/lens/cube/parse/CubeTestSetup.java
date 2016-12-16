@@ -543,8 +543,6 @@ public class CubeTestSetup {
     cubeMeasures.add(new ColumnMeasure(new FieldSchema(prefix + "msr3", "int", prefix + "third measure")));
 
     cubeDimensions = new HashSet<CubeDimAttribute>();
-
-    cubeDimensions.add(new BaseDimAttribute(new FieldSchema(prefix + "d_time", "timestamp", "d time")));
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema(prefix + "cityid", "timestamp", "the cityid ")));
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema(prefix + "zipcode", "timestamp", "the zipcode")));
 
@@ -587,6 +585,9 @@ public class CubeTestSetup {
       "dim3 refer", "dim3chain", "id", null, null, 0.0));
     cubeDimensions.add(new ReferencedDimAttribute(new FieldSchema("cityname", "string", "city name"),
       "city name", "cubecity", "name", null, null, 0.0));
+    // union join context
+    cubeDimensions.add(new ReferencedDimAttribute(new FieldSchema(prefix + "cityname", "string", "city name"),
+        "city name", "cubeCityJoinUnionCtx", "name", null, null, 0.0));
     List<ChainRefCol> references = new ArrayList<>();
     references.add(new ChainRefCol("timedatechain1", "full_date"));
     references.add(new ChainRefCol("timehourchain1", "full_hour"));
@@ -677,6 +678,9 @@ public class CubeTestSetup {
         "Count of Distinct CityId Expr", "count(distinct(cityid))"));
     exprs.add(new ExprColumn(new FieldSchema("notnullcityid", "int", "Not null cityid"),
         "Not null cityid Expr", "case when cityid is null then 0 else cityid end"));
+    // union join context
+    exprs.add(new ExprColumn(new FieldSchema(prefix + "notnullcityid", "int", "Not null cityid"),
+        "Not null cityid Expr", "case when union_join_ctx_cityid is null then 0 else union_join_ctx_cityid end"));
 
     Map<String, String> cubeProperties = new HashMap<String, String>();
     cubeProperties.put(MetastoreUtil.getCubeTimedDimensionListKey(TEST_CUBE_NAME),
@@ -718,6 +722,7 @@ public class CubeTestSetup {
   }
 
   private void addCubeChains(Map<String, JoinChain> joinChains, final String cubeName) {
+    final String prefix = "union_join_ctx_";
     joinChains.put("timehourchain1", new JoinChain("timehourchain1", "time chain", "time dim thru hour dim") {
       {
         addPath(new ArrayList<TableReference>() {
@@ -776,6 +781,17 @@ public class CubeTestSetup {
         });
       }
     });
+    joinChains.put("cubeCity", new JoinChain("cubeCityJoinUnionCtx", "cube-city", "city thru cube") {
+      {
+        // added for testing union join context
+        addPath(new ArrayList<TableReference>() {
+          {
+            add(new TableReference(cubeName, prefix + "cityid"));
+            add(new TableReference("citydim", "id"));
+          }
+        });
+      }
+    });
     joinChains.put("cubeCity1", new JoinChain("cubeCity1", "cube-city", "city thru cube") {
       {
         addPath(new ArrayList<TableReference>() {
@@ -806,11 +822,27 @@ public class CubeTestSetup {
         });
       }
     });
+    joinChains.put("cubeZip",  new JoinChain("cubeZipJoinUnionCtx", "cube-zip", "Zipcode thru cube") {
+      {
+        addPath(new ArrayList<TableReference>() {
+          {
+            add(new TableReference(cubeName, prefix + "zipcode"));
+            add(new TableReference("zipdim", "code"));
+          }
+        });
+      }
+    });
     joinChains.put("cubeZip",  new JoinChain("cubeZip", "cube-zip", "Zipcode thru cube") {
       {
         addPath(new ArrayList<TableReference>() {
           {
             add(new TableReference(cubeName, "zipcode"));
+            add(new TableReference("zipdim", "code"));
+          }
+        });
+        addPath(new ArrayList<TableReference>() {
+          {
+            add(new TableReference(cubeName, prefix + "zipcode"));
             add(new TableReference("zipdim", "code"));
           }
         });
@@ -1388,6 +1420,7 @@ public class CubeTestSetup {
     dimensions.add(prefix + "cityid");
     dimensions.add(prefix + "zipcode");
     dimensions.add("d_time");
+    dimensions.add(prefix + "cityname");
     client.createDerivedCube(BASE_CUBE_NAME, derivedCubeName, measures, dimensions, derivedProperties, 5L);
 
   }
