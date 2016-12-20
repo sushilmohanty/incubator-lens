@@ -37,7 +37,6 @@ import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.util.ReflectionUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -84,15 +83,15 @@ class StorageTableResolver implements ContextRewriter {
       this.maxInterval = null;
     }
     rangeWriter = ReflectionUtils.newInstance(conf
-        .getClass(CubeQueryConfUtil.TIME_RANGE_WRITER_CLASS, CubeQueryConfUtil.DEFAULT_TIME_RANGE_WRITER,
-            TimeRangeWriter.class), this.conf);
+      .getClass(CubeQueryConfUtil.TIME_RANGE_WRITER_CLASS, CubeQueryConfUtil.DEFAULT_TIME_RANGE_WRITER,
+        TimeRangeWriter.class), this.conf);
     String formatStr = conf.get(CubeQueryConfUtil.PART_WHERE_CLAUSE_DATE_FORMAT);
     if (formatStr != null) {
       partWhereClauseFormat = new SimpleDateFormat(formatStr);
     }
     this.phase = PHASE.first();
     completenessThreshold = conf
-        .getFloat(CubeQueryConfUtil.COMPLETENESS_THRESHOLD, CubeQueryConfUtil.DEFAULT_COMPLETENESS_THRESHOLD);
+      .getFloat(CubeQueryConfUtil.COMPLETENESS_THRESHOLD, CubeQueryConfUtil.DEFAULT_COMPLETENESS_THRESHOLD);
     completenessPartCol = conf.get(CubeQueryConfUtil.COMPLETENESS_CHECK_PART_COL);
   }
 
@@ -113,28 +112,28 @@ class StorageTableResolver implements ContextRewriter {
     client = cubeql.getMetastoreClient();
 
     switch (phase) {
-      case STORAGE_TABLES:
-        if (!cubeql.getCandidates().isEmpty()) {
-          resolveStorageTable(cubeql);
-        }
-        break;
-      case STORAGE_PARTITIONS:
-        if (!cubeql.getCandidates().isEmpty()) {
-          resolveStoragePartitions(cubeql);
-        }
-        break;
-      case DIM_TABLE_AND_PARTITIONS:
-        resolveDimStorageTablesAndPartitions(cubeql);
-        if (cubeql.getAutoJoinCtx() != null) {
-          // After all candidates are pruned after storage resolver, prune join paths.
-          cubeql.getAutoJoinCtx().pruneAllPaths(cubeql.getCube(),
-              CandidateUtil.getStorageCandidates(cubeql.getCandidates()), null);
-          cubeql.getAutoJoinCtx().pruneAllPathsForCandidateDims(cubeql.getCandidateDimTables());
-          cubeql.getAutoJoinCtx().refreshJoinPathColumns();
-        }
-        // TODO union : What is this? We may not need this as it non existing partitions are stored in StorageCandidate
-        cubeql.setNonexistingParts(nonExistingPartitions);
-        break;
+    case STORAGE_TABLES:
+      if (!cubeql.getCandidates().isEmpty()) {
+        resolveStorageTable(cubeql);
+      }
+      break;
+    case STORAGE_PARTITIONS:
+      if (!cubeql.getCandidates().isEmpty()) {
+        resolveStoragePartitions(cubeql);
+      }
+      break;
+    case DIM_TABLE_AND_PARTITIONS:
+      resolveDimStorageTablesAndPartitions(cubeql);
+      if (cubeql.getAutoJoinCtx() != null) {
+        // After all candidates are pruned after storage resolver, prune join paths.
+        cubeql.getAutoJoinCtx()
+          .pruneAllPaths(cubeql.getCube(), CandidateUtil.getStorageCandidates(cubeql.getCandidates()), null);
+        cubeql.getAutoJoinCtx().pruneAllPathsForCandidateDims(cubeql.getCandidateDimTables());
+        cubeql.getAutoJoinCtx().refreshJoinPathColumns();
+      }
+      // TODO union : What is this? We may not need this as it non existing partitions are stored in StorageCandidate
+      cubeql.setNonexistingParts(nonExistingPartitions);
+      break;
     }
     phase = phase.next();
   }
@@ -146,14 +145,17 @@ class StorageTableResolver implements ContextRewriter {
    * @param cubeql
    */
   private void resolveStoragePartitions(CubeQueryContext cubeql) throws LensException {
-    Set<Candidate> candidateList = cubeql.getCandidates();
-    for (Candidate candidate : candidateList) {
+    Iterator<Candidate> candidateIterator = cubeql.getCandidates().iterator();
+    while(candidateIterator.hasNext()) {
+      Candidate candidate = candidateIterator.next();
       boolean isComplete = true;
       for (TimeRange range : cubeql.getTimeRanges()) {
         isComplete &= candidate.evaluateCompleteness(range, failOnPartialData);
       }
       if (!isComplete) {
+        candidateIterator.remove();
         // TODO union : Prune this candidate?
+        // TODO union : Add prune causes to other candidates.
       }
     }
   }
@@ -174,13 +176,14 @@ class StorageTableResolver implements ContextRewriter {
         CubeDimensionTable dimtable = candidate.dimtable;
         if (dimtable.getStorages().isEmpty()) {
           cubeql
-              .addDimPruningMsgs(dim, dimtable, new CandidateTablePruneCause(CandidateTablePruneCode.MISSING_STORAGES));
+            .addDimPruningMsgs(dim, dimtable, new CandidateTablePruneCause(CandidateTablePruneCode.MISSING_STORAGES));
           i.remove();
           continue;
         }
         Set<String> storageTables = new HashSet<String>();
         Map<String, String> whereClauses = new HashMap<String, String>();
         boolean foundPart = false;
+        // TODO union : We have to remove all usages of a deprecated class.
         Map<String, SkipStorageCause> skipStorageCauses = new HashMap<>();
         for (String storage : dimtable.getStorages()) {
           if (isStorageSupportedOnDriver(storage)) {
@@ -202,7 +205,7 @@ class StorageTableResolver implements ContextRewriter {
               if (!failOnPartialData || foundPart) {
                 storageTables.add(tableName);
                 String whereClause = StorageUtil
-                    .getWherePartClause(dim.getTimedDimension(), null, StorageConstants.getPartitionsForLatest());
+                  .getWherePartClause(dim.getTimedDimension(), null, StorageConstants.getPartitionsForLatest());
                 whereClauses.put(tableName, whereClause);
               } else {
                 log.info("Not considering dim storage table:{} as no dim partitions exist", tableName);
@@ -250,8 +253,8 @@ class StorageTableResolver implements ContextRewriter {
       Candidate c = it.next();
       assert (c instanceof StorageCandidate);
       StorageCandidate sc = (StorageCandidate) c;
-      String storageTable = sc.getName();
-      if (!isStorageSupportedOnDriver(sc.getStorageName())) {
+      String storageTable = sc.getStorageName();
+      if (!isStorageSupportedOnDriver(storageTable)) {
         log.info("Skipping storage: {} as it is not supported", storageTable);
         cubeql.addStoragePruningMsg(sc, new CandidateTablePruneCause(CandidateTablePruneCode.UNSUPPORTED_STORAGE));
         it.remove();
@@ -259,8 +262,9 @@ class StorageTableResolver implements ContextRewriter {
       }
       String str = conf.get(CubeQueryConfUtil.getValidStorageTablesKey(sc.getFact().getName()));
       List<String> validFactStorageTables = StringUtils.isBlank(str)
-          ? null
-          : Arrays.asList(StringUtils.split(str.toLowerCase(), ","));
+                                            ? null
+                                            : Arrays.asList(StringUtils.split(str.toLowerCase(), ","));
+      storageTable = sc.getName();
       // Check if storagetable is in the list of valid storages.
       if (validFactStorageTables != null && !validFactStorageTables.contains(storageTable)) {
         log.info("Skipping storage table {} as it is not valid", storageTable);
@@ -270,51 +274,55 @@ class StorageTableResolver implements ContextRewriter {
       }
 
       boolean valid = false;
-      Set<CandidateTablePruneCause.CandidateTablePruneCode> codes = new HashSet<>();
+      // There could be multiple causes for the same time range.
+      Set<CandidateTablePruneCause.CandidateTablePruneCode> pruningCauses = new HashSet<>();
       for (TimeRange range : cubeql.getTimeRanges()) {
         boolean columnInRange = client
-            .isStorageTableCandidateForRange(storageTable, range.getFromDate(), range.getToDate());
+          .isStorageTableCandidateForRange(storageTable, range.getFromDate(), range.getToDate());
+        if (!columnInRange) {
+          break;
+        }
         boolean partitionColumnExists = client.partColExists(storageTable, range.getPartitionColumn());
-        valid = columnInRange && partitionColumnExists;
-        if (valid) {
+        valid = partitionColumnExists;
+        if (!valid) {
           break;
         }
         if (!columnInRange) {
-          codes.add(TIME_RANGE_NOT_ANSWERABLE);
+          pruningCauses.add(TIME_RANGE_NOT_ANSWERABLE);
           continue;
         }
-        // This means fallback is required.
         if (!partitionColumnExists) {
           String timeDim = cubeql.getBaseCube().getTimeDimOfPartitionColumn(range.getPartitionColumn());
           if (!sc.getFact().getColumns().contains(timeDim)) {
             // Not a time dimension so no fallback required.
-            codes.add(TIMEDIM_NOT_SUPPORTED);
+            pruningCauses.add(TIMEDIM_NOT_SUPPORTED);
             continue;
           }
           TimeRange fallBackRange = getFallbackRange(range, sc.getFact().getCubeName(), cubeql);
           if (fallBackRange == null) {
             log.info("No partitions for range:{}. fallback range: {}", range, fallBackRange);
+            pruningCauses.add(TIME_RANGE_NOT_ANSWERABLE);
             continue;
           }
           valid = client
-              .isStorageTableCandidateForRange(storageTable, fallBackRange.getFromDate(), fallBackRange.getToDate());
+            .isStorageTableCandidateForRange(storageTable, fallBackRange.getFromDate(), fallBackRange.getToDate());
           if (valid) {
             break;
           } else {
-            codes.add(TIME_RANGE_NOT_ANSWERABLE);
+            pruningCauses.add(TIME_RANGE_NOT_ANSWERABLE);
           }
         }
       }
       if (!valid) {
         it.remove();
-        for (CandidateTablePruneCode code : codes) {
+        for (CandidateTablePruneCode code : pruningCauses) {
           cubeql.addStoragePruningMsg(sc, new CandidateTablePruneCause(code));
         }
         continue;
       }
 
       List<String> validUpdatePeriods = CubeQueryConfUtil
-          .getStringList(conf, CubeQueryConfUtil.getValidUpdatePeriodsKey(sc.getFact().getName(), storageTable));
+        .getStringList(conf, CubeQueryConfUtil.getValidUpdatePeriodsKey(sc.getFact().getName(), sc.getStorageName()));
       boolean isStorageAdded = false;
       Map<String, SkipUpdatePeriodCode> skipUpdatePeriodCauses = new HashMap<>();
 
@@ -340,37 +348,8 @@ class StorageTableResolver implements ContextRewriter {
     }
   }
 
-  private TreeSet<UpdatePeriod> getValidUpdatePeriods(CubeFactTable fact) {
-    TreeSet<UpdatePeriod> set = new TreeSet<UpdatePeriod>();
-    set.addAll(validStorageMap.get(fact).keySet());
-    return set;
-  }
-
-  private String getStorageTableName(CubeFactTable fact, String storage, List<String> validFactStorageTables) {
-    String tableName = getFactOrDimtableStorageTableName(fact.getName(), storage).toLowerCase();
-    if (validFactStorageTables != null && !validFactStorageTables.contains(tableName)) {
-      log.info("Skipping storage table {} as it is not valid", tableName);
-      return null;
-    }
-    return tableName;
-  }
-
   void addNonExistingParts(String name, Set<String> nonExistingParts) {
     nonExistingPartitions.put(name, nonExistingParts);
-  }
-
-  private Set<String> getStorageTablesWithoutPartCheck(FactPartition part, Set<String> storageTableNames)
-      throws LensException, HiveException {
-    Set<String> validStorageTbls = new HashSet<>();
-    for (String storageTableName : storageTableNames) {
-      // skip all storage tables for which are not eligible for this partition
-      if (client.isStorageTablePartitionACandidate(storageTableName, part.getPartSpec())) {
-        validStorageTbls.add(storageTableName);
-      } else {
-        log.info("Skipping {} as it is not valid for part {}", storageTableName, part.getPartSpec());
-      }
-    }
-    return validStorageTbls;
   }
 
   enum PHASE {
