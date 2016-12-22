@@ -231,7 +231,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   private void updatePartitionStorage(FactPartition part) throws LensException {
     try {
-      if (client.isStorageTablePartitionACandidate(storageName, part.getPartSpec()) && (client
+      if (client.isStorageTablePartitionACandidate(name, part.getPartSpec()) && (client
         .factPartitionExists(fact, part, name))) {
         part.getStorageTables().add(name);
         part.setFound(true);
