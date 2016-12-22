@@ -97,9 +97,12 @@ class CandidateTableResolver implements ContextRewriter {
             cubeql.getCube().getName() + " does not have any facts");
       }
       for (CubeFactTable fact : factTables) {
-        StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact,
-            fact.getStorages().iterator().next(), "sc" + aliasCounter++, cubeql);
-        cubeql.getCandidates().add(sc);
+        Iterator<String> it = fact.getStorages().iterator();
+        while(it.hasNext()) {
+          StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact,
+            it.next(), "sc" + aliasCounter++, cubeql);
+          cubeql.getCandidates().add(sc);
+        }
       }
       log.info("Populated storage candidates: {}", cubeql.getCandidates());
     }

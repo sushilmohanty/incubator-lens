@@ -35,6 +35,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
+import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.util.ReflectionUtils;
 
 import org.antlr.runtime.CommonToken;
@@ -164,8 +165,14 @@ public class StorageCandidate implements Candidate, CandidateTable {
     return false;
   }
 
+  protected void setMissingExpressions() throws LensException {
+    //    setFrom(String.format(astFromString, getFromTable()));
+    setWhereString(joinWithAnd(whereString, null));
+  }
+
   @Override
   public String toHQL() throws LensException {
+    setMissingExpressions();
     return CandidateUtil
       .createHQLQuery(queryAst.getSelectString(), fromString, whereString, queryAst.getGroupByString(),
         queryAst.getOrderByString(), queryAst.getHavingString(), queryAst.getLimitValue());
@@ -224,7 +231,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   private void updatePartitionStorage(FactPartition part) throws LensException {
     try {
-      if (client.isStorageTablePartitionACandidate(name, part.getPartSpec()) && (client
+      if (client.isStorageTablePartitionACandidate(storageName, part.getPartSpec()) && (client
         .factPartitionExists(fact, part, name))) {
         part.getStorageTables().add(name);
         part.setFound(true);
@@ -270,11 +277,11 @@ public class StorageCandidate implements Candidate, CandidateTable {
     if (interval == UpdatePeriod.CONTINUOUS && rangeWriter.getClass().equals(BetweenTimeRangeWriter.class)) {
       FactPartition part = new FactPartition(partCol, fromDate, interval, null, partWhereClauseFormat);
       partitions.add(part);
-      part.getStorageTables().add(name);
+      part.getStorageTables().add(storageName);
       part = new FactPartition(partCol, toDate, interval, null, partWhereClauseFormat);
       partitions.add(part);
-      part.getStorageTables().add(name);
-      log.info("Added continuous fact partition for storage table {}", name);
+      part.getStorageTables().add(storageName);
+      log.info("Added continuous fact partition for storage table {}", storageName);
       return true;
     }
 
@@ -286,7 +293,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
       log.info("{} does not exist in {}", partCol, name);
       List<String> missingCols = new ArrayList<>();
       missingCols.add(partCol);
-      cubeql.addStoragePruningMsg(this, partitionColumnsMissing(missingCols));
+      //      cubeql.addStoragePruningMsg(this, partitionColumnsMissing(missingCols));
       return false;
     }
 
@@ -344,7 +351,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
                 log.debug("Looking for process time partitions between {} and {}", pdt, nextPdt);
                 Set<FactPartition> processTimeParts = getPartitions(
                   TimeRange.getBuilder().fromDate(pdt).toDate(nextPdt).partitionColumn(processTimePartCol).build(),
-                  newset, true, false, missingPartitions);
+                  newset, true, failOnPartialData, missingPartitions);
                 log.debug("Look ahead partitions: {}", processTimeParts);
                 TimeRange timeRange = TimeRange.getBuilder().fromDate(dt).toDate(nextDt).build();
                 for (FactPartition pPart : processTimeParts) {
@@ -375,12 +382,12 @@ public class StorageCandidate implements Candidate, CandidateTable {
             // Add non existing partitions for all cases of whether we populate all non existing or not.
             missingPartitions.add(part);
             if (!failOnPartialData) {
-              if (client.isStorageTablePartitionACandidate(name, part.getPartSpec())) {
+              if (!client.isStorageTablePartitionACandidate(name, part.getPartSpec())) {
                 log.info("Storage tables not eligible");
                 return false;
               }
               partitions.add(part);
-              part.getStorageTables().add(name);
+              part.getStorageTables().add(storageName);
             }
           } else {
             log.info("No finer granual partitions exist for {}", part);
@@ -428,15 +435,18 @@ public class StorageCandidate implements Candidate, CandidateTable {
     Set<FactPartition> rangeParts = getPartitions(timeRange, validUpdatePeriods, true, failOnPartialData, missingParts);
     String partCol = timeRange.getPartitionColumn();
     boolean partColNotSupported = rangeParts.isEmpty();
-    String storageTableName = getStorageName();
+    String storageTableName = getName();
+
     if (storagePruningMsgs.containsKey(storageTableName)) {
       List<CandidateTablePruneCause> causes = storagePruningMsgs.get(storageTableName);
       // Find the PART_COL_DOES_NOT_EXISTS
       for (CandidateTablePruneCause cause : causes) {
         if (cause.getCause().equals(CandidateTablePruneCode.PART_COL_DOES_NOT_EXIST)) {
-          partColNotSupported = cause.getNonExistantPartCols().contains(partCol);
+          partColNotSupported &= cause.getNonExistantPartCols().contains(partCol);
         }
       }
+    } else {
+      partColNotSupported = false;
     }
     TimeRange prevRange = timeRange;
     String sep = "";
@@ -646,6 +656,11 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   protected String getFromTable() throws LensException {
     String alias = cubeql.getAliasForTableName(cubeql.getCube().getName());
-    return name + " " + alias;
+    String database = SessionState.get().getCurrentDatabase();
+    String ret = name + " " + alias;
+    if (StringUtils.isNotBlank(database) && !"default".equalsIgnoreCase(database)) {
+      ret = database + "." + ret;
+    }
+    return ret;
   }
 }

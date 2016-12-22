@@ -19,7 +19,6 @@
 package org.apache.lens.cube.parse;
 
 import static org.apache.lens.cube.metadata.MetastoreUtil.getFactOrDimtableStorageTableName;
-import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.TIMEDIM_NOT_SUPPORTED;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.noCandidateStorages;
 import static org.apache.lens.cube.parse.StorageUtil.getFallbackRange;
@@ -146,7 +145,7 @@ class StorageTableResolver implements ContextRewriter {
    */
   private void resolveStoragePartitions(CubeQueryContext cubeql) throws LensException {
     Iterator<Candidate> candidateIterator = cubeql.getCandidates().iterator();
-    while(candidateIterator.hasNext()) {
+    while (candidateIterator.hasNext()) {
       Candidate candidate = candidateIterator.next();
       boolean isComplete = true;
       for (TimeRange range : cubeql.getTimeRanges()) {
@@ -155,7 +154,7 @@ class StorageTableResolver implements ContextRewriter {
       if (!isComplete) {
         candidateIterator.remove();
         // TODO union : Prune this candidate?
-        // TODO union : Add prune causes to other candidates.
+        //
       }
     }
   }
@@ -280,24 +279,18 @@ class StorageTableResolver implements ContextRewriter {
         boolean columnInRange = client
           .isStorageTableCandidateForRange(storageTable, range.getFromDate(), range.getToDate());
         if (!columnInRange) {
-          break;
-        }
-        boolean partitionColumnExists = client.partColExists(storageTable, range.getPartitionColumn());
-        valid = partitionColumnExists;
-        if (!valid) {
-          break;
-        }
-        if (!columnInRange) {
           pruningCauses.add(TIME_RANGE_NOT_ANSWERABLE);
           continue;
         }
+        boolean partitionColumnExists = client.partColExists(storageTable, range.getPartitionColumn());
+        valid = partitionColumnExists;
         if (!partitionColumnExists) {
           String timeDim = cubeql.getBaseCube().getTimeDimOfPartitionColumn(range.getPartitionColumn());
-          if (!sc.getFact().getColumns().contains(timeDim)) {
-            // Not a time dimension so no fallback required.
-            pruningCauses.add(TIMEDIM_NOT_SUPPORTED);
-            continue;
-          }
+//          if (!sc.getFact().getColumns().contains(timeDim)) {
+ //           // Not a time dimension so no fallback required.
+  //          pruningCauses.add(TIMEDIM_NOT_SUPPORTED);
+    //        continue;
+   //       }
           TimeRange fallBackRange = getFallbackRange(range, sc.getFact().getCubeName(), cubeql);
           if (fallBackRange == null) {
             log.info("No partitions for range:{}. fallback range: {}", range, fallBackRange);
@@ -306,9 +299,7 @@ class StorageTableResolver implements ContextRewriter {
           }
           valid = client
             .isStorageTableCandidateForRange(storageTable, fallBackRange.getFromDate(), fallBackRange.getToDate());
-          if (valid) {
-            break;
-          } else {
+          if (!valid) {
             pruningCauses.add(TIME_RANGE_NOT_ANSWERABLE);
           }
         }
