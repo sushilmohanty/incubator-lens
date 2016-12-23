@@ -90,9 +90,10 @@ public class JoinCandidate implements Candidate {
    * @return
    */
   @Override
-  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) throws LensException {
-    return this.childCandidate1.evaluateCompleteness(timeRange, failOnPartialData) && this.childCandidate2
-      .evaluateCompleteness(timeRange, failOnPartialData);
+  public boolean evaluateCompleteness(TimeRange timeRange, TimeRange parentTimeRange, boolean failOnPartialData)
+    throws LensException {
+    return this.childCandidate1.evaluateCompleteness(timeRange, parentTimeRange, failOnPartialData)
+      && this.childCandidate2.evaluateCompleteness(timeRange, parentTimeRange, failOnPartialData);
   }
 
   @Override
