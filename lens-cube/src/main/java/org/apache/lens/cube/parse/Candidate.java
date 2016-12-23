@@ -126,7 +126,7 @@ public interface Candidate {
    * Updates the columns queried for a candidate
    * @param cubeql
    */
-  void updateAnswerableColumnsQueried(CubeQueryContext cubeql) throws LensException;
+  void updateAnswerableQueriedColumns(CubeQueryContext cubeql) throws LensException;
 
   // Moved to CandidateUtil boolean isValidForTimeRange(TimeRange timeRange);
   // Moved to CandidateUtil boolean isExpressionAnswerable(ASTNode node, CubeQueryContext context) throws LensException;

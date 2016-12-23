@@ -106,7 +106,7 @@ public class JoinCandidate implements Candidate {
   }
 
   @Override
-  public void updateAnswerableColumnsQueried(CubeQueryContext cubeql) {
+  public void updateAnswerableQueriedColumns(CubeQueryContext cubeql) {
 
   }
 

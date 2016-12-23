@@ -69,6 +69,7 @@ public class TestUnionAndJoinCandidates extends TestQueryRewrite {
           getValidUpdatePeriodsKey(prefix + "fact3", "C1"), "DAILY");
       // Single Storage candidate
       // query with dim attribute, measure , ref dim attribute and expression
+      /*
       String colsSelected = prefix + "cityid , " + prefix + "cityname , " + prefix + "notnullcityid, "
           + prefix + "zipcode , " + "sum(" + prefix + "msr1) , " + "sum(" + prefix + "msr2) ";
 
@@ -92,6 +93,15 @@ public class TestUnionAndJoinCandidates extends TestQueryRewrite {
           + "(basecube.union_join_ctx_zipcode)";
 
       assertEquals(hqlQuery, expected);
+        */
+      // Test union candidate
+      String  colsSelected = prefix + "cityid , " + prefix + "cityname , " + prefix + "notnullcityid, "
+          + prefix + "zipcode , " + "sum(" + prefix + "msr1) ";
+
+       String whereCond = prefix + "zipcode = 'a' and " + prefix + "cityid = 'b' and " +
+          "(" + TWO_MONTHS_RANGE_UPTO_DAYS + ")";
+       String hqlQuery = rewrite("select " + colsSelected + " from " + cubeName + " where " + whereCond, conf);
+
     } finally {
       getStorageToUpdatePeriodMap().clear();
     }

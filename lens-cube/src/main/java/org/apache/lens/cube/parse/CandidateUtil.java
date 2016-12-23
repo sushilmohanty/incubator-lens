@@ -110,7 +110,14 @@ public class CandidateUtil {
     }});
   }
 
-
+  /**
+   *
+   * @param candSet
+   * @param msrs
+   * @param cubeql
+   * @return
+   * @throws LensException
+   */
   public static Set<QueriedPhraseContext> coveredMeasures(Candidate candSet, Collection<QueriedPhraseContext> msrs,
     CubeQueryContext cubeql) throws LensException {
     Set<QueriedPhraseContext> coveringSet = new HashSet<>();
@@ -120,6 +127,7 @@ public class CandidateUtil {
           coveringSet.add(msr);
         }
       } else {
+        // TODO union : all candidates should answer
           for (Candidate cand : candSet.getChildren()) {
             if (msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
               coveringSet.add(msr);
@@ -232,7 +240,7 @@ public class CandidateUtil {
     }
 
     StringBuilder queryFormat = new StringBuilder();
-    queryFormat.append(baseQueryFormat);
+    queryFormat.append(" ( " + baseQueryFormat);
     if (!StringUtils.isBlank(where)) {
       queryFormat.append(" WHERE %s");
     }
@@ -248,6 +256,11 @@ public class CandidateUtil {
     if (limit != null) {
       queryFormat.append(" LIMIT %s");
     }
+    queryFormat.append(" ) ");
     return String.format(queryFormat.toString(), qstrs.toArray(new String[0]));
+  }
+
+  public static String createUnionHQLQuery(List<String> queries) {
+    return StringUtils.join(queries, " UNION ALL " );
   }
 }

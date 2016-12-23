@@ -89,6 +89,8 @@ public class StorageCandidate implements Candidate, CandidateTable {
   private final List<Integer> selectIndices = Lists.newArrayList();
   private final List<Integer> dimFieldIndices = Lists.newArrayList();
   @Getter
+  private final List<Integer> measureIndices = Lists.newArrayList();
+  @Getter
   private String fromString;
   @Getter
   private CubeInterface cube;
@@ -140,11 +142,15 @@ public class StorageCandidate implements Candidate, CandidateTable {
         .getFloat(CubeQueryConfUtil.COMPLETENESS_THRESHOLD, CubeQueryConfUtil.DEFAULT_COMPLETENESS_THRESHOLD);
   }
 
+  public void setQueriedMeasures(int index) {
+    measureIndices.add(index);
+  }
+
   @Override
   public String toHQL() throws LensException{
     return CandidateUtil.createHQLQuery(queryAst.getSelectString(),fromString, whereString,
         queryAst.getGroupByString(), queryAst.getOrderByString(),
-        queryAst.getHavingString() ,queryAst.getLimitValue());
+        queryAst.getHavingString() ,queryAst.getLimitValue()) + " as " + alias;
   }
 
   @Override
@@ -545,7 +551,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
   }
 
   @Override
-  public void updateAnswerableColumnsQueried(CubeQueryContext cubeql) throws LensException{
+  public void updateAnswerableQueriedColumns(CubeQueryContext cubeql) throws LensException{
     // update select AST with selected fields
     int currentChild = 0;
     for (int i = 0; i < cubeql.getSelectAST().getChildCount(); i++) {

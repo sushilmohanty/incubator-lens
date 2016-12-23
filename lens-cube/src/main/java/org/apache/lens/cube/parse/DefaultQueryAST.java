@@ -33,6 +33,8 @@ public class DefaultQueryAST implements QueryAST {
   private String fromString;
   private String whereString;
 
+  public DefaultQueryAST(){
+  }
 
   public String getSelectString() {
     return HQLParser.getString(selectAST);

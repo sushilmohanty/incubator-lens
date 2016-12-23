@@ -972,8 +972,10 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     Set<Dimension> exprDimensions = new HashSet<>();
     if (scSet != null) {
       for (StorageCandidate sc : scSet) {
-        Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery,
-            scSet.size() > 1 ? sc.getQueryAst() : this);
+
+        //Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery,
+        //    scSet.size() > 1 ? sc.getQueryAst() : this);
+        Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery, this);
         exprDimensions.addAll(factExprDimTables);
        // if (scSet.size() > 1) {
           factDimMap.get(sc).addAll(factExprDimTables);
@@ -1031,7 +1033,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
      // if (scSet.size() > 1) {
         // Update ASTs for each fact
         for (StorageCandidate sc : scSet) {
-          sc.updateAnswerableColumnsQueried(this);
+          sc.updateAnswerableQueriedColumns(this);
         }
         // TODO rewrite: Handle this in join candidates
         //whereAST = MultiFactHQLContext.convertHavingToWhere(havingAST, this, cfacts, new DefaultAliasDecider());
