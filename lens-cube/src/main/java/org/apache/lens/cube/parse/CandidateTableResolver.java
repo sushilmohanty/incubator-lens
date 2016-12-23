@@ -97,9 +97,12 @@ class CandidateTableResolver implements ContextRewriter {
             cubeql.getCube().getName() + " does not have any facts");
       }
       for (CubeFactTable fact : factTables) {
-        StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact,
-            fact.getStorages().iterator().next(), "sc" + aliasCounter++, cubeql);
-        cubeql.getCandidates().add(sc);
+        Iterator<String> it = fact.getStorages().iterator();
+        while(it.hasNext()) {
+          StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact,
+            it.next(), "sc" + aliasCounter++, cubeql);
+          cubeql.getCandidates().add(sc);
+        }
       }
       log.info("Populated storage candidates: {}", cubeql.getCandidates());
     }
@@ -252,7 +255,7 @@ class CandidateTableResolver implements ContextRewriter {
         if (cand instanceof StorageCandidate) {
           StorageCandidate sc = (StorageCandidate) cand;
           if (validFactTables != null) {
-            if (!validFactTables.contains(sc.getName().toLowerCase())) {
+            if (!validFactTables.contains(sc.getFact().getName().toLowerCase())) {
               log.info("Not considering storage candidate:{} as it is not a valid candidate", sc);
               cubeql.addStoragePruningMsg(sc, new CandidateTablePruneCause(CandidateTablePruneCode.INVALID));
               i.remove();

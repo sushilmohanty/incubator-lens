@@ -935,13 +935,13 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       // resolve timerange positions and replace it by corresponding where clause
       for (TimeRange range : getTimeRanges()) {
         String rangeWhere = sc.getRangeToWhere().get(range);
-          if (!StringUtils.isBlank(rangeWhere)) {
-            ASTNode rangeAST = HQLParser.parseExpr(rangeWhere, conf);
-            range.getParent().setChild(range.getChildIndex(), rangeAST);
-          }
-          sc.getQueryAst().setWhereAST(HQLParser.parseExpr(getWhereString(), conf));
+        if (!StringUtils.isBlank(rangeWhere)) {
+          ASTNode rangeAST = HQLParser.parseExpr(rangeWhere, conf);
+          range.getParent().setChild(range.getChildIndex(), rangeAST);
         }
+        sc.getQueryAst().setWhereAST(HQLParser.parseExpr(getWhereString(), conf));
       }
+    }
   }
 
   public String toHQL() throws LensException {

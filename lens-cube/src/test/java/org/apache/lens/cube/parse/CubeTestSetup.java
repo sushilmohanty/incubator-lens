@@ -1313,7 +1313,7 @@ public class CubeTestSetup {
     createUnionAndJoinContextFacts(client);
   }
 
-  private void createUnionAndJoinContextFacts(CubeMetastoreClient client)   throws HiveException, LensException {
+  private void createUnionAndJoinContextFacts(CubeMetastoreClient client) throws HiveException, LensException {
     String prefix = "union_join_ctx_";
     String derivedCubeName = prefix + "der1";
     Map<String, Set<UpdatePeriod>> storageAggregatePeriods = new HashMap<String, Set<UpdatePeriod>>();
@@ -1348,8 +1348,8 @@ public class CubeTestSetup {
     properties.put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, "false");
     properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 90 days"));
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day - 30 days"));
-    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
-        properties, storageTables);
+    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L, properties,
+      storageTables);
 
     // create fact2 with same schema, but it starts after fact1 ends
     factName = prefix + "fact2";
@@ -1359,8 +1359,8 @@ public class CubeTestSetup {
     properties.put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, "false");
     properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 31 days"));
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
-    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
-        properties, storageTables);
+    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L, properties,
+      storageTables);
 
     // create fact3 (all dim attributes only msr2)
     factName = prefix + "fact3";
@@ -1374,8 +1374,8 @@ public class CubeTestSetup {
     properties.put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, "false");
     properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 90 days"));
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
-    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
-        properties, storageTables);
+    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L, properties,
+      storageTables);
 
     /*
     // create fact4 will all all measures and entire timerange covered
@@ -1387,8 +1387,7 @@ public class CubeTestSetup {
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
         properties, storageTables);
-     */
-
+    */
     // create fact5 and fact6 with msr3 and covering timerange as set
     factName = prefix + "fact5";
     factColumns.clear();
@@ -1400,16 +1399,16 @@ public class CubeTestSetup {
     properties.put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, "false");
     properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day - 90 days"));
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day -30 days"));
-    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
-        properties, storageTables);
+    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L, properties,
+      storageTables);
 
     factName = prefix + "fact6";
     properties.clear();
     properties.put(MetastoreConstants.FACT_AGGREGATED_PROPERTY, "false");
     properties.put(MetastoreConstants.FACT_ABSOLUTE_START_TIME, DateUtil.relativeToAbsolute("now.day -31 days"));
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
-    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
-        properties, storageTables);
+    client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L, properties,
+      storageTables);
 
     // Create derived cube
     Map<String, String> derivedProperties = new HashMap<>();

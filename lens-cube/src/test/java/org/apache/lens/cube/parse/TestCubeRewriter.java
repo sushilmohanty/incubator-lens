@@ -139,7 +139,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String expected =
       getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
         getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
-    compareQueries(rewrittenQuery.toHQL(), expected);
+    String hql = rewrittenQuery.toHQL();
+    compareQueries(hql, expected);
     System.out.println("Non existing parts:" + rewrittenQuery.getNonExistingParts());
     assertNotNull(rewrittenQuery.getNonExistingParts());
   }
@@ -315,7 +316,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String hqlQuery, expected;
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, getConfWithStorages("C2"));
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) as `expr 1` FROM ", null, null,
         getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 

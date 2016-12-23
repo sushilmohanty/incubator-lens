@@ -2,12 +2,12 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 
@@ -204,7 +204,7 @@ public class CandidateUtil {
   }
 
   public static StorageCandidate cloneStorageCandidate(StorageCandidate sc) {
-    return new StorageCandidate(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getAlias(), sc.getCubeql());
+    return new StorageCandidate(sc);
   }
 
   public static class UnionCandidateComparator<T> implements Comparator<UnionCandidate> {
