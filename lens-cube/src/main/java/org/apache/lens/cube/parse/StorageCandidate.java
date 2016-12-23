@@ -421,7 +421,8 @@ public class StorageCandidate implements Candidate, CandidateTable {
    * 2. getPartitions for timeRange and validUpdatePeriods
    */
   @Override
-  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) throws LensException {
+  public boolean evaluateCompleteness(TimeRange timeRange, TimeRange parentTimeRange, boolean failOnPartialData)
+    throws LensException {
     // Check the measure tags.
     if (!evaluateMeasuresCompleteness(timeRange)) {
       log
@@ -493,11 +494,11 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
     String extraWhere = extraWhereClauseFallback.toString();
     if (!StringUtils.isEmpty(extraWhere)) {
-      rangeToWhere.put(timeRange, "((" + rangeWriter
+      rangeToWhere.put(parentTimeRange, "((" + rangeWriter
         .getTimeRangeWhereClause(cubeql, cubeql.getAliasForTableName(cubeql.getCube().getName()), rangeParts)
         + ") and  (" + extraWhere + "))");
     } else {
-      rangeToWhere.put(timeRange, rangeWriter
+      rangeToWhere.put(parentTimeRange, rangeWriter
         .getTimeRangeWhereClause(cubeql, cubeql.getAliasForTableName(cubeql.getCube().getName()), rangeParts));
     }
     // Add all the partitions. participatingPartitions contains all the partitions for previous time ranges also.
