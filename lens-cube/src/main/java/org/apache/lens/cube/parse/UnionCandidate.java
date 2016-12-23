@@ -113,11 +113,12 @@ public class UnionCandidate implements Candidate {
    * @return
    */
   @Override
-  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) throws LensException {
+  public boolean evaluateCompleteness(TimeRange timeRange, TimeRange parentTimeRange, boolean failOnPartialData)
+    throws LensException {
     Map<Candidate, TimeRange> candidateRange = splitTimeRangeForChildren(timeRange);
     boolean ret = true;
     for (Map.Entry<Candidate, TimeRange> entry : candidateRange.entrySet()) {
-      ret &= entry.getKey().evaluateCompleteness(entry.getValue(), failOnPartialData);
+      ret &= entry.getKey().evaluateCompleteness(entry.getValue(), parentTimeRange, failOnPartialData);
     }
     return ret;
   }
