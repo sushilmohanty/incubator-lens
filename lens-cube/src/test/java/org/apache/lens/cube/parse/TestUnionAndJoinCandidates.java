@@ -18,18 +18,19 @@
  */
 package org.apache.lens.cube.parse;
 
-import static org.testng.Assert.*;
+import static org.apache.lens.cube.metadata.DateFactory.TWO_MONTHS_RANGE_UPTO_DAYS;
+import static org.apache.lens.cube.parse.CubeQueryConfUtil.*;
+import static org.apache.lens.cube.parse.CubeTestSetup.*;
+import static org.testng.Assert.assertEquals;
+
+import org.apache.lens.server.api.LensServerAPITestUtil;
+import org.apache.lens.server.api.error.LensException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.ql.parse.ParseException;
-import org.apache.lens.server.api.LensServerAPITestUtil;
-import org.apache.lens.server.api.error.LensException;
+
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-
-import static org.apache.lens.cube.metadata.DateFactory.*;
-import static org.apache.lens.cube.parse.CubeQueryConfUtil.*;
-import static org.apache.lens.cube.parse.CubeTestSetup.*;
 
 public class TestUnionAndJoinCandidates extends TestQueryRewrite {
 
@@ -75,7 +76,9 @@ public class TestUnionAndJoinCandidates extends TestQueryRewrite {
       String whereCond = prefix + "zipcode = 'a' and " + prefix + "cityid = 'b' and " +
           "(" + TWO_MONTHS_RANGE_UPTO_DAYS + ")";
 
-      String hqlQuery = rewrite("select " + colsSelected + " from " + cubeName + " where " + whereCond, conf);
+      String query = "select " + colsSelected + " from " + cubeName + " where " + whereCond;
+      System.out.println(query);
+      String hqlQuery = rewrite(query, conf);
       String expected = "SELECT (basecube.union_join_ctx_cityid) as `union_join_ctx_cityid`, "
           + "(cubecityjoinunionctx.name) as `union_join_ctx_cityname`, case  when (basecube.union_join_ctx_cityid)"
           + " is null then 0 else (basecube.union_join_ctx_cityid) end as `union_join_ctx_notnullcityid`, "

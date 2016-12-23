@@ -18,13 +18,7 @@
  */
 package org.apache.lens.cube.parse;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.lens.server.api.error.LensException;
-
-import org.apache.commons.lang.StringUtils;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
