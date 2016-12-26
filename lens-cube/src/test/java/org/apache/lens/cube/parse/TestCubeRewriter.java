@@ -316,7 +316,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     String hqlQuery, expected;
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, getConfWithStorages("C2"));
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) as `expr 1` FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) as `expr1` FROM ", null, null,
         getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
@@ -325,7 +325,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.setBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, true);
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) as `expr1` FROM ", null, null,
         getWhereForHourly2days("c1_testfact2"));
     compareQueries(hqlQuery, expected);
     conf.setBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, false);
@@ -335,7 +335,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.set(DRIVER_SUPPORTED_STORAGES, "C1");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) as `expr1` FROM ", null, null,
         getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C1_testfact"));
     compareQueries(hqlQuery, expected);
 
@@ -343,7 +343,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.set(CubeQueryConfUtil.getValidFactTablesKey(TEST_CUBE_NAME), "testFact");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) as `expr1` FROM ", null, null,
         getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
@@ -351,7 +351,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.set(CubeQueryConfUtil.getValidFactTablesKey(TEST_CUBE_NAME), "testFact2");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) as `expr1` FROM ", null, null,
         getWhereForHourly2days("c1_testfact2"));
     compareQueries(hqlQuery, expected);
 
@@ -360,7 +360,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.set(getValidStorageTablesKey("testFact2"), "C1_testFact2");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) FROM ", null, null,
+      getExpectedQuery(TEST_CUBE_NAME, "select sum(testcube.msr2) as `expr1` FROM ", null, null,
         getWhereForHourly2days("c1_testfact2"));
     compareQueries(hqlQuery, expected);
 
@@ -369,7 +369,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.set(getValidUpdatePeriodsKey("testfact", "C1"), "HOURLY");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected = getExpectedQuery(TEST_CUBE_NAME,
-      "select sum(testcube.msr2) FROM ", null, null, getWhereForHourly2days("c1_testfact"));
+      "select sum(testcube.msr2) as `expr1` FROM ", null, null, getWhereForHourly2days("c1_testfact"));
     compareQueries(hqlQuery, expected);
 
     conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
@@ -377,16 +377,16 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.set(getValidUpdatePeriodsKey("testfact", "C2"), "HOURLY");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected = getExpectedQuery(TEST_CUBE_NAME,
-      "select sum(testcube.msr2) FROM ", null, null, getWhereForHourly2days("c2_testfact"));
+      "select sum(testcube.msr2) as `expr1` FROM ", null, null, getWhereForHourly2days("c2_testfact"));
     compareQueries(hqlQuery, expected);
 
     // max interval test
     conf = new Configuration();
     conf.set(CubeQueryConfUtil.QUERY_MAX_INTERVAL, "HOURLY");
-    conf.set(DRIVER_SUPPORTED_STORAGES, "C1,C2");
+    conf.set(DRIVER_SUPPORTED_STORAGES, "C1");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected = getExpectedQuery(TEST_CUBE_NAME,
-      "select sum(testcube.msr2) FROM ", null, null, getWhereForHourly2days("c1_testfact2"));
+      "select sum(testcube.msr2) as `expr1` FROM ", null, null, getWhereForHourly2days("c1_testfact"));
     compareQueries(hqlQuery, expected);
   }
 
@@ -401,7 +401,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
       "select cubecountry.name, msr2 from" + " testCube" + " where cubecountry.region = 'asia' and "
         + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select cubecountry.name, sum(testcube.msr2)" + " FROM ", " JOIN " + getDbName()
+      getExpectedQuery(TEST_CUBE_NAME, "select cubecountry.name as `name`, sum(testcube.msr2) as `msr2` " + " FROM ", " JOIN " + getDbName()
           + "c3_countrytable_partitioned cubecountry on testcube.countryid=cubecountry.id and cubecountry.dt='latest'",
         "cubecountry.region='asia'",
         " group by cubecountry.name ", null,
@@ -411,7 +411,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
       "select cubestate.name, cubestate.countryid, msr2 from" + " testCube" + " where cubestate.countryid = 5 and "
         + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select cubestate.name, cubestate.countryid, sum(testcube.msr2)" + " FROM ",
+      getExpectedQuery(TEST_CUBE_NAME, "select cubestate.name as `name`, cubestate.countryid as `countryid` , sum(testcube.msr2) as `msr2`" + " FROM ",
         " JOIN " + getDbName()
           + "c3_statetable_partitioned cubestate ON" + " testCube.stateid = cubestate.id and cubestate.dt = 'latest'",
         "cubestate.countryid=5",
