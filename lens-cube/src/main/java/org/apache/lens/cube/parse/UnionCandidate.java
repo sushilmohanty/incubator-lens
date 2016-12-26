@@ -38,6 +38,7 @@ public class UnionCandidate implements Candidate {
   private List<Candidate> childCandidates;
   @Getter
   private QueryAST queryAst;
+  private ASTNode innerSelectAST = new ASTNode(new CommonToken(TOK_SELECT));
 
   private Map<HashableASTNode, ASTNode> innerToOuterASTs = new HashMap<>();
   private AliasDecider aliasDecider = new DefaultAliasDecider();
@@ -98,7 +99,16 @@ public class UnionCandidate implements Candidate {
   }
 
   private void updateAsts() {
+    processSelectAST();
+    queryAst.setGroupByAST(processExpression(cubeql.getGroupByAST()));
+    setHavingAST();
+    setOrderByAST();
+    setLimit();
+
     for (Candidate child : childCandidates) {
+      if (innerSelectAST != null) {
+        child.getQueryAst().setSelectAST(innerSelectAST);
+      }
       if (child.getQueryAst().getHavingAST() != null) {
         child.getQueryAst().setHavingAST(null);
       }
@@ -109,11 +119,6 @@ public class UnionCandidate implements Candidate {
         child.getQueryAst().setLimitValue(null);
       }
     }
-    processSelectAST();
-    queryAst.setGroupByAST(processExpression(cubeql.getGroupByAST()));
-    setHavingAST();
-    setOrderByAST();
-    setLimit();
 
     // update union candidate alias
     updateUnionCandidateAlias(queryAst.getSelectAST());
@@ -489,7 +494,7 @@ public class UnionCandidate implements Candidate {
       String alias = aliasDecider.decideAlias(astNode);
       ASTNode aliasNode = new ASTNode(new CommonToken(Identifier, alias));
       innerSelectExprAST.addChild(aliasNode);
-      addToInnerSelectAST(innerSelectExprAST);
+      innerSelectAST.addChild(innerSelectExprAST);
       ASTNode outerAST = getDotAST(cubeql.getCube().getName(), alias);
       innerToOuterASTs.put(new HashableASTNode(innerSelectASTWithoutAlias), outerAST);
       return outerAST;
@@ -503,7 +508,7 @@ public class UnionCandidate implements Candidate {
     String alias = aliasDecider.decideAlias(astNode);
     ASTNode aliasNode = new ASTNode(new CommonToken(Identifier, alias));
     innerSelectExprAST.addChild(aliasNode);
-    addToInnerSelectAST(innerSelectExprAST);
+    innerSelectAST.addChild(innerSelectExprAST);
     ASTNode dotAST = getDotAST(cubeql.getCube().getName(), alias);
     ASTNode outerAST = new ASTNode(new CommonToken(TOK_FUNCTION));
     //TODO: take care or non-transitive aggregate functions
@@ -511,13 +516,6 @@ public class UnionCandidate implements Candidate {
     outerAST.addChild(dotAST);
     innerToOuterASTs.put(new HashableASTNode(innerSelectASTWithoutAlias), outerAST);
     return outerAST;
-  }
-
-  private void addToInnerSelectAST(ASTNode selectExprAST) {
-    if (queryAst.getSelectAST() == null) {
-      queryAst.setSelectAST(new ASTNode(new CommonToken(TOK_SELECT)));
-    }
-    queryAst.getSelectAST().addChild(selectExprAST);
   }
 
 }

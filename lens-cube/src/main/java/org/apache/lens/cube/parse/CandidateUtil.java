@@ -267,7 +267,7 @@ public class CandidateUtil {
     for (int i = 0; i < selectAST.getChildCount(); i++) {
       ASTNode selectExpr = (ASTNode) selectAST.getChild(i);
         ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
-        String finalAlias = cubeql.getSelectPhrases().get(i).getFinalAlias();
+        String finalAlias = cubeql.getSelectPhrases().get(i).getFinalAlias().replaceAll("`","");
         if (aliasNode != null) {
           String queryAlias = aliasNode.getText();
           if (!queryAlias.equals(finalAlias)) {
