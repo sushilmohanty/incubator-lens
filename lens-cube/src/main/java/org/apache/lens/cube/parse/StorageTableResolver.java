@@ -149,7 +149,7 @@ class StorageTableResolver implements ContextRewriter {
       Candidate candidate = candidateIterator.next();
       boolean isComplete = true;
       for (TimeRange range : cubeql.getTimeRanges()) {
-        isComplete &= candidate.evaluateCompleteness(range, failOnPartialData);
+        isComplete &= candidate.evaluateCompleteness(range, range, failOnPartialData);
       }
       if (!isComplete) {
         candidateIterator.remove();

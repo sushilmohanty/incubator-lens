@@ -4,6 +4,7 @@ import java.util.*;
 
 import org.antlr.runtime.CommonToken;
 import org.apache.hadoop.hive.ql.lib.Node;
+import org.apache.hadoop.hive.ql.optimizer.calcite.functions.CanAggregateDistinct;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.util.StringUtils;
@@ -52,13 +53,43 @@ public class UnionCandidate implements Candidate {
   public String toHQL() throws LensException {
     queryAst = new DefaultQueryAST();
     updateAsts();
-    updateUnionCandidateAlias(queryAst.getSelectAST());
-    updateUnionCandidateAlias(queryAst.getGroupByAST());
-    updateUnionCandidateAlias(queryAst.getOrderByAST());
-    updateUnionCandidateAlias(queryAst.getHavingAST());
     return CandidateUtil.createHQLQuery(queryAst.getSelectString(), getFromString(), null,
         queryAst.getGroupByString(), queryAst.getOrderByString(),
         queryAst.getHavingString() ,queryAst.getLimitValue());
+  }
+
+
+  private void updateQueriableMeasureInAST(ASTNode node) {
+    if (node == null) {
+      return;
+    }
+
+    List<QueriedPhraseContext> contexts = cubeql.getQueriedPhrases();
+    for (int i = 0; i < contexts.size(); i++) {
+      if (contexts.get(i).hasMeasures(cubeql) &&
+          !childMeasureIndices().contains(i) ){
+        removeChildAST(node, contexts.get(i).getExprAST());
+      }
+    }
+  }
+
+  private void removeChildAST(ASTNode node, ASTNode child) {
+    for (int i = 0; i < node.getChildCount(); i++) {
+      if (node.getChild(i).equals(child)) {
+        node.deleteChild(i);
+      }
+    }
+  }
+
+  private ArrayList<Integer> childMeasureIndices() {
+    ArrayList<Integer> mesureIndices = new ArrayList<>();
+    List<StorageCandidate> scs = new ArrayList<StorageCandidate>();
+    scs.addAll(CandidateUtil.getStorageCandidates(childCandidates));
+    // All children in the UnionCandiate will be having common quriable measure
+    for (StorageCandidate sc : scs) {
+      mesureIndices = (ArrayList<Integer>) sc.getMeasureIndices();
+    }
+    return mesureIndices;
   }
 
   private void updateAsts() {
@@ -78,9 +109,19 @@ public class UnionCandidate implements Candidate {
     setHavingAST();
     setOrderByAST();
     setLimit();
+
+    // update union candidate alias
+    updateUnionCandidateAlias(queryAst.getSelectAST());
+    updateUnionCandidateAlias(queryAst.getGroupByAST());
+    updateUnionCandidateAlias(queryAst.getOrderByAST());
+    updateUnionCandidateAlias(queryAst.getHavingAST());
+
+    // update non quriable measure in ASTs
+    updateQueriableMeasureInAST(queryAst.getSelectAST());
+    updateQueriableMeasureInAST(queryAst.getGroupByAST());
+    updateQueriableMeasureInAST(queryAst.getOrderByAST());
+    updateQueriableMeasureInAST(queryAst.getHavingAST());
   }
-
-
 
   private void setHavingAST() {
     if (cubeql.getHavingAST() != null) {
