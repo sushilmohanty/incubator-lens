@@ -53,6 +53,9 @@ public class UnionCandidate implements Candidate {
   public String toHQL() throws LensException {
     queryAst = new DefaultQueryAST();
     updateAsts();
+    if (this == cubeql.getPickedCandidate()) {
+      CandidateUtil.updateFinalAlias(queryAst.getSelectAST(), cubeql);
+    }
     return CandidateUtil.createHQLQuery(queryAst.getSelectString(), getFromString(), null,
         queryAst.getGroupByString(), queryAst.getOrderByString(),
         queryAst.getHavingString() ,queryAst.getLimitValue());

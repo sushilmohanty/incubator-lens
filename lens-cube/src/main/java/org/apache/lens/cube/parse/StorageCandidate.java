@@ -179,6 +179,9 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Override
   public String toHQL() throws LensException {
     setMissingExpressions();
+    if (this == cubeql.getPickedCandidate()) {
+      CandidateUtil.updateFinalAlias(queryAst.getSelectAST(), cubeql);
+    }
     return CandidateUtil
       .createHQLQuery(queryAst.getSelectString(), fromString, whereString, queryAst.getGroupByString(),
         queryAst.getOrderByString(), queryAst.getHavingString(), queryAst.getLimitValue());

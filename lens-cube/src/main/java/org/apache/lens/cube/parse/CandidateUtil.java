@@ -2,6 +2,8 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
+import org.antlr.runtime.CommonToken;
+import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.TimeRange;
@@ -15,6 +17,8 @@ import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
+
+import static org.apache.hadoop.hive.ql.parse.HiveParser.Identifier;
 
 /**
  * Placeholder for Util methods that will be required for {@link Candidate}
@@ -260,7 +264,25 @@ public class CandidateUtil {
     return String.format(queryFormat.toString(), qstrs.toArray(new String[0]));
   }
 
-  public static String createUnionHQLQuery(List<String> queries) {
-    return StringUtils.join(queries, " UNION ALL " );
+  public static void updateFinalAlias(ASTNode selectAST, CubeQueryContext cubeql) {
+    for (int i = 0; i < selectAST.getChildCount(); i++) {
+      ASTNode selectExpr = (ASTNode) selectAST.getChild(i);
+        ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
+        String finalAlias = cubeql.getSelectPhrases().get(i).getFinalAlias();
+        if (aliasNode != null) {
+          String queryAlias = aliasNode.getText();
+          if (!queryAlias.equals(finalAlias)) {
+            // replace the alias node
+            ASTNode newAliasNode = new ASTNode(new CommonToken(HiveParser.Identifier, finalAlias));
+            selectAST.getChild(i).replaceChildren(selectExpr.getChildCount() - 1,
+                selectExpr.getChildCount() - 1, newAliasNode);
+          }
+        } else {
+          // add column alias
+          ASTNode newAliasNode = new ASTNode(new CommonToken(HiveParser.Identifier, finalAlias));
+          selectAST.getChild(i).addChild(newAliasNode);
+        }
+    }
+
   }
 }
