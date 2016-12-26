@@ -959,7 +959,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     if (cand != null) {
         // copy ASTs for each storage candidate
         for (StorageCandidate sc : scSet) {
-          sc.setQueryAst(DefaultQueryAST.fromCandidateStorage(sc, sc.getStorageName(), this));
+          sc.setQueryAst(DefaultQueryAST.fromCandidateStorage(sc, this));
           //CandidateUtil.copyASTs(this, sc.getQueryAst());
           factDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
         }

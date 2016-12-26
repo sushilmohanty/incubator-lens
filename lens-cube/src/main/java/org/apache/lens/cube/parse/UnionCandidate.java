@@ -4,7 +4,6 @@ import java.util.*;
 
 import org.antlr.runtime.CommonToken;
 import org.apache.hadoop.hive.ql.lib.Node;
-import org.apache.hadoop.hive.ql.optimizer.calcite.functions.CanAggregateDistinct;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.util.StringUtils;
@@ -51,7 +50,10 @@ public class UnionCandidate implements Candidate {
 
   @Override
   public String toHQL() throws LensException {
-    queryAst = new DefaultQueryAST();
+    Set<StorageCandidate> candidates = CandidateUtil.getStorageCandidates(childCandidates);
+    // intitilize queryAST from child StorageCandidate
+    queryAst = DefaultQueryAST.fromCandidateStorage(candidates.iterator().next(),
+        candidates.iterator().next().getQueryAst() );
     updateAsts();
     if (this == cubeql.getPickedCandidate()) {
       CandidateUtil.updateFinalAlias(queryAst.getSelectAST(), cubeql);
@@ -149,7 +151,7 @@ public class UnionCandidate implements Candidate {
     StringBuilder from = new StringBuilder();
     List<String> hqlQueries = new ArrayList<>();
     for (Candidate c : childCandidates) {
-      hqlQueries.add(c.toHQL());
+      hqlQueries.add(" ( " + c.toHQL() + " ) ");
     }
     return  from.append(" ( ")
         .append(StringUtils.join(" UNION ALL ", hqlQueries))
@@ -402,7 +404,7 @@ public class UnionCandidate implements Candidate {
   }
 
   private void processSelectAST() {
-    ASTNode originalSelectAST = MetastoreUtil.copyAST(cubeql.getSelectAST());
+    ASTNode originalSelectAST = MetastoreUtil.copyAST(queryAst.getSelectAST());
     queryAst.setSelectAST(new ASTNode(originalSelectAST.getToken()));
     ASTNode outerSelectAST = processSelectExpression(originalSelectAST);
     queryAst.setSelectAST(outerSelectAST);
@@ -482,7 +484,7 @@ public class UnionCandidate implements Candidate {
       return outerAST;
     } else {
       ASTNode innerSelectASTWithoutAlias = MetastoreUtil.copyAST(astNode);
-      ASTNode innerSelectExprAST = new ASTNode(new CommonToken(HiveParser.TOK_SELEXPR));
+      ASTNode innerSelectExprAST = new ASTNode(new CommonToken(HiveParser.TOK_SELEXPR, "TOK_SELEXPR"));
       innerSelectExprAST.addChild(innerSelectASTWithoutAlias);
       String alias = aliasDecider.decideAlias(astNode);
       ASTNode aliasNode = new ASTNode(new CommonToken(Identifier, alias));

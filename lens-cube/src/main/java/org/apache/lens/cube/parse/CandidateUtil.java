@@ -244,7 +244,7 @@ public class CandidateUtil {
     }
 
     StringBuilder queryFormat = new StringBuilder();
-    queryFormat.append(" ( " + baseQueryFormat);
+    queryFormat.append(baseQueryFormat);
     if (!StringUtils.isBlank(where)) {
       queryFormat.append(" WHERE %s");
     }
@@ -260,7 +260,6 @@ public class CandidateUtil {
     if (limit != null) {
       queryFormat.append(" LIMIT %s");
     }
-    queryFormat.append(" ) ");
     return String.format(queryFormat.toString(), qstrs.toArray(new String[0]));
   }
 
