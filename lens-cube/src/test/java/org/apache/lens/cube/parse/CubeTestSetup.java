@@ -1377,7 +1377,7 @@ public class CubeTestSetup {
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L, properties,
       storageTables);
 
-    /*
+
     // create fact4 will all all measures and entire timerange covered
     factName = prefix + "fact4";
     factColumns.add(new ColumnMeasure(new FieldSchema(prefix + "msr1", "int", "first measure")).getColumn());
@@ -1387,7 +1387,7 @@ public class CubeTestSetup {
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
         properties, storageTables);
-    */
+
     // create fact5 and fact6 with msr3 and covering timerange as set
     factName = prefix + "fact5";
     factColumns.clear();

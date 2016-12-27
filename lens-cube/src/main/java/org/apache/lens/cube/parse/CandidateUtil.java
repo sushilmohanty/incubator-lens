@@ -266,21 +266,26 @@ public class CandidateUtil {
   public static void updateFinalAlias(ASTNode selectAST, CubeQueryContext cubeql) {
     for (int i = 0; i < selectAST.getChildCount(); i++) {
       ASTNode selectExpr = (ASTNode) selectAST.getChild(i);
-        ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
-        String finalAlias = cubeql.getSelectPhrases().get(i).getFinalAlias().replaceAll("`","");
-        if (aliasNode != null) {
-          String queryAlias = aliasNode.getText();
-          if (!queryAlias.equals(finalAlias)) {
-            // replace the alias node
-            ASTNode newAliasNode = new ASTNode(new CommonToken(HiveParser.Identifier, finalAlias));
-            selectAST.getChild(i).replaceChildren(selectExpr.getChildCount() - 1,
-                selectExpr.getChildCount() - 1, newAliasNode);
-          }
-        } else {
-          // add column alias
+      ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
+      String finalAlias = cubeql.getSelectPhrases().get(i).getFinalAlias().replaceAll("`", "");
+      String actualAlias = cubeql.getSelectPhrases().get(i).getActualAlias();
+      if (actualAlias == null && selectExpr.getChildCount() == 2 ) {
+        selectExpr.deleteChild(1);
+        continue;
+      }
+      if (aliasNode != null) {
+        String queryAlias = aliasNode.getText();
+        if (!queryAlias.equals(finalAlias)) {
+          // replace the alias node
           ASTNode newAliasNode = new ASTNode(new CommonToken(HiveParser.Identifier, finalAlias));
-          selectAST.getChild(i).addChild(newAliasNode);
+          selectAST.getChild(i).replaceChildren(selectExpr.getChildCount() - 1,
+              selectExpr.getChildCount() - 1, newAliasNode);
         }
+      } else {
+        // add column alias
+        ASTNode newAliasNode = new ASTNode(new CommonToken(HiveParser.Identifier, finalAlias));
+        selectAST.getChild(i).addChild(newAliasNode);
+      }
     }
 
   }
