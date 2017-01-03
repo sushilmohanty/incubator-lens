@@ -620,8 +620,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
     Configuration conf = getConf();
     conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
 
-    String hqlQuery =
-      rewrite("select name, SUM(msr2) from" + " testCube join citydim on testCube.cityid = citydim.id where "
+   String hqlQuery =
+     rewrite("select name, SUM(msr2) from" + " testCube join citydim on testCube.cityid = citydim.id where "
         + TWO_DAYS_RANGE, conf);
     String expected =
       getExpectedQuery(TEST_CUBE_NAME, "select citydim.name," + " sum(testcube.msr2) FROM ", "INNER JOIN " + getDbName()
