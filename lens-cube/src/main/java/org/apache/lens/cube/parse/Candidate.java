@@ -1,5 +1,6 @@
 package org.apache.lens.cube.parse;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
@@ -124,6 +125,8 @@ public interface Candidate {
    * @param cubeql
    */
   void updateAnswerableQueriedColumns(CubeQueryContext cubeql) throws LensException;
+
+  ArrayList<Integer> getAnswerableMeasureIndices();
 
   // Moved to CandidateUtil boolean isValidForTimeRange(TimeRange timeRange);
   // Moved to CandidateUtil boolean isExpressionAnswerable(ASTNode node, CubeQueryContext context) throws LensException;

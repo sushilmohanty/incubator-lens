@@ -73,7 +73,7 @@ public class UnionCandidate implements Candidate {
     List<QueriedPhraseContext> contexts = cubeql.getQueriedPhrases();
     for (int i = 0; i < contexts.size(); i++) {
       if (contexts.get(i).hasMeasures(cubeql) &&
-          !childMeasureIndices().contains(i) ){
+          !getAnswerableMeasureIndices().contains(i) ){
         removeChildAST(node, contexts.get(i).getExprAST());
       }
     }
@@ -87,13 +87,14 @@ public class UnionCandidate implements Candidate {
     }
   }
 
-  private ArrayList<Integer> childMeasureIndices() {
+  @Override
+  public ArrayList<Integer> getAnswerableMeasureIndices() {
     ArrayList<Integer> mesureIndices = new ArrayList<>();
     List<StorageCandidate> scs = new ArrayList<StorageCandidate>();
     scs.addAll(CandidateUtil.getStorageCandidates(childCandidates));
     // All children in the UnionCandiate will be having common quriable measure
     for (StorageCandidate sc : scs) {
-      mesureIndices = (ArrayList<Integer>) sc.getMeasureIndices();
+      mesureIndices = (ArrayList<Integer>) sc.getAnswerableMeasureIndices();
     }
     return mesureIndices;
   }
@@ -448,6 +449,7 @@ public class UnionCandidate implements Candidate {
     }
     return outerExpression;
   }
+
 
   /*
 

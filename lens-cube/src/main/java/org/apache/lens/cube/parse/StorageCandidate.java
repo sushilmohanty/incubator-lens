@@ -93,7 +93,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Setter
   private String whereString;
   @Getter
-  private final List<Integer> measureIndices = Lists.newArrayList();
+  private final ArrayList<Integer> answerableMeasureIndices = Lists.newArrayList();
   @Getter
   private String fromString;
   @Getter
@@ -172,8 +172,8 @@ public class StorageCandidate implements Candidate, CandidateTable {
     setWhereString(joinWithAnd(whereString, null));
   }
 
-  public void setQueriedMeasures(int index) {
-    measureIndices.add(index);
+  public void setAnswerableMeasureIndices(int index) {
+    answerableMeasureIndices.add(index);
   }
 
   @Override
@@ -585,7 +585,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   @Override
   public void updateAnswerableQueriedColumns(CubeQueryContext cubeql) throws LensException {
-
     // update select AST with selected fields
     int currentChild = 0;
     for (int i = 0; i < cubeql.getSelectAST().getChildCount(); i++) {

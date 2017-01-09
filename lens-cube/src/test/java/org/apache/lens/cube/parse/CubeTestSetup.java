@@ -681,6 +681,15 @@ public class CubeTestSetup {
     // union join context
     exprs.add(new ExprColumn(new FieldSchema(prefix + "notnullcityid", "int", "Not null cityid"),
         "Not null cityid Expr", "case when union_join_ctx_cityid is null then 0 else union_join_ctx_cityid end"));
+    exprs.add(new ExprColumn(new FieldSchema(prefix + "sum_msr1_msr2", "int", "sum of msr1 and msr2"),
+        "sum of msr1 and msr2", "sum(union_join_ctx_msr1) + sum(union_join_ctx_msr2)"));
+   // exprs.add(new ExprColumn(new FieldSchema(prefix + "msr1_greater_than_100", "int", "msr1 greater than 100"),
+   //     "msr1 greater than 100", "case when sum(union_join_ctx_msr1) > 100 then \"high\" else \"low\" end"));
+    exprs.add(new ExprColumn(new FieldSchema(prefix + "non_zero_msr2_sum", "int", "non zero msr2 sum"),
+        "non zero msr2 sum", "sum(case when union_join_ctx_msr2 > 0 then union_join_ctx_msr2 else 0 end)"));
+
+
+
 
     Map<String, String> cubeProperties = new HashMap<String, String>();
     cubeProperties.put(MetastoreUtil.getCubeTimedDimensionListKey(TEST_CUBE_NAME),
@@ -1377,7 +1386,7 @@ public class CubeTestSetup {
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L, properties,
       storageTables);
 
-
+    /*
     // create fact4 will all all measures and entire timerange covered
     factName = prefix + "fact4";
     factColumns.add(new ColumnMeasure(new FieldSchema(prefix + "msr1", "int", "first measure")).getColumn());
@@ -1387,7 +1396,7 @@ public class CubeTestSetup {
     properties.put(MetastoreConstants.FACT_ABSOLUTE_END_TIME, DateUtil.relativeToAbsolute("now.day + 7 days"));
     client.createCubeFactTable(BASE_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
         properties, storageTables);
-
+     */
     // create fact5 and fact6 with msr3 and covering timerange as set
     factName = prefix + "fact5";
     factColumns.clear();

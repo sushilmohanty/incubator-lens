@@ -139,7 +139,9 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
   void addQueriedPhrase(QueriedPhraseContext qur) {
     queriedPhrases.add(qur);
+    qur.setPosition(queriedPhrases.size() -1);
   }
+
   @Getter
   private final List<SelectPhraseContext> selectPhrases = new ArrayList<>();
 
@@ -960,7 +962,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
         // copy ASTs for each storage candidate
         for (StorageCandidate sc : scSet) {
           sc.setQueryAst(DefaultQueryAST.fromCandidateStorage(sc, this));
-          //CandidateUtil.copyASTs(this, sc.getQueryAst());
+          CandidateUtil.copyASTs(this, sc.getQueryAst());
           factDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
         }
         for (StorageCandidate sc : scSet) {
@@ -975,7 +977,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
         //Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery,
         //    scSet.size() > 1 ? sc.getQueryAst() : this);
-        Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery, this);
+        Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery, sc.getQueryAst());
         exprDimensions.addAll(factExprDimTables);
        // if (scSet.size() > 1) {
           factDimMap.get(sc).addAll(factExprDimTables);
@@ -1060,7 +1062,12 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
         }
       }
     }
-    return cand.toHQL();
+    if (cand instanceof StorageCandidate) {
+      return cand.toHQL();
+    } else {
+      UnionQueryWriter uqc = new UnionQueryWriter(cand, this);
+      return uqc.toHQL();
+    }
   }
 
   public ASTNode toAST(Context ctx) throws LensException {
