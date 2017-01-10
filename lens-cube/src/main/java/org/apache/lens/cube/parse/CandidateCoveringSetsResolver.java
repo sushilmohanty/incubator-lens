@@ -1,14 +1,13 @@
 package org.apache.lens.cube.parse;
 
-import com.google.common.collect.Lists;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.lens.cube.error.LensCubeErrorCode;
-import org.apache.lens.cube.metadata.TimeRange;
+import java.util.*;
 
+import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
-import java.util.*;
+import org.apache.hadoop.conf.Configuration;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class CandidateCoveringSetsResolver implements ContextRewriter {
@@ -42,7 +41,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
 
     String msrString = CandidateUtil.getColumns(queriedMsrs).toString();
     if (finalCandidates.isEmpty()) {
-      throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
+        log.info("No fact has columns {}", msrString);
     }
     // update final candidate sets
     cubeql.getCandidates().clear();

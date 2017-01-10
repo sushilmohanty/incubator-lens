@@ -948,8 +948,11 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
   public String toHQL() throws LensException {
     Candidate cand = pickCandidateToQuery();
-    Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(cand);
     Map<Dimension, CandidateDim> dimsToQuery = pickCandidateDimsToQuery(dimensions);
+    Set<StorageCandidate> scSet = null;
+    if (cand != null) {
+      scSet = CandidateUtil.getStorageCandidates(cand);
+    }
     log.info("facts:{}, dimsToQuery: {}", cand, dimsToQuery);
 
     if (autoJoinCtx != null) {
