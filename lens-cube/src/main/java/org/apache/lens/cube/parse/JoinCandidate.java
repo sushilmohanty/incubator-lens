@@ -40,15 +40,9 @@ public class JoinCandidate implements Candidate {
     this.cubeql = cubeql;
   }
 
-  private String getJoinCondition() {
-    return null;
-  }
-
   @Override
   public String toHQL() throws LensException {
-    return CandidateUtil.createHQLQuery(getSelectString(), getFromString(), cubeql.getWhereString(),
-        null, cubeql.getOrderByString(),
-        null ,null);
+  return null;
   }
 
   @Override
@@ -148,58 +142,4 @@ public class JoinCandidate implements Candidate {
   private String getToString() {
     return this.toStr = "JOIN[" + childCandidate1.toString() + ", " + childCandidate2.toString() + "]";
   }
-
-  private String getSelectString() throws LensException {
-    List<String> selectPhrases = new ArrayList<>();
-    for (SelectPhraseContext spc : cubeql.getSelectPhrases()) {
-      StringBuilder select = new StringBuilder();
-      if (!spc.hasMeasures(cubeql)
-          || isMeasureAnswerableByAllCandidates(spc.getPosition())) {
-        select.append("COALESCE(")
-            .append(childCandidate1.getAlias())
-            .append(".")
-            .append(spc.getSelectAlias())
-            .append(",")
-            .append(childCandidate2.getAlias())
-            .append(".")
-            .append(spc.getSelectAlias())
-            .append(") as ")
-            .append(spc.getFinalAlias());
-        selectPhrases.add(select.toString());
-      } else if (spc.hasMeasures(cubeql)) {
-        Candidate cand = getMeasureAnswerableCandidate(spc.getPosition());
-        select.append(cand.getAlias())
-            .append(".")
-            .append(spc.getSelectAlias())
-            .append(" as ")
-            .append(spc.getFinalAlias());
-        selectPhrases.add(select.toString());
-      }
-    }
-    return "SELECT " + StringUtils.join(", ", selectPhrases).toString();
-  }
-
-  private Candidate getMeasureAnswerableCandidate(int position) {
-    if (childCandidate1.getAnswerableMeasureIndices().contains(position)) {
-      return childCandidate1;
-    } else {
-      return childCandidate2;
-    }
-  }
-  private boolean isMeasureAnswerableByAllCandidates(int position) {
-    return  childCandidate1.getAnswerableMeasureIndices().contains(position) &&
-        childCandidate2.getAnswerableMeasureIndices().contains(position);
-  }
-
-  private String getFromString() throws LensException {
-    StringBuilder from = new StringBuilder();
-    List<String> hqlQueries = new ArrayList<>();
-    for (Candidate c : getChildren()) {
-      hqlQueries.add(" ( " + c.toHQL() + " )  as " + c.getAlias());
-    }
-    return  from.append(" ( ")
-        .append(StringUtils.join(" FULL OUTER JOIN ", hqlQueries))
-        .append(" ) as " + alias).toString();
-  }
-
 }

@@ -21,6 +21,8 @@ package org.apache.lens.cube.parse;
 import static org.apache.lens.cube.metadata.DateFactory.TWO_MONTHS_RANGE_UPTO_DAYS;
 import static org.apache.lens.cube.parse.CubeQueryConfUtil.*;
 import static org.apache.lens.cube.parse.CubeTestSetup.*;
+import static org.apache.lens.cube.parse.TestCubeRewriter.compareContains;
+
 import static org.testng.Assert.*;
 
 import org.apache.lens.server.api.LensServerAPITestUtil;
@@ -52,7 +54,7 @@ public class TestUnionAndJoinCandidates extends TestQueryRewrite {
   }
 
   @Test
-  public void testUnionCandidateQuery() throws ParseException, LensException {
+  public void testFinalCandidateRewrittenQuery() throws ParseException, LensException {
     try {
       Configuration conf = LensServerAPITestUtil.getConfigurationWithParams(getConf(),
           //Supported storage
@@ -65,53 +67,6 @@ public class TestUnionAndJoinCandidates extends TestQueryRewrite {
           getValidUpdatePeriodsKey("union_join_ctx_fact1", "C1"), "DAILY",
           getValidUpdatePeriodsKey("union_join_ctx_fact2", "C1"), "DAILY",
           getValidUpdatePeriodsKey("union_join_ctx_fact3", "C1"), "DAILY");
-      // Test union candidate
-      String colsSelected = " union_join_ctx_cityid , union_join_ctx_cityname , union_join_ctx_notnullcityid, "
-          + " union_join_ctx_zipcode, sum(union_join_ctx_msr1), sum(union_join_ctx_msr1) + 10 ";
-      String whereCond = " union_join_ctx_zipcode = 'a' and union_join_ctx_cityid = 'b' and "
-          + "(" + TWO_MONTHS_RANGE_UPTO_DAYS + ")";
-      String rewrittenQuery = rewrite("select " + colsSelected + " from basecube where " + whereCond, conf);
-      String expectedOuterSelect = "SELECT (uc2.alias0), (uc2.alias1), (uc2.alias2), (uc2.alias3), sum((uc2.alias4)), "
-          + "(sum((uc2.alias4)) + 10)";
-      String expectedInnerSelect = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, "
-          + "(cubecityjoinunionctx.name) as `alias1`, case  when (basecube.union_join_ctx_cityid) is null then 0 "
-          + "else (basecube.union_join_ctx_cityid) end as `alias2`, (basecube.union_join_ctx_zipcode) as `alias3`, "
-          + "sum((basecube.union_join_ctx_msr1)) as `alias4`";
-      String expectedOuterGroupBy = "GROUP BY (uc2.alias0), (uc2.alias1), (uc2.alias2), (uc2.alias3)";
-      String expectedInnerGroupBy = "GROUP BY (basecube.union_join_ctx_cityid), (cubecityjoinunionctx.name), "
-          + "case  when (basecube.union_join_ctx_cityid) is null then 0 else (basecube.union_join_ctx_cityid) end, "
-          + "(basecube.union_join_ctx_zipcode) )";
-      assertTrue(rewrittenQuery.toLowerCase().contains(expectedOuterSelect.toLowerCase()));
-      assertTrue(rewrittenQuery.toLowerCase().contains(expectedInnerSelect.toLowerCase()));
-      assertTrue(rewrittenQuery.toLowerCase().contains(expectedOuterGroupBy.toLowerCase()));
-      assertTrue(rewrittenQuery.toLowerCase().contains(expectedInnerGroupBy.toLowerCase()   ));
-
-    } finally {
-      getStorageToUpdatePeriodMap().clear();
-    }
-  }
-  @Test
-  public void testJoinCandidateQuery() throws ParseException, LensException {
-    try {
-      Configuration conf = LensServerAPITestUtil.getConfigurationWithParams(getConf(),
-          //Supported storage
-          CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1",
-          // Storage tables
-          getValidStorageTablesKey("union_join_ctx_fact1"), "C1_union_join_ctx_fact1",
-          getValidStorageTablesKey("union_join_ctx_fact2"), "C1_union_join_ctx_fact2",
-          getValidStorageTablesKey("union_join_ctx_fact3"), "C1_union_join_ctx_fact3",
-          // Update periods
-          getValidUpdatePeriodsKey("union_join_ctx_fact1", "C1"), "DAILY",
-          getValidUpdatePeriodsKey("union_join_ctx_fact2", "C1"), "DAILY",
-          getValidUpdatePeriodsKey("union_join_ctx_fact3", "C1"), "DAILY");
-      // Test union candidate
-      //String colsSelected = " union_join_ctx_cityid , union_join_ctx_cityname , union_join_ctx_notnullcityid, "
-      //    + " union_join_ctx_zipcode, sum(union_join_ctx_msr1), sum(union_join_ctx_msr2), "
-      //    + " sum(union_join_ctx_msr1) + 10, union_join_ctx_non_zero_msr2_sum";
-      //String colsSelected = " union_join_ctx_cityid, sum(union_join_ctx_msr1) ";
-
-
-/*
 
       // Query with non projected measure in having clause.
       String colsSelected = "union_join_ctx_cityid, sum(union_join_ctx_msr2) ";
@@ -119,48 +74,77 @@ public class TestUnionAndJoinCandidates extends TestQueryRewrite {
       String whereCond = " union_join_ctx_zipcode = 'a' and union_join_ctx_cityid = 'b' and "
           + "(" + TWO_MONTHS_RANGE_UPTO_DAYS + ")";
       String rewrittenQuery = rewrite("select " + colsSelected + " from basecube where " + whereCond + having, conf);
-      String expectedSelect1 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, 0.0 as `alias1`, "
-          + "sum((basecube.union_join_ctx_msr1)) as `alias2` FROM TestQueryRewrite.c1_union_join_ctx_fact1 basecube "
-          + "WHERE ((((basecube.union_join_ctx_zipcode) = 'a') and ((basecube.union_join_ctx_cityid) = 'b')";
-      String expectedSelect2 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, 0.0 as `alias1`, "
-          + "sum((basecube.union_join_ctx_msr1)) as `alias2` FROM TestQueryRewrite.c1_union_join_ctx_fact2 basecube "
-          + "WHERE ((((basecube.union_join_ctx_zipcode) = 'a') and ((basecube.union_join_ctx_cityid) = 'b')";
-      String expectedSelect3 = " SELECT (basecube.union_join_ctx_cityid) as `alias0`, "
+      String expectedInnerSelect1 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, 0.0 as `alias1`, "
+          + "sum((basecube.union_join_ctx_msr1)) as `alias2` FROM TestQueryRewrite.c1_union_join_ctx_fact1 basecube ";
+      String expectedInnerSelect2 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, 0.0 as `alias1`, "
+          + "sum((basecube.union_join_ctx_msr1)) as `alias2` FROM TestQueryRewrite.c1_union_join_ctx_fact2 basecube ";
+      String expectedInnerSelect3 = " SELECT (basecube.union_join_ctx_cityid) as `alias0`, "
           + "sum((basecube.union_join_ctx_msr2)) as `alias1`, sum(0.0) as `alias2` "
-          + "FROM TestQueryRewrite.c1_union_join_ctx_fact3 basecube WHERE ((((basecube.union_join_ctx_zipcode) = 'a') "
-          + "and ((basecube.union_join_ctx_cityid) = 'b')";
+          + "FROM TestQueryRewrite.c1_union_join_ctx_fact3 basecube ";
       String outerHaving = "HAVING (sum((jc0.alias2)) > 100)";
-      assertTrue(rewrittenQuery.toLowerCase().contains(expectedSelect1.toLowerCase()));
-      assertTrue(rewrittenQuery.toLowerCase().contains(expectedSelect2.toLowerCase()));
-      assertTrue(rewrittenQuery.toLowerCase().contains(expectedSelect3.toLowerCase()));
-      assertTrue(rewrittenQuery.toLowerCase().contains(outerHaving.toLowerCase()));
-*/
-      // Query with measure and aggregate expression
-      String colsSelected = " union_join_ctx_cityid , union_join_ctx_cityname , union_join_ctx_notnullcityid, "
-          + " union_join_ctx_zipcode, sum(union_join_ctx_msr1), sum(union_join_ctx_msr2), "
-          + " sum(union_join_ctx_msr1) + 10, union_join_ctx_non_zero_msr2_sum";
+      compareContains(expectedInnerSelect1, rewrittenQuery);
+      compareContains(expectedInnerSelect2, rewrittenQuery);
+      compareContains(expectedInnerSelect3, rewrittenQuery);
+      compareContains(outerHaving, rewrittenQuery);
 
-      String whereCond = " union_join_ctx_zipcode = 'a' and union_join_ctx_cityid = 'b' and "
+      // Query with measure and dim only expression
+      colsSelected = " union_join_ctx_cityid , union_join_ctx_cityname , union_join_ctx_notnullcityid, "
+          + "  sum(union_join_ctx_msr1), sum(union_join_ctx_msr2) ";
+      whereCond = " union_join_ctx_zipcode = 'a' and union_join_ctx_cityid = 'b' and "
           + "(" + TWO_MONTHS_RANGE_UPTO_DAYS + ")";
-      String rewrittenQuery = rewrite("select " + colsSelected + " from basecube where " + whereCond , conf);
+      rewrittenQuery = rewrite("select " + colsSelected + " from basecube where " + whereCond, conf);
+      String outerSelect = "SELECT (jc0.alias0), (jc0.alias1), (jc0.alias2), sum((jc0.alias3)), sum((jc0.alias4)) ";
+      expectedInnerSelect1 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, (cubecityjoinunionctx.name) "
+          + "as `alias1`, case  when (basecube.union_join_ctx_cityid) is null then 0 else "
+          + "(basecube.union_join_ctx_cityid) end as `alias2`, sum((basecube.union_join_ctx_msr1)) as `alias3`, "
+          + "0.0 as `alias4` FROM TestQueryRewrite.c1_union_join_ctx_fact1 basecube";
+      expectedInnerSelect2 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, (cubecityjoinunionctx.name) "
+          + "as `alias1`, case  when (basecube.union_join_ctx_cityid) is null then 0 else "
+          + "(basecube.union_join_ctx_cityid) end as `alias2`, sum((basecube.union_join_ctx_msr1)) as `alias3`, "
+          + "0.0 as `alias4` FROM TestQueryRewrite.c1_union_join_ctx_fact2";
+      expectedInnerSelect3 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, (cubecityjoinunionctx.name) "
+          + "as `alias1`, case  when (basecube.union_join_ctx_cityid) is null then 0 else "
+          + "(basecube.union_join_ctx_cityid) end as `alias2`, 0.0 as `alias3`, " +
+          "sum((basecube.union_join_ctx_msr2)) as `alias4` FROM TestQueryRewrite.c1_union_join_ctx_fact3";
+      String outerGroupBy = "GROUP BY (jc0.alias0), (jc0.alias1), (jc0.alias2)";
+      compareContains(outerSelect, rewrittenQuery);
+      compareContains(expectedInnerSelect1, rewrittenQuery);
+      compareContains(expectedInnerSelect2, rewrittenQuery);
+      compareContains(expectedInnerSelect3, rewrittenQuery);
+      compareContains(outerGroupBy, rewrittenQuery);
+      // Query with measure and measure expression eg. sum(case when....), case when sum(msr1)...
+      // and measure with constant sum(msr1) + 10
+      colsSelected = " union_join_ctx_cityid as `city id`, union_join_ctx_cityname, sum(union_join_ctx_msr1), "
+          + "sum(union_join_ctx_msr2), union_join_ctx_non_zero_msr2_sum, union_join_ctx_msr1_greater_than_100, "
+          + "sum(union_join_ctx_msr1) + 10 ";
+      //colsSelected = " union_join_ctx_cityid as `city id`, union_join_ctx_msr1_greater_than_100, union_join_ctx_non_zero_msr2_sum ";
+      whereCond = " union_join_ctx_zipcode = 'a' and union_join_ctx_cityid = 'b' and "
+          + "(" + TWO_MONTHS_RANGE_UPTO_DAYS + ")";
+      rewrittenQuery = rewrite("select " + colsSelected + " from basecube where " + whereCond, conf);
+      outerSelect = "SELECT (jc0.alias0) as `city id`, (jc0.alias1), sum((jc0.alias2)), sum((jc0.alias3)), "
+          + "sum((jc0.alias4)), case  when (sum((jc0.alias5)) > 100) then \"high\" else \"low\" end, "
+          + "(sum((jc0.alias6)) + 10)";
+      expectedInnerSelect1 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, "
+          + "(cubecityjoinunionctx.name) as `alias1`, sum((basecube.union_join_ctx_msr1)) as `alias2`, "
+          + "0.0 as `alias3`, 0.0 as `alias4`, sum((basecube.union_join_ctx_msr1)) as `alias5`, "
+          + "sum((basecube.union_join_ctx_msr1)) as `alias6`";
+      expectedInnerSelect2 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, "
+          + "(cubecityjoinunionctx.name) as `alias1`, sum((basecube.union_join_ctx_msr1)) as `alias2`, "
+          + "0.0 as `alias3`, 0.0 as `alias4`, sum((basecube.union_join_ctx_msr1)) as `alias5`, "
+          + "sum((basecube.union_join_ctx_msr1)) as `alias6`";
+      expectedInnerSelect3 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, "
+          + "(cubecityjoinunionctx.name) as `alias1`, 0.0 as `alias2`, sum((basecube.union_join_ctx_msr2)) "
+          + "as `alias3`, sum(case  when ((basecube.union_join_ctx_msr2) > 0) then (basecube.union_join_ctx_msr2) "
+          + "else 0 end) as `alias4`, 0.0 as `alias5`, 0.0 as `alias6`";
+      String innerGroupBy = "GROUP BY (basecube.union_join_ctx_cityid), (cubecityjoinunionctx.name)";
+      outerGroupBy = "GROUP BY (jc0.alias0), (jc0.alias1)";
 
-
-
-      //String rewrittenQuery = rewrite("select " + colsSelected + " from basecube where " + whereCond , conf);
-      String expectedOuterSelect = "SELECT (uc2.alias0), (uc2.alias1), (uc2.alias2), (uc2.alias3), sum((uc2.alias4)), "
-          + "(sum((uc2.alias4)) + 10)";
-      String expectedInnerSelect = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, "
-          + "(cubecityjoinunionctx.name) as `alias1`, case  when (basecube.union_join_ctx_cityid) is null then 0 "
-          + "else (basecube.union_join_ctx_cityid) end as `alias2`, (basecube.union_join_ctx_zipcode) as `alias3`, "
-          + "sum((basecube.union_join_ctx_msr1)) as `alias4`";
-      String expectedOuterGroupBy = "GROUP BY (uc2.alias0), (uc2.alias1), (uc2.alias2), (uc2.alias3)";
-      String expectedInnerGroupBy = "GROUP BY (basecube.union_join_ctx_cityid), (cubecityjoinunionctx.name), "
-          + "case  when (basecube.union_join_ctx_cityid) is null then 0 else (basecube.union_join_ctx_cityid) end, "
-          + "(basecube.union_join_ctx_zipcode) )";
-      assertTrue(rewrittenQuery.toLowerCase().contains(expectedOuterSelect.toLowerCase()));
-      assertTrue(rewrittenQuery.toLowerCase().contains(expectedInnerSelect.toLowerCase()));
-      assertTrue(rewrittenQuery.toLowerCase().contains(expectedOuterGroupBy.toLowerCase()));
-      assertTrue(rewrittenQuery.toLowerCase().contains(expectedInnerGroupBy.toLowerCase()   ));
+      compareContains(outerSelect, rewrittenQuery);
+      compareContains(expectedInnerSelect1, rewrittenQuery);
+      compareContains(expectedInnerSelect2, rewrittenQuery);
+      compareContains(expectedInnerSelect3, rewrittenQuery);
+      compareContains(outerGroupBy, rewrittenQuery);
+      compareContains(innerGroupBy, rewrittenQuery);
 
     } finally {
       getStorageToUpdatePeriodMap().clear();

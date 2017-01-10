@@ -959,33 +959,24 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
     Map<StorageCandidate, Set<Dimension>> factDimMap = new HashMap<>();
     if (cand != null) {
-        // copy ASTs for each storage candidate
-        for (StorageCandidate sc : scSet) {
-          sc.setQueryAst(DefaultQueryAST.fromCandidateStorage(sc, this));
-          CandidateUtil.copyASTs(this, sc.getQueryAst());
-          factDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
-        }
-        for (StorageCandidate sc : scSet) {
-         addRangeClauses(sc);
-     }
+      // copy ASTs for each storage candidate
+      for (StorageCandidate sc : scSet) {
+        sc.setQueryAst(DefaultQueryAST.fromCandidateStorage(sc, this));
+        CandidateUtil.copyASTs(this, sc.getQueryAst());
+        factDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
+      }
+      for (StorageCandidate sc : scSet) {
+        addRangeClauses(sc);
+      }
     }
 
     // pick dimension tables required during expression expansion for the picked fact and dimensions
     Set<Dimension> exprDimensions = new HashSet<>();
     if (scSet != null) {
       for (StorageCandidate sc : scSet) {
-
-        //Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery,
-        //    scSet.size() > 1 ? sc.getQueryAst() : this);
         Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery, sc.getQueryAst());
         exprDimensions.addAll(factExprDimTables);
-       // if (scSet.size() > 1) {
-          factDimMap.get(sc).addAll(factExprDimTables);
-       // }
-      }
-      if (scSet.size() > 1) {
-        //TODO rewrite: Handle the having  pushdown in case of join candidates
-        //havingAST = MultiFactHQLContext.pushDownHaving(havingAST, this, cfacts);
+        factDimMap.get(sc).addAll(factExprDimTables);
       }
     } else {
       // dim only query
@@ -1000,9 +991,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       for (StorageCandidate sc : scSet) {
         Set<Dimension> factDenormTables = deNormCtx.rewriteDenormctx(sc, dimsToQuery, scSet.size() > 1);
         denormTables.addAll(factDenormTables);
-        //if (scSet.size() > 1) {
-          factDimMap.get(sc).addAll(factDenormTables);
-        //}
+        factDimMap.get(sc).addAll(factDenormTables);
       }
     } else {
       denormTables.addAll(deNormCtx.rewriteDenormctx(null, dimsToQuery, false));
@@ -1032,37 +1021,31 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     pickedDimTables = dimsToQuery.values();
     pickedCandidate = cand;
     if (scSet != null) {
-     // if (scSet.size() > 1) {
-        // Update ASTs for each fact
-        for (StorageCandidate sc : scSet) {
-          sc.updateAnswerableQueriedColumns(this);
-        }
-        // TODO rewrite: Handle this in join candidates
-        //whereAST = MultiFactHQLContext.convertHavingToWhere(havingAST, this, cfacts, new DefaultAliasDecider());
-        for (StorageCandidate sc : scSet) {
-          sc.updateFromString(this, factDimMap.get(sc), dimsToQuery);
-        }
-     // }
+      for (StorageCandidate sc : scSet) {
+        sc.updateAnswerableQueriedColumns(this);
+      }
+      for (StorageCandidate sc : scSet) {
+        sc.updateFromString(this, factDimMap.get(sc), dimsToQuery);
+      }
     }
-    /*
-    if (scSet == null || scSet.size() == 1) {
-      updateFromString(scSet == null ? null : scSet.iterator().next(), dimsToQuery);
-    }
-    */
     //update dim filter with fact filter
     if (scSet != null && scSet.size() > 0) {
       for (StorageCandidate sc : scSet) {
         if (!sc.getStorageName().isEmpty()) {
           String qualifiedStorageTable = sc.getStorageName();
-            String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1);
-            String where = getWhere(sc, autoJoinCtx,
-                sc.getQueryAst().getWhereAST(), getAliasForTableName(sc.getBaseTable().getName()),
-                shouldReplaceDimFilterWithFactFilter(), storageTable, dimsToQuery);
-            sc.setWhereString(where);
+          String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1);
+          String where = getWhere(sc, autoJoinCtx,
+              sc.getQueryAst().getWhereAST(), getAliasForTableName(sc.getBaseTable().getName()),
+              shouldReplaceDimFilterWithFactFilter(), storageTable, dimsToQuery);
+          sc.setWhereString(where);
         }
       }
     }
-    if (cand instanceof StorageCandidate) {
+
+    if (cand == null) {
+      DimHQLContext dimHQLContext = new DimOnlyHQLContext(dimsToQuery, this, this);
+      return dimHQLContext.toHQL();
+    } else if (cand instanceof StorageCandidate) {
       return cand.toHQL();
     } else {
       UnionQueryWriter uqc = new UnionQueryWriter(cand, this);
