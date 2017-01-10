@@ -62,8 +62,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
   private final float completenessThreshold;
   @Getter
   private final String name;
-  private final List<Integer> selectIndices = Lists.newArrayList();
-  private final List<Integer> dimFieldIndices = Lists.newArrayList();
   /**
    * Valid udpate periods populated by Phase 1.
    */
@@ -85,10 +83,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
   private Map<Dimension, CandidateDim> dimensions;
   @Getter
   private Map<TimeRange, String> rangeToWhere = new LinkedHashMap<>();
-  //@Getter
-  //private final Map<String, ASTNode> storgeWhereClauseMap = new HashMap<>();
-  //@Getter
-  //private final Map<String, String> storgeWhereStringMap = new HashMap<>();
   @Getter
   @Setter
   private String whereString;
@@ -155,19 +149,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
   }
 
-  static boolean containsAny(Collection<String> srcSet, Collection<String> colSet) {
-    if (colSet == null || colSet.isEmpty()) {
-      return true;
-    }
-    for (String column : colSet) {
-      if (srcSet.contains(column)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  protected void setMissingExpressions() throws LensException {
+  private void setMissingExpressions() throws LensException {
     //    setFrom(String.format(astFromString, getFromTable()));
     setWhereString(joinWithAnd(whereString, null));
   }
@@ -179,11 +161,13 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Override
   public String toHQL() throws LensException {
     setMissingExpressions();
+    // Check if the picked candidate is a StorageCandidate and in that case
+    // update the selectAST with final alias.
     if (this == cubeql.getPickedCandidate()) {
       CandidateUtil.updateFinalAlias(queryAst.getSelectAST(), cubeql);
     }
     return CandidateUtil
-      .createHQLQuery(queryAst.getSelectString(), fromString, whereString, queryAst.getGroupByString(),
+      .buildHQLString(queryAst.getSelectString(), fromString, whereString, queryAst.getGroupByString(),
         queryAst.getOrderByString(), queryAst.getHavingString(), queryAst.getLimitValue());
   }
 
@@ -584,19 +568,13 @@ public class StorageCandidate implements Candidate, CandidateTable {
   }
 
   @Override
-  public void updateAnswerableQueriedColumns(CubeQueryContext cubeql) throws LensException {
+  public void updateAnswerableSelectColumns(CubeQueryContext cubeql) throws LensException {
     // update select AST with selected fields
     int currentChild = 0;
     for (int i = 0; i < cubeql.getSelectAST().getChildCount(); i++) {
       ASTNode selectExpr = (ASTNode) queryAst.getSelectAST().getChild(currentChild);
       Set<String> exprCols = HQLParser.getColsInExpr(cubeql.getAliasForTableName(cubeql.getCube()), selectExpr);
       if (getColumns().containsAll(exprCols)) {
-        selectIndices.add(i);
-        if (exprCols.isEmpty() // no direct fact columns
-          // does not have measure names
-          || (!containsAny(cubeql.getCube().getMeasureNames(), exprCols))) {
-          dimFieldIndices.add(i);
-        }
         ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
         String alias = cubeql.getSelectPhrases().get(i).getSelectAlias();
         if (aliasNode != null) {
@@ -664,7 +642,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
   }
 
-  protected String getFromTable() throws LensException {
+  private String getFromTable() throws LensException {
     String alias = cubeql.getAliasForTableName(cubeql.getCube().getName());
     String database = SessionState.get().getCurrentDatabase();
     String ret = name + " " + alias;

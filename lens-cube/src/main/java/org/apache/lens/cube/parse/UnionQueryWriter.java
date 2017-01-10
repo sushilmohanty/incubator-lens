@@ -57,7 +57,7 @@ public class UnionQueryWriter {
     for (StorageCandidate sc : storageCandidates) {
       updateSelectASTWithDefault(sc);
     }
-    queryAst = DefaultQueryAST.fromCandidateStorage(storageCandidates.iterator().next(),
+    queryAst = DefaultQueryAST.fromStorageCandidate(storageCandidates.iterator().next(),
         storageCandidates.iterator().next().getQueryAst());
     // Get not default outer select expr asts
     processSelectAndHavingAST();
@@ -65,7 +65,7 @@ public class UnionQueryWriter {
     processOrderByAST();
     updateAsts();
     CandidateUtil.updateFinalAlias(queryAst.getSelectAST(), cubeql);
-    return CandidateUtil.createHQLQuery(queryAst.getSelectString(), getFromString(), null,
+    return CandidateUtil.buildHQLString(queryAst.getSelectString(), getFromString(), null,
         queryAst.getGroupByString(), queryAst.getOrderByString(),
         queryAst.getHavingString(), queryAst.getLimitValue());
   }

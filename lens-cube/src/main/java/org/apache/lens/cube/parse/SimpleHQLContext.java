@@ -75,6 +75,6 @@ public abstract class SimpleHQLContext implements HQLContextInterface {
 
   public String toHQL() throws LensException {
     setMissingExpressions();
-    return CandidateUtil.createHQLQuery(select, from, where, groupby, orderby, having, limit);
+    return CandidateUtil.buildHQLString(select, from, where, groupby, orderby, having, limit);
   }
 }

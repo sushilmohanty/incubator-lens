@@ -33,10 +33,6 @@ public class UnionCandidate implements Candidate {
   private List<Candidate> childCandidates;
   @Getter
   private QueryAST queryAst;
-  private ASTNode innerSelectAST = new ASTNode(new CommonToken(TOK_SELECT));
-
-  private Map<HashableASTNode, ASTNode> innerToOuterASTs = new HashMap<>();
-  private AliasDecider aliasDecider = new DefaultAliasDecider();
 
   public UnionCandidate(List<Candidate> childCandidates, String alias, CubeQueryContext cubeql) {
     this.childCandidates = childCandidates;
@@ -63,11 +59,9 @@ public class UnionCandidate implements Candidate {
 
   @Override
   public Collection<String> getColumns() {
-    Set<String> columns = new HashSet<>();
-    for (Candidate cand : childCandidates) {
-      columns.addAll(cand.getColumns());
-    }
-    return columns;
+    // In UnionCandidate all columns are same, return the columns
+    // of first child
+    return childCandidates.iterator().next().getColumns();
   }
 
   @Override
@@ -159,7 +153,7 @@ public class UnionCandidate implements Candidate {
   }
 
   @Override
-  public void updateAnswerableQueriedColumns(CubeQueryContext cubeql) {
+  public void updateAnswerableSelectColumns(CubeQueryContext cubeql) {
 
   }
 

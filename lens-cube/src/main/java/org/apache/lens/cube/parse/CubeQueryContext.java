@@ -954,14 +954,14 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
     if (autoJoinCtx != null) {
       // prune join paths for picked fact and dimensions
-      autoJoinCtx.pruneAllPaths(cube, scSet, dimsToQuery);
+      autoJoinCtx.pruneAllPaths(cube, cand, dimsToQuery);
     }
 
     Map<StorageCandidate, Set<Dimension>> factDimMap = new HashMap<>();
     if (cand != null) {
       // copy ASTs for each storage candidate
       for (StorageCandidate sc : scSet) {
-        sc.setQueryAst(DefaultQueryAST.fromCandidateStorage(sc, this));
+        sc.setQueryAst(DefaultQueryAST.fromStorageCandidate(sc, this));
         CandidateUtil.copyASTs(this, sc.getQueryAst());
         factDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
       }
@@ -1001,7 +1001,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     // Prune join paths once denorm tables are picked
     if (autoJoinCtx != null) {
       // prune join paths for picked fact and dimensions
-      autoJoinCtx.pruneAllPaths(cube, scSet, dimsToQuery);
+      autoJoinCtx.pruneAllPaths(cube, cand, dimsToQuery);
     }
     if (autoJoinCtx != null) {
       // add optional dims from Join resolver
@@ -1022,7 +1022,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     pickedCandidate = cand;
     if (scSet != null) {
       for (StorageCandidate sc : scSet) {
-        sc.updateAnswerableQueriedColumns(this);
+        sc.updateAnswerableSelectColumns(this);
       }
       for (StorageCandidate sc : scSet) {
         sc.updateFromString(this, factDimMap.get(sc), dimsToQuery);

@@ -100,8 +100,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   }
 
   private List<Candidate> resolveRangeCoveringFactSet(CubeQueryContext cubeql, List<TimeRange> ranges,
-                                           Set<QueriedPhraseContext> queriedMsrs,
-                                           List<QueriedPhraseContext> qpc) throws LensException {
+      Set<QueriedPhraseContext> queriedMsrs, List<QueriedPhraseContext> qpc) throws LensException {
     // All Candidates
     List<Candidate> allCandidates = new ArrayList<Candidate>(cubeql.getCandidates());
     // Partially valid candidates
@@ -139,12 +138,10 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   }
 
   private boolean isMeasureAnswerablebyUnionCandidate(QueriedPhraseContext msr, Candidate uc,
-                                                      CubeQueryContext cubeql) throws LensException {
+      CubeQueryContext cubeql) throws LensException {
     // Candidate is a single StorageCandidate
-    if (uc.getChildren() == null ) {
-      if (!msr.isEvaluable(cubeql, (StorageCandidate) uc)) {
-        return false;
-      }
+    if ((uc instanceof StorageCandidate) && !msr.isEvaluable(cubeql, (StorageCandidate) uc)) {
+      return false;
     } else {
       for (Candidate cand : uc.getChildren()) {
         if (!msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
@@ -156,8 +153,8 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   }
 
   private void pruneUnionCoveringSetWithoutAnyCommonMeasure(List<UnionCandidate> ucs,
-                                                            Set<QueriedPhraseContext> queriedMsrs,
-                                                            CubeQueryContext cubeql) throws LensException {
+      Set<QueriedPhraseContext> queriedMsrs,
+      CubeQueryContext cubeql) throws LensException {
     for (ListIterator<UnionCandidate> itr = ucs.listIterator(); itr.hasNext(); ) {
       boolean toRemove = true;
       UnionCandidate uc = itr.next();
@@ -209,9 +206,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   }
 
   private List<List<Candidate>> resolveJoinCandidates(List<Candidate> unionCandidates,
-                                                      Set<QueriedPhraseContext> msrs,
-                                                      CubeQueryContext cubeql,
-                                                      List<QueriedPhraseContext> qpc) throws LensException {
+      Set<QueriedPhraseContext> msrs, CubeQueryContext cubeql, List<QueriedPhraseContext> qpc) throws LensException {
     List<List<Candidate>> msrCoveringSets = new ArrayList<>();
     List<Candidate> ucSet = new ArrayList<>(unionCandidates);
     // Check if a single set can answer all the measures and exprsWithMeasures
@@ -260,8 +255,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   }
 
   private void updateQueriableMeasures(List<Candidate> cands,
-                                       List<QueriedPhraseContext> qpc,
-                                       CubeQueryContext cubeql) throws LensException {
+      List<QueriedPhraseContext> qpc, CubeQueryContext cubeql) throws LensException {
     for (Candidate cand : cands ) {
       updateStorageCandidateQueriableMeasures(cand, qpc, cubeql);
     }
@@ -269,8 +263,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
 
 
   private void updateStorageCandidateQueriableMeasures(Candidate unionCandidate,
-                                                       List<QueriedPhraseContext> queriedPhrases,
-                                                       CubeQueryContext cubeql) throws LensException {
+      List<QueriedPhraseContext> queriedPhrases, CubeQueryContext cubeql) throws LensException {
     QueriedPhraseContext msrPhrase;
     boolean isEvaluable;
     for (int index = 0; index < queriedPhrases.size(); index++) {
@@ -283,7 +276,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       msrPhrase = queriedPhrases.get(index);
       if (unionCandidate instanceof StorageCandidate && msrPhrase.isEvaluable(cubeql, (StorageCandidate) unionCandidate)) {
         ((StorageCandidate) unionCandidate).setAnswerableMeasureIndices(index);
-      } else if (unionCandidate instanceof UnionCandidate){
+      } else if (unionCandidate instanceof UnionCandidate) {
         isEvaluable = true;
         for (Candidate childCandidate : unionCandidate.getChildren()) {
           if (!msrPhrase.isEvaluable(cubeql, (StorageCandidate) childCandidate)) {

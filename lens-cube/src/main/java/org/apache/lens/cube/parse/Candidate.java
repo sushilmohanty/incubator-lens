@@ -94,10 +94,11 @@ public interface Candidate {
    *
    * @param timeRange         : TimeRange to check completeness for. TimeRange consists of start time, end time and the
    *                          partition column
+   * @param queriedTimeRange  : User quried timerange
    * @param failOnPartialData : fail fast if the candidate can answer the query only partially
    * @return true if this Candidate can answer query for the given time range.
    */
-  boolean evaluateCompleteness(TimeRange timeRange, TimeRange parentTimeRange, boolean failOnPartialData)
+  boolean evaluateCompleteness(TimeRange timeRange, TimeRange queriedTimeRange, boolean failOnPartialData)
     throws LensException;
 
   /**
@@ -124,7 +125,7 @@ public interface Candidate {
    *
    * @param cubeql
    */
-  void updateAnswerableQueriedColumns(CubeQueryContext cubeql) throws LensException;
+  void updateAnswerableSelectColumns(CubeQueryContext cubeql) throws LensException;
 
   ArrayList<Integer> getAnswerableMeasureIndices();
 

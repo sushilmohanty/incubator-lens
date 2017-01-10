@@ -67,13 +67,12 @@ public class DefaultQueryAST implements QueryAST {
       ast.getFromString(),
       fact.getStorageWhereString(storageTable.substring(storageTable.indexOf(".") + 1)));
   }
-  public static DefaultQueryAST fromCandidateStorage(StorageCandidate sc, QueryAST ast) throws
+  public static DefaultQueryAST fromStorageCandidate(StorageCandidate sc, QueryAST ast) throws
       LensException {
     return new DefaultQueryAST(ast.getSelectAST(),
         null,
         ast.getGroupByAST(), ast.getHavingAST(), ast.getJoinAST(), ast.getOrderByAST(), ast.getLimitValue(),
         ast.getFromString(),
-        //sc.getStorgeWhereStringMap().get(storageTable.substring(storageTable.indexOf(".") + 1)));
         sc.getWhereString());
   }
 }

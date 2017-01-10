@@ -221,7 +221,7 @@ public class CandidateUtil {
 
   private static final String baseQueryFormat = "SELECT %s FROM %s";
 
-  public static String createHQLQuery(String select, String from, String where, String groupby, String orderby, String having,
+  public static String buildHQLString(String select, String from, String where, String groupby, String orderby, String having,
                                       Integer limit) {
 
     List<String> qstrs = new ArrayList<String>();
@@ -263,14 +263,25 @@ public class CandidateUtil {
     return String.format(queryFormat.toString(), qstrs.toArray(new String[0]));
   }
 
+  /**
+   *
+   * @param selectAST Outer query selectAST
+   * @param cubeql Cubequery Context
+   *
+   *  Update the final alias in the outer select query. Replace the query with final alias, if user hasn't \
+   *  specified any alias in final selectAST deelete the alias
+   */
   public static void updateFinalAlias(ASTNode selectAST, CubeQueryContext cubeql) {
     for (int i = 0; i < selectAST.getChildCount(); i++) {
       ASTNode selectExpr = (ASTNode) selectAST.getChild(i);
       ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
       String finalAlias = cubeql.getSelectPhrases().get(i).getFinalAlias().replaceAll("`", "");
       String actualAlias = cubeql.getSelectPhrases().get(i).getActualAlias();
-      if (actualAlias == null && selectExpr.getChildCount() == 2 ) {
-        selectExpr.deleteChild(1);
+      if (actualAlias == null ) {
+        if (aliasNode != null){
+          //Since actual alias supplied by user is null, we should delete this alias node
+          selectExpr.deleteChild(1);
+        }
         continue;
       }
       if (aliasNode != null) {
@@ -287,6 +298,17 @@ public class CandidateUtil {
         selectAST.getChild(i).addChild(newAliasNode);
       }
     }
+  }
 
+  public static boolean containsAny(Set<String> srcSet, Set<String> colSet) {
+    if (colSet == null || colSet.isEmpty()) {
+      return true;
+    }
+    for (String column : colSet) {
+      if (srcSet.contains(column)) {
+        return true;
+      }
+    }
+    return false;
   }
 }
