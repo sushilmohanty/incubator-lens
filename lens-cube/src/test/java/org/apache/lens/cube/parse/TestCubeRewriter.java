@@ -412,7 +412,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
       "select cubestate.name, cubestate.countryid, msr2 from" + " testCube" + " where cubestate.countryid = 5 and "
         + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select cubestate.name, cubestate.countryid , sum(testcube.msr2)" + " FROM ",
+      getExpectedQuery(TEST_CUBE_NAME, "select cubestate.name, cubestate.countryid, sum(testcube.msr2)" + " FROM ",
         " JOIN " + getDbName()
           + "c3_statetable_partitioned cubestate ON" + " testCube.stateid = cubestate.id and cubestate.dt = 'latest'",
         "cubestate.countryid=5",

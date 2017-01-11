@@ -192,7 +192,7 @@ class ColumnResolver implements ContextRewriter {
   // and user given alias is the final alias of the expression.
   private static final String SELECT_ALIAS_PREFIX = "expr";
 
-  void getColsForSelectTree(final CubeQueryContext cubeql) throws LensException {
+  private void getColsForSelectTree(final CubeQueryContext cubeql) throws LensException {
     int exprInd = 1;
     for (int i = 0; i < cubeql.getSelectAST().getChildCount(); i++) {
       ASTNode selectExpr = (ASTNode) cubeql.getSelectAST().getChild(i);
