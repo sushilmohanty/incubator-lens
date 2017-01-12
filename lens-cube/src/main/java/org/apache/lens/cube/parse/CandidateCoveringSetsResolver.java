@@ -34,19 +34,22 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       finalCandidates.addAll(cubeql.getCandidates());
     }
 
-    List<Candidate> unionSet = resolveRangeCoveringFactSet(cubeql, cubeql.getTimeRanges(),
-        queriedMsrs, qpc);
+    List<Candidate> unionSet = resolveRangeCoveringFactSet(cubeql, cubeql.getTimeRanges(), queriedMsrs, qpc);
     List<List<Candidate>> measureCoveringSets = resolveJoinCandidates(unionSet, queriedMsrs, cubeql, qpc);
     updateFinalCandidates(measureCoveringSets, cubeql);
     log.info("Covering candidate sets :{}", finalCandidates);
 
     String msrString = CandidateUtil.getColumns(queriedMsrs).toString();
-    if (finalCandidates.isEmpty()) {
+
+
+    if (!finalCandidates.isEmpty()) {
+      // update final candidate sets in CubeQueryContext
+      cubeql.getCandidates().clear();
+      cubeql.getCandidates().addAll(finalCandidates);
+    } else if (finalCandidates.isEmpty() && cubeql.getCandidateDims().isEmpty()) {
       throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
     }
-    // update final candidate sets
-    cubeql.getCandidates().clear();
-    cubeql.getCandidates().addAll(finalCandidates);
+
     // TODO : we might need to prune if we maintian two data structures in CubeQueryContext.
     //cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCause.columnNotFound(getColumns(queriedMsrs)));
     //if (cubeql.getCandidates().size() == 0) {
@@ -142,7 +145,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     // Candidate is a single StorageCandidate
     if ((uc instanceof StorageCandidate) && !msr.isEvaluable(cubeql, (StorageCandidate) uc)) {
       return false;
-    } else {
+    } else if ((uc instanceof UnionCandidate)){
       for (Candidate cand : uc.getChildren()) {
         if (!msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
           return false;

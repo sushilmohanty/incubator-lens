@@ -173,7 +173,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   @Override
   public String getStorageString(String alias) {
-    return null;
+    return storageName + " " + alias;
   }
 
   @Override

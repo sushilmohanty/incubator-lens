@@ -32,42 +32,47 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 class LeastPartitionResolver implements ContextRewriter {
-  public LeastPartitionResolver(Configuration conf) {
-  }
-
   @Override
   public void rewriteContext(CubeQueryContext cubeql) throws LensException {
-    if (cubeql.getCube() != null && !cubeql.getCandidateFactSets().isEmpty()) {
-      Map<Set<CandidateFact>, Integer> factPartCount = new HashMap<Set<CandidateFact>, Integer>();
 
-      //The number of partitions being calculated is not the actual number of partitions,
-      // they are number of time values now instead of partitions.
-      // This seems fine, as the less number of time values actually represent the rollups on time. And with
-      // MaxCoveringFactResolver facts with less partitions which are not covering the range would be removed.
-      for (Set<CandidateFact> facts : cubeql.getCandidateFactSets()) {
-        factPartCount.put(facts, getPartCount(facts));
-      }
-
-      double minPartitions = Collections.min(factPartCount.values());
-
-      for (Iterator<Set<CandidateFact>> i = cubeql.getCandidateFactSets().iterator(); i.hasNext();) {
-        Set<CandidateFact> facts = i.next();
-        if (factPartCount.get(facts) > minPartitions) {
-          log.info("Not considering facts:{} from candidate fact tables as it requires more partitions to be"
-            + " queried:{} minimum:{}", facts, factPartCount.get(facts), minPartitions);
-          i.remove();
-        }
-      }
-      cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCode.MORE_PARTITIONS);
-    }
   }
-
-  private int getPartCount(Set<CandidateFact> set) {
-    int parts = 0;
-    for (CandidateFact f : set) {
-      parts += f.getNumQueriedParts();
-    }
-    return parts;
-  }
+  public LeastPartitionResolver(Configuration conf) {}
+//  public LeastPartitionResolver(Configuration conf) {
+//  }
+//
+//  @Override
+//  public void rewriteContext(CubeQueryContext cubeql) throws LensException {
+//    if (cubeql.getCube() != null && !cubeql.getCandidateFactSets().isEmpty()) {
+//      Map<Set<CandidateFact>, Integer> factPartCount = new HashMap<Set<CandidateFact>, Integer>();
+//
+//      //The number of partitions being calculated is not the actual number of partitions,
+//      // they are number of time values now instead of partitions.
+//      // This seems fine, as the less number of time values actually represent the rollups on time. And with
+//      // MaxCoveringFactResolver facts with less partitions which are not covering the range would be removed.
+//      for (Set<CandidateFact> facts : cubeql.getCandidateFactSets()) {
+//        factPartCount.put(facts, getPartCount(facts));
+//      }
+//
+//      double minPartitions = Collections.min(factPartCount.values());
+//
+//      for (Iterator<Set<CandidateFact>> i = cubeql.getCandidateFactSets().iterator(); i.hasNext();) {
+//        Set<CandidateFact> facts = i.next();
+//        if (factPartCount.get(facts) > minPartitions) {
+//          log.info("Not considering facts:{} from candidate fact tables as it requires more partitions to be"
+//            + " queried:{} minimum:{}", facts, factPartCount.get(facts), minPartitions);
+//          i.remove();
+//        }
+//      }
+//      cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCode.MORE_PARTITIONS);
+//    }
+//  }
+//
+//  private int getPartCount(Set<CandidateFact> set) {
+//    int parts = 0;
+//    for (CandidateFact f : set) {
+//      parts += f.getNumQueriedParts();
+//    }
+//    return parts;
+//  }
 
 }

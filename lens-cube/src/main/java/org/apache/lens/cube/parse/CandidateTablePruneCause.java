@@ -285,7 +285,8 @@ public class CandidateTablePruneCause {
   // the fact is not partitioned by part col of the time dim and time dim is not a dim attribute
   private Set<String> unsupportedTimeDims;
   // time covered
-  private MaxCoveringFactResolver.TimeCovered maxTimeCovered;
+  // TODO union : Fix this after MaxCoveringFactResolver chnaged wrt. Candidate
+  //private MaxCoveringFactResolver.TimeCovered maxTimeCovered;
   // ranges in which fact is invalid
   private List<TimeRange> invalidRanges;
 
@@ -352,12 +353,14 @@ public class CandidateTablePruneCause {
     return cause;
   }
 
+  // TODO union : uncomment the below method after MaxCoveringFactResolver is fixed wrt. Candidate
+  /*
   public static CandidateTablePruneCause lessData(MaxCoveringFactResolver.TimeCovered timeCovered) {
     CandidateTablePruneCause cause = new CandidateTablePruneCause(LESS_DATA);
     cause.setMaxTimeCovered(timeCovered);
     return cause;
   }
-
+*/
   public static CandidateTablePruneCause noColumnPartOfAJoinPath(final Collection<String> colSet) {
     CandidateTablePruneCause cause =
       new CandidateTablePruneCause(NO_COLUMN_PART_OF_A_JOIN_PATH);
