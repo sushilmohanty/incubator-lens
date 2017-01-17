@@ -986,7 +986,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     Set<Dimension> denormTables = new HashSet<>();
     if (!scSet.isEmpty()) {
       for (StorageCandidate sc : scSet) {
-        Set<Dimension> factDenormTables = deNormCtx.rewriteDenormctx(sc, dimsToQuery, scSet.size() > 1);
+        Set<Dimension> factDenormTables = deNormCtx.rewriteDenormctx(sc, dimsToQuery, !scSet.isEmpty());
         denormTables.addAll(factDenormTables);
         factDimMap.get(sc).addAll(factDenormTables);
       }

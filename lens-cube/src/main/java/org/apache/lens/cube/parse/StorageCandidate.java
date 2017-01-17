@@ -89,9 +89,12 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Getter
   private final ArrayList<Integer> answerableMeasureIndices = Lists.newArrayList();
   @Getter
+  @Setter
   private String fromString;
   @Getter
   private CubeInterface cube;
+  @Getter
+  Map<Dimension, CandidateDim> dimsToQuery;
   /**
    * Cached fact columns
    */
@@ -646,17 +649,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
     this.validUpdatePeriods.add(updatePeriod);
   }
 
-  //  public void updateFromString(CubeQueryContext query, Set<Dimension> queryDims,
-  //    Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
-  //    fromString = "%s"; // to update the storage alias later
-  //    if (query.isAutoJoinResolved()) {
-  //      fromString =
-  //        query.getAutoJoinCtx().getFromString(fromString, this, queryDims, dimsToQuery,
-  //          query, cubeql);
-  //    }
-  //  }
-  @Getter
-  Map<Dimension, CandidateDim> dimsToQuery;
   public void updateFromString(CubeQueryContext query, Set<Dimension> queryDims,
     Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
     this.dimsToQuery = dimsToQuery;
