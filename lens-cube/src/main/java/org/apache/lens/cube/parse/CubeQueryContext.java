@@ -737,9 +737,9 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     qb.getParseInfo().setDestLimit(getClause(), 0, value);
   }
 
-  private String getStorageStringWithAlias(CandidateFact fact, Map<Dimension, CandidateDim> dimsToQuery, String alias) {
+  private String getStorageStringWithAlias(StorageCandidate candidate, Map<Dimension, CandidateDim> dimsToQuery, String alias) {
     if (cubeTbls.get(alias) instanceof CubeInterface) {
-      return fact.getStorageString(alias);
+      return candidate.getAliasForTable(alias);
     } else {
       return dimsToQuery.get(cubeTbls.get(alias)).getStorageString(alias);
     }
@@ -749,14 +749,14 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     return StorageUtil.getWhereClause(dimsToQuery.get(cubeTbls.get(alias)), alias);
   }
 
-  String getQBFromString(CandidateFact fact, Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
+  String getQBFromString(StorageCandidate candidate, Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
     String fromString;
     if (getJoinAST() == null) {
       if (cube != null) {
         if (dimensions.size() > 0) {
           throw new LensException(LensCubeErrorCode.NO_JOIN_CONDITION_AVAILABLE.getLensErrorInfo());
         }
-        fromString = fact.getStorageString(getAliasForTableName(cube.getName()));
+        fromString = candidate.getAliasForTable(getAliasForTableName(cube.getName()));
       } else {
         if (dimensions.size() != 1) {
           throw new LensException(LensCubeErrorCode.NO_JOIN_CONDITION_AVAILABLE.getLensErrorInfo());
@@ -766,22 +766,22 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       }
     } else {
       StringBuilder builder = new StringBuilder();
-      getQLString(qb.getQbJoinTree(), builder, fact, dimsToQuery);
+      getQLString(qb.getQbJoinTree(), builder, candidate, dimsToQuery);
       fromString = builder.toString();
     }
     return fromString;
   }
 
-  private void getQLString(QBJoinTree joinTree, StringBuilder builder, CandidateFact fact,
+  private void getQLString(QBJoinTree joinTree, StringBuilder builder, StorageCandidate candidate,
     Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
     List<String> joiningTables = new ArrayList<>();
     if (joinTree.getBaseSrc()[0] == null) {
       if (joinTree.getJoinSrc() != null) {
-        getQLString(joinTree.getJoinSrc(), builder, fact, dimsToQuery);
+        getQLString(joinTree.getJoinSrc(), builder, candidate, dimsToQuery);
       }
     } else { // (joinTree.getBaseSrc()[0] != null){
       String alias = joinTree.getBaseSrc()[0].toLowerCase();
-      builder.append(getStorageStringWithAlias(fact, dimsToQuery, alias));
+      builder.append(getStorageStringWithAlias(candidate , dimsToQuery, alias));
       joiningTables.add(alias);
     }
     if (joinTree.getJoinCond() != null) {
@@ -790,11 +790,11 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     }
     if (joinTree.getBaseSrc()[1] == null) {
       if (joinTree.getJoinSrc() != null) {
-        getQLString(joinTree.getJoinSrc(), builder, fact, dimsToQuery);
+        getQLString(joinTree.getJoinSrc(), builder, candidate, dimsToQuery);
       }
     } else { // (joinTree.getBaseSrc()[1] != null){
       String alias = joinTree.getBaseSrc()[1].toLowerCase();
-      builder.append(getStorageStringWithAlias(fact, dimsToQuery, alias));
+      builder.append(getStorageStringWithAlias(candidate, dimsToQuery, alias));
       joiningTables.add(alias);
     }
 
@@ -948,8 +948,11 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
   public String toHQL() throws LensException {
     Candidate cand = pickCandidateToQuery();
-    Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(cand);
     Map<Dimension, CandidateDim> dimsToQuery = pickCandidateDimsToQuery(dimensions);
+    Set<StorageCandidate> scSet = null;
+    if (cand != null) {
+      scSet = CandidateUtil.getStorageCandidates(cand);
+    }
     log.info("facts:{}, dimsToQuery: {}", cand, dimsToQuery);
 
     if (autoJoinCtx != null) {

@@ -56,18 +56,19 @@ class SingleFactSingleStorageHQLContext extends DimOnlyHQLContext {
 
   @Override
   protected String getFromTable() throws LensException {
-    if (getQuery().isAutoJoinResolved()) {
-      if (storageAlias != null) {
-        return storageAlias;
-      } else {
-        return fact.getStorageString(query.getAliasForTableName(query.getCube().getName()));
-      }
-    } else {
-      if (fact.getStorageTables().size() == 1) {
-        return getQuery().getQBFromString(fact, getDimsToQuery());
-      } else {
-        return storageAlias;
-      }
-    }
+//    if (getQuery().isAutoJoinResolved()) {
+//      if (storageAlias != null) {
+//        return storageAlias;
+//      } else {
+//        return fact.getStorageString(query.getAliasForTableName(query.getCube().getName()));
+//      }
+//    } else {
+//      if (fact.getStorageTables().size() == 1) {
+//        return getQuery().getQBFromString(fact, getDimsToQuery());
+//      } else {
+//        return storageAlias;
+//      }
+ //   }
+    return null;
   }
 }

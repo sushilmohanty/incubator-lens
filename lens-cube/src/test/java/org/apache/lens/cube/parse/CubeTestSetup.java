@@ -790,7 +790,7 @@ public class CubeTestSetup {
         });
       }
     });
-    joinChains.put("cubeCity", new JoinChain("cubeCityJoinUnionCtx", "cube-city", "city thru cube") {
+    joinChains.put("cubeCityJoinUnionCtx", new JoinChain("cubeCityJoinUnionCtx", "cube-city", "city thru cube") {
       {
         // added for testing union join context
         addPath(new ArrayList<TableReference>() {
