@@ -969,7 +969,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
     // pick dimension tables required during expression expansion for the picked fact and dimensions
     Set<Dimension> exprDimensions = new HashSet<>();
-    if (scSet != null) {
+    if (!scSet.isEmpty()) {
       for (StorageCandidate sc : scSet) {
         Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery, sc.getQueryAst());
         exprDimensions.addAll(factExprDimTables);
@@ -984,7 +984,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
     // pick denorm tables for the picked fact and dimensions
     Set<Dimension> denormTables = new HashSet<>();
-    if (scSet != null) {
+    if (!scSet.isEmpty()) {
       for (StorageCandidate sc : scSet) {
         Set<Dimension> factDenormTables = deNormCtx.rewriteDenormctx(sc, dimsToQuery, scSet.size() > 1);
         denormTables.addAll(factDenormTables);
@@ -1017,13 +1017,15 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     log.info("Picked Fact:{} dimsToQuery: {}", scSet, dimsToQuery);
     pickedDimTables = dimsToQuery.values();
     pickedCandidate = cand;
-    if (scSet != null) {
+    if (!scSet.isEmpty()) {
       for (StorageCandidate sc : scSet) {
         sc.updateAnswerableSelectColumns(this);
       }
       for (StorageCandidate sc : scSet) {
         sc.updateFromString(this, factDimMap.get(sc), dimsToQuery);
       }
+    } else {
+      updateFromString(null, dimsToQuery);
     }
     //update dim filter with fact filter
     if (scSet != null && scSet.size() > 0) {
