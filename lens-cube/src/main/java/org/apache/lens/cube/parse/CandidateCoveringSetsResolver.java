@@ -1,14 +1,14 @@
 package org.apache.lens.cube.parse;
 
-import com.google.common.collect.Lists;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.hadoop.conf.Configuration;
+import java.util.*;
+
 import org.apache.lens.cube.error.LensCubeErrorCode;
 import org.apache.lens.cube.metadata.TimeRange;
-
 import org.apache.lens.server.api.error.LensException;
 
-import java.util.*;
+import org.apache.hadoop.conf.Configuration;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class CandidateCoveringSetsResolver implements ContextRewriter {
@@ -41,7 +41,6 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
 
     String msrString = CandidateUtil.getColumns(queriedMsrs).toString();
 
-
     if (!finalCandidates.isEmpty()) {
       // update final candidate sets in CubeQueryContext
       cubeql.getCandidates().clear();
@@ -49,7 +48,6 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     } else if (finalCandidates.isEmpty() && cubeql.getCandidateDims().isEmpty()) {
       throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
     }
-
     // TODO : we might need to prune if we maintian two data structures in CubeQueryContext.
     //cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCause.columnNotFound(getColumns(queriedMsrs)));
     //if (cubeql.getCandidates().size() == 0) {

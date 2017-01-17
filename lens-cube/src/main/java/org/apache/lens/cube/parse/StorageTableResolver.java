@@ -286,11 +286,11 @@ class StorageTableResolver implements ContextRewriter {
         valid = partitionColumnExists;
         if (!partitionColumnExists) {
           String timeDim = cubeql.getBaseCube().getTimeDimOfPartitionColumn(range.getPartitionColumn());
-//          if (!sc.getFact().getColumns().contains(timeDim)) {
- //           // Not a time dimension so no fallback required.
-  //          pruningCauses.add(TIMEDIM_NOT_SUPPORTED);
-    //        continue;
-   //       }
+          //          if (!sc.getFact().getColumns().contains(timeDim)) {
+          //           // Not a time dimension so no fallback required.
+          //          pruningCauses.add(TIMEDIM_NOT_SUPPORTED);
+          //        continue;
+          //       }
           TimeRange fallBackRange = getFallbackRange(range, sc.getFact().getCubeName(), cubeql);
           if (fallBackRange == null) {
             log.info("No partitions for range:{}. fallback range: {}", range, fallBackRange);

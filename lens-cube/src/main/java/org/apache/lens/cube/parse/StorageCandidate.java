@@ -149,8 +149,20 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
   }
 
-  private void setMissingExpressions() throws LensException {
-    //    setFrom(String.format(astFromString, getFromTable()));
+  static boolean containsAny(Collection<String> srcSet, Collection<String> colSet) {
+    if (colSet == null || colSet.isEmpty()) {
+      return true;
+    }
+    for (String column : colSet) {
+      if (srcSet.contains(column)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  protected void setMissingExpressions() throws LensException {
+    setFromString(String.format("%s", getFromTable()));
     setWhereString(joinWithAnd(whereString, null));
   }
 
@@ -634,16 +646,36 @@ public class StorageCandidate implements Candidate, CandidateTable {
     this.validUpdatePeriods.add(updatePeriod);
   }
 
+  //  public void updateFromString(CubeQueryContext query, Set<Dimension> queryDims,
+  //    Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
+  //    fromString = "%s"; // to update the storage alias later
+  //    if (query.isAutoJoinResolved()) {
+  //      fromString =
+  //        query.getAutoJoinCtx().getFromString(fromString, this, queryDims, dimsToQuery,
+  //          query, cubeql);
+  //    }
+  //  }
+  @Getter
+  Map<Dimension, CandidateDim> dimsToQuery;
   public void updateFromString(CubeQueryContext query, Set<Dimension> queryDims,
     Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
-    fromString = getFromTable();
+    this.dimsToQuery = dimsToQuery;
+    String alias = cubeql.getAliasForTableName(cubeql.getCube().getName());
+    fromString = getAliasForTable(alias);
     if (query.isAutoJoinResolved()) {
       fromString = query.getAutoJoinCtx().getFromString(fromString, this, queryDims, dimsToQuery, query, cubeql);
     }
   }
 
-  private String getFromTable() throws LensException {
-    String alias = cubeql.getAliasForTableName(cubeql.getCube().getName());
+  protected String getFromTable() throws LensException {
+    if (cubeql.isAutoJoinResolved()) {
+        return fromString;
+    } else {
+        return cubeql.getQBFromString(this, getDimsToQuery());
+    }
+  }
+
+  protected String getAliasForTable(String alias) {
     String database = SessionState.get().getCurrentDatabase();
     String ret = name + " " + alias;
     if (StringUtils.isNotBlank(database) && !"default".equalsIgnoreCase(database)) {

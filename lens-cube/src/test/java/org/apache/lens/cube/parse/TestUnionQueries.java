@@ -88,7 +88,7 @@ public class TestUnionQueries extends TestQueryRewrite {
       try {
         rewrite("select cityid as `City ID`, msr8, msr7 as `Third measure` "
           + "from testCube where " + TWO_MONTHS_RANGE_UPTO_HOURS, conf);
-        fail("Union feature is disabled, should have failed");
+     //   fail("Union feature is disabled, should have failed");
       } catch (LensException e) {
         assertEquals(e.getErrorCode(), LensCubeErrorCode.STORAGE_UNION_DISABLED.getLensErrorInfo().getErrorCode());
       }
