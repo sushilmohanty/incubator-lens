@@ -61,7 +61,15 @@ public class TestJoinResolver extends TestQueryRewrite {
   }
 
   private String getAutoResolvedFromString(CubeQueryContext query) throws LensException {
-    return query.getHqlContext().getFrom();
+    String from = null;
+    if (query.getPickedCandidate() instanceof StorageCandidate) {
+      StorageCandidate sc = (StorageCandidate) query.getPickedCandidate();
+      from =  sc.getFromString();
+      // Dim only query
+    } else if (query.getPickedCandidate() == null) {
+      from = query.getHqlContext().getFrom();
+    }
+    return from;
   }
 
   @Test

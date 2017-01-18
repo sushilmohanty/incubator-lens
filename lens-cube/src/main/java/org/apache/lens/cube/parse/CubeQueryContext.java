@@ -1042,8 +1042,8 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     }
 
     if (cand == null) {
-      DimHQLContext dimHQLContext = new DimOnlyHQLContext(dimsToQuery, this, this);
-      return dimHQLContext.toHQL();
+      hqlContext = new DimOnlyHQLContext(dimsToQuery, this, this);
+      return hqlContext.toHQL();
     } else if (cand instanceof StorageCandidate) {
       return cand.toHQL();
     } else {
