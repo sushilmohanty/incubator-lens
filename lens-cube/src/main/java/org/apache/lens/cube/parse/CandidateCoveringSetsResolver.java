@@ -1,14 +1,13 @@
 package org.apache.lens.cube.parse;
 
-import com.google.common.collect.Lists;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.lens.cube.error.LensCubeErrorCode;
-import org.apache.lens.cube.metadata.TimeRange;
+import java.util.*;
 
+import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
-import java.util.*;
+import org.apache.hadoop.conf.Configuration;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class CandidateCoveringSetsResolver implements ContextRewriter {
@@ -22,9 +21,9 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
 
   @Override
   public void rewriteContext(CubeQueryContext cubeql) throws LensException {
-
+    List<QueriedPhraseContext> qpc = cubeql.getQueriedPhrases();
     Set<QueriedPhraseContext> queriedMsrs = new HashSet<>();
-    for (QueriedPhraseContext qur : cubeql.getQueriedPhrases()) {
+    for (QueriedPhraseContext qur : qpc) {
       if (qur.hasMeasures(cubeql)) {
         queriedMsrs.add(qur);
       }
@@ -34,14 +33,15 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       finalCandidates.addAll(cubeql.getCandidates());
     }
 
-    List<Candidate> unionSet = resolveRangeCoveringFactSet(cubeql, cubeql.getTimeRanges(), queriedMsrs);
-    List<List<Candidate>> measureCoveringSets = resolveJoinCandidates(unionSet, queriedMsrs, cubeql);
-    updateFinalCandidates(measureCoveringSets);
+    List<Candidate> unionSet = resolveRangeCoveringFactSet(cubeql, cubeql.getTimeRanges(),
+        queriedMsrs, qpc);
+    List<List<Candidate>> measureCoveringSets = resolveJoinCandidates(unionSet, queriedMsrs, cubeql, qpc);
+    updateFinalCandidates(measureCoveringSets, cubeql);
     log.info("Covering candidate sets :{}", finalCandidates);
 
     String msrString = CandidateUtil.getColumns(queriedMsrs).toString();
     if (finalCandidates.isEmpty()) {
-      throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
+        log.info("No fact has columns {}", msrString);
     }
     // update final candidate sets
     cubeql.getCandidates().clear();
@@ -50,17 +50,17 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     //cubeql.pruneCandidateFactWithCandidateSet(CandidateTablePruneCause.columnNotFound(getColumns(queriedMsrs)));
     //if (cubeql.getCandidates().size() == 0) {
     //  throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
-   // }
+    // }
   }
 
-  private Candidate createJoinCandidateFromUnionCandidates(List<Candidate> ucs) {
+  private Candidate createJoinCandidateFromUnionCandidates(List<Candidate> ucs, CubeQueryContext cubeql) {
     Candidate cand;
     if (ucs.size() >= 2) {
       Candidate first = ucs.get(0);
       Candidate second = ucs.get(1);
-      cand = new JoinCandidate(first, second, "jc" + joinCandidatealiasCounter++);
+      cand = new JoinCandidate(first, second, "jc" + joinCandidatealiasCounter++, cubeql);
       for (int i = 2; i < ucs.size(); i++) {
-        cand = new JoinCandidate(cand, ucs.get(i), "jc" + joinCandidatealiasCounter++);
+        cand = new JoinCandidate(cand, ucs.get(i), "jc" + joinCandidatealiasCounter++, cubeql);
       }
     } else {
       cand = ucs.get(0);
@@ -68,14 +68,13 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     return cand;
   }
 
-  private void updateFinalCandidates(List<List<Candidate>> jcs) {
-    int aliasCounter = 0;
+  private void updateFinalCandidates(List<List<Candidate>> jcs, CubeQueryContext cubeql) {
     for (Iterator<List<Candidate>> itr = jcs.iterator(); itr.hasNext(); ) {
       List<Candidate> jc = itr.next();
-      if (jc.size() == 1 && jc.iterator().next().getChildren().size() == 1) {
-        finalCandidates.add(jc.iterator().next().getChildren().iterator().next());
+      if (jc.size() == 1) {
+        finalCandidates.add(jc.iterator().next());
       } else {
-        finalCandidates.add(createJoinCandidateFromUnionCandidates(jc));
+        finalCandidates.add(createJoinCandidateFromUnionCandidates(jc, cubeql));
       }
     }
   }
@@ -100,7 +99,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   }
 
   private List<Candidate> resolveRangeCoveringFactSet(CubeQueryContext cubeql, List<TimeRange> ranges,
-                                           Set<QueriedPhraseContext> queriedMsrs) throws LensException {
+      Set<QueriedPhraseContext> queriedMsrs, List<QueriedPhraseContext> qpc) throws LensException {
     // All Candidates
     List<Candidate> allCandidates = new ArrayList<Candidate>(cubeql.getCandidates());
     // Partially valid candidates
@@ -111,7 +110,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       if (cand instanceof StorageCandidate) {
         StorageCandidate sc = (StorageCandidate) cand;
         if (CandidateUtil.isValidForTimeRanges(sc, ranges)) {
-          candidateSet.add(sc);
+          candidateSet.add(CandidateUtil.cloneStorageCandidate(sc));
           continue;
         } else if (CandidateUtil.isPartiallyValidForTimeRanges(sc, ranges)) {
           allCandidatesPartiallyValid.add(CandidateUtil.cloneStorageCandidate(sc));
@@ -122,7 +121,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     }
     // Get all covering fact sets
     List<UnionCandidate> unionCoveringSet =
-        getCombinations(new ArrayList<Candidate>(allCandidatesPartiallyValid));
+        getCombinations(new ArrayList<Candidate>(allCandidatesPartiallyValid), cubeql);
     // Sort the Collection based on no of elements
     Collections.sort(unionCoveringSet, new CandidateUtil.UnionCandidateComparator<UnionCandidate>());
     // prune non covering sets
@@ -133,17 +132,15 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     pruneRedundantUnionCoveringSets(unionCoveringSet);
     // pruing done in the previous steps, now create union candidates
     candidateSet.addAll(unionCoveringSet);
+    updateQueriableMeasures(candidateSet, qpc, cubeql);
     return candidateSet ;
-
   }
 
   private boolean isMeasureAnswerablebyUnionCandidate(QueriedPhraseContext msr, Candidate uc,
-                                                   CubeQueryContext cubeql) throws LensException {
+      CubeQueryContext cubeql) throws LensException {
     // Candidate is a single StorageCandidate
-    if (uc.getChildren() == null ) {
-      if (!msr.isEvaluable(cubeql, (StorageCandidate) uc)) {
-        return false;
-      }
+    if ((uc instanceof StorageCandidate) && !msr.isEvaluable(cubeql, (StorageCandidate) uc)) {
+      return false;
     } else {
       for (Candidate cand : uc.getChildren()) {
         if (!msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
@@ -155,8 +152,8 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   }
 
   private void pruneUnionCoveringSetWithoutAnyCommonMeasure(List<UnionCandidate> ucs,
-                                                       Set<QueriedPhraseContext> queriedMsrs,
-                                                       CubeQueryContext cubeql) throws LensException {
+      Set<QueriedPhraseContext> queriedMsrs,
+      CubeQueryContext cubeql) throws LensException {
     for (ListIterator<UnionCandidate> itr = ucs.listIterator(); itr.hasNext(); ) {
       boolean toRemove = true;
       UnionCandidate uc = itr.next();
@@ -185,7 +182,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     }
   }
 
-  public List<UnionCandidate> getCombinations(final List<Candidate> candidates) {
+  public List<UnionCandidate> getCombinations(final List<Candidate> candidates, CubeQueryContext cubeql) {
     int aliasCounter = 0;
     List<UnionCandidate> combinations = new LinkedList<UnionCandidate>();
     int size = candidates.size();
@@ -202,19 +199,18 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
         clonedI = clonedI >>> 1;
         --count;
       }
-      combinations.add(new UnionCandidate(individualCombinationList, "uc" + unionCandidatealiasCounter++ ));
+      combinations.add(new UnionCandidate(individualCombinationList, "uc" + unionCandidatealiasCounter++, cubeql ));
     }
     return combinations;
   }
 
   private List<List<Candidate>> resolveJoinCandidates(List<Candidate> unionCandidates,
-                                                           Set<QueriedPhraseContext> msrs,
-                                                           CubeQueryContext cubeql) throws LensException {
+      Set<QueriedPhraseContext> msrs, CubeQueryContext cubeql, List<QueriedPhraseContext> qpc) throws LensException {
     List<List<Candidate>> msrCoveringSets = new ArrayList<>();
     List<Candidate> ucSet = new ArrayList<>(unionCandidates);
-    boolean evaluable = false;
     // Check if a single set can answer all the measures and exprsWithMeasures
     for (Iterator<Candidate> i = ucSet.iterator(); i.hasNext(); ) {
+      boolean evaluable = false;
       Candidate uc = i.next();
       for (QueriedPhraseContext msr : msrs) {
         evaluable = isMeasureAnswerablebyUnionCandidate(msr, uc, cubeql) ? true : false;
@@ -241,7 +237,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
         Set<QueriedPhraseContext> coveredMsrs = CandidateUtil.coveredMeasures(uc, msrs, cubeql);
         remainingMsrs.removeAll(coveredMsrs);
 
-        List<List<Candidate>> coveringSets = resolveJoinCandidates(ucSet, remainingMsrs, cubeql);
+        List<List<Candidate>> coveringSets = resolveJoinCandidates(ucSet, remainingMsrs, cubeql, qpc);
         if (!coveringSets.isEmpty()) {
           for (List<Candidate> candSet : coveringSets) {
             candSet.add(uc);
@@ -255,5 +251,45 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     }
     log.info("Covering set {} for measures {} with factsPassed {}", msrCoveringSets, msrs, ucSet);
     return msrCoveringSets;
+  }
+
+  private void updateQueriableMeasures(List<Candidate> cands,
+      List<QueriedPhraseContext> qpc, CubeQueryContext cubeql) throws LensException {
+    for (Candidate cand : cands ) {
+      updateStorageCandidateQueriableMeasures(cand, qpc, cubeql);
+    }
+  }
+
+
+  private void updateStorageCandidateQueriableMeasures(Candidate unionCandidate,
+      List<QueriedPhraseContext> queriedPhrases, CubeQueryContext cubeql) throws LensException {
+    QueriedPhraseContext msrPhrase;
+    boolean isEvaluable;
+    for (int index = 0; index < queriedPhrases.size(); index++) {
+
+      if (!queriedPhrases.get(index).hasMeasures(cubeql)) {
+        //Not a measure phrase. Skip it
+        continue;
+      }
+
+      msrPhrase = queriedPhrases.get(index);
+      if (unionCandidate instanceof StorageCandidate && msrPhrase.isEvaluable(cubeql, (StorageCandidate) unionCandidate)) {
+        ((StorageCandidate) unionCandidate).setAnswerableMeasureIndices(index);
+      } else if (unionCandidate instanceof UnionCandidate) {
+        isEvaluable = true;
+        for (Candidate childCandidate : unionCandidate.getChildren()) {
+          if (!msrPhrase.isEvaluable(cubeql, (StorageCandidate) childCandidate)) {
+            isEvaluable = false;
+            break;
+          }
+        }
+        if (isEvaluable) {
+          //Set the index for all the children in this case
+          for (Candidate childCandidate : unionCandidate.getChildren()) {
+            ((StorageCandidate) childCandidate).setAnswerableMeasureIndices(index);
+          }
+        }
+      }
+    }
   }
 }

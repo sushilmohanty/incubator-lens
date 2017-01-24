@@ -1,16 +1,13 @@
 package org.apache.lens.cube.parse;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Map;
 import java.util.Set;
 
-import org.apache.lens.cube.metadata.Dimension;
 import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
-
-import org.apache.hadoop.hive.ql.parse.ASTNode;
 
 /**
  * This interface represents candidates that are involved in different phases of query rewriting.
@@ -30,7 +27,7 @@ public interface Candidate {
    *
    * @return
    */
-  String toHQL();
+  String toHQL() throws LensException;
 
   /**
    * Returns Query AST
@@ -85,10 +82,10 @@ public interface Candidate {
   /**
    * Returns child candidates of this candidate if any.
    * Note: StorageCandidate will return null
+   *
    * @return
    */
   Collection<Candidate> getChildren();
-
 
   /**
    * Calculates if this candidate can answer the query for given time range based on actual data registered with
@@ -97,16 +94,17 @@ public interface Candidate {
    *
    * @param timeRange         : TimeRange to check completeness for. TimeRange consists of start time, end time and the
    *                          partition column
+   * @param queriedTimeRange  : User quried timerange
    * @param failOnPartialData : fail fast if the candidate can answer the query only partially
    * @return true if this Candidate can answer query for the given time range.
    */
-  boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData)
+  boolean evaluateCompleteness(TimeRange timeRange, TimeRange queriedTimeRange, boolean failOnPartialData)
     throws LensException;
 
   /**
    * Returns the set of fact partitions that will participate in this candidate.
    * Note: This method can be called only after call to
-   * {@link #evaluateCompleteness(TimeRange, boolean)}
+   * {@link #evaluateCompleteness(TimeRange, TimeRange, boolean)}
    *
    * @return
    */
@@ -121,6 +119,15 @@ public interface Candidate {
    * @return
    */
   boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr);
+
+  /**
+   * Updates the columns queried for a candidate
+   *
+   * @param cubeql
+   */
+  void updateAnswerableSelectColumns(CubeQueryContext cubeql) throws LensException;
+
+  ArrayList<Integer> getAnswerableMeasureIndices();
 
   // Moved to CandidateUtil boolean isValidForTimeRange(TimeRange timeRange);
   // Moved to CandidateUtil boolean isExpressionAnswerable(ASTNode node, CubeQueryContext context) throws LensException;

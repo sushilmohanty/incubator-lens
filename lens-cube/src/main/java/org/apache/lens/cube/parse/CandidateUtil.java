@@ -2,11 +2,14 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
+import org.antlr.runtime.CommonToken;
+import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 
@@ -14,6 +17,8 @@ import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
+
+import static org.apache.hadoop.hive.ql.parse.HiveParser.Identifier;
 
 /**
  * Placeholder for Util methods that will be required for {@link Candidate}
@@ -92,7 +97,7 @@ public class CandidateUtil {
    * @param targetAst
    * @throws LensException
    */
-  public void copyASTs(QueryAST sourceAst, QueryAST targetAst) throws LensException {
+  public static void copyASTs(QueryAST sourceAst, QueryAST targetAst) throws LensException {
     targetAst.setSelectAST(MetastoreUtil.copyAST(sourceAst.getSelectAST()));
     targetAst.setWhereAST(MetastoreUtil.copyAST(sourceAst.getWhereAST()));
     if (sourceAst.getJoinAST() != null) {
@@ -109,7 +114,14 @@ public class CandidateUtil {
     }});
   }
 
-
+  /**
+   *
+   * @param candSet
+   * @param msrs
+   * @param cubeql
+   * @return
+   * @throws LensException
+   */
   public static Set<QueriedPhraseContext> coveredMeasures(Candidate candSet, Collection<QueriedPhraseContext> msrs,
     CubeQueryContext cubeql) throws LensException {
     Set<QueriedPhraseContext> coveringSet = new HashSet<>();
@@ -119,6 +131,7 @@ public class CandidateUtil {
           coveringSet.add(msr);
         }
       } else {
+        // TODO union : all candidates should answer
           for (Candidate cand : candSet.getChildren()) {
             if (msr.isEvaluable(cubeql, (StorageCandidate) cand)) {
               coveringSet.add(msr);
@@ -195,7 +208,7 @@ public class CandidateUtil {
   }
 
   public static StorageCandidate cloneStorageCandidate(StorageCandidate sc) {
-    return new StorageCandidate(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getAlias(), sc.getCubeql());
+    return new StorageCandidate(sc);
   }
 
   public static class UnionCandidateComparator<T> implements Comparator<UnionCandidate> {
@@ -204,5 +217,98 @@ public class CandidateUtil {
     public int compare(UnionCandidate o1, UnionCandidate o2) {
       return Integer.valueOf(o1.getChildren().size() - o2.getChildren().size());
     }
+  }
+
+  private static final String baseQueryFormat = "SELECT %s FROM %s";
+
+  public static String buildHQLString(String select, String from, String where, String groupby, String orderby, String having,
+                                      Integer limit) {
+
+    List<String> qstrs = new ArrayList<String>();
+    qstrs.add(select);
+    qstrs.add(from);
+    if (!StringUtils.isBlank(where)) {
+      qstrs.add(where);
+    }
+    if (!StringUtils.isBlank(groupby)) {
+      qstrs.add(groupby);
+    }
+    if (!StringUtils.isBlank(having)) {
+      qstrs.add(having);
+    }
+    if (!StringUtils.isBlank(orderby)) {
+      qstrs.add(orderby);
+    }
+    if (limit != null) {
+      qstrs.add(String.valueOf(limit));
+    }
+
+    StringBuilder queryFormat = new StringBuilder();
+    queryFormat.append(baseQueryFormat);
+    if (!StringUtils.isBlank(where)) {
+      queryFormat.append(" WHERE %s");
+    }
+    if (!StringUtils.isBlank(groupby)) {
+      queryFormat.append(" GROUP BY %s");
+    }
+    if (!StringUtils.isBlank(having)) {
+      queryFormat.append(" HAVING %s");
+    }
+    if (!StringUtils.isBlank(orderby)) {
+      queryFormat.append(" ORDER BY %s");
+    }
+    if (limit != null) {
+      queryFormat.append(" LIMIT %s");
+    }
+    return String.format(queryFormat.toString(), qstrs.toArray(new String[0]));
+  }
+
+  /**
+   *
+   * @param selectAST Outer query selectAST
+   * @param cubeql Cubequery Context
+   *
+   *  Update the final alias in the outer select query. Replace the query with final alias, if user hasn't \
+   *  specified any alias in final selectAST deelete the alias
+   */
+  public static void updateFinalAlias(ASTNode selectAST, CubeQueryContext cubeql) {
+    for (int i = 0; i < selectAST.getChildCount(); i++) {
+      ASTNode selectExpr = (ASTNode) selectAST.getChild(i);
+      ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
+      String finalAlias = cubeql.getSelectPhrases().get(i).getFinalAlias().replaceAll("`", "");
+      String actualAlias = cubeql.getSelectPhrases().get(i).getActualAlias();
+      if (actualAlias == null ) {
+        if (aliasNode != null){
+          //Since actual alias supplied by user is null, we should delete this alias node
+          selectExpr.deleteChild(1);
+        }
+        continue;
+      }
+      if (aliasNode != null) {
+        String queryAlias = aliasNode.getText();
+        if (!queryAlias.equals(finalAlias)) {
+          // replace the alias node
+          ASTNode newAliasNode = new ASTNode(new CommonToken(HiveParser.Identifier, finalAlias));
+          selectAST.getChild(i).replaceChildren(selectExpr.getChildCount() - 1,
+              selectExpr.getChildCount() - 1, newAliasNode);
+        }
+      } else {
+        // add column alias
+        ASTNode newAliasNode = new ASTNode(new CommonToken(HiveParser.Identifier, finalAlias));
+        selectAST.getChild(i).addChild(newAliasNode);
+      }
+    }
+  }
+
+  public static boolean containsAny(Set<String> srcSet, Set<String> colSet) {
+    if (colSet == null || colSet.isEmpty()) {
+      return true;
+    }
+    for (String column : colSet) {
+      if (srcSet.contains(column)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

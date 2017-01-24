@@ -74,7 +74,8 @@ class CandidateTableResolver implements ContextRewriter {
       if (cubeql.getAutoJoinCtx() != null) {
         // Before checking for candidate table columns, prune join paths containing non existing columns
         // in populated candidate tables
-        cubeql.getAutoJoinCtx().pruneAllPaths(cubeql.getCube(), cubeql.getCandidateFacts(), null);
+        //TODO rewrite : commented below line to compile
+        //cubeql.getAutoJoinCtx().pruneAllPaths(cubeql.getCube(), cubeql.getCandidateFacts(), null);
         cubeql.getAutoJoinCtx().pruneAllPathsForCandidateDims(cubeql.getCandidateDimTables());
         cubeql.getAutoJoinCtx().refreshJoinPathColumns();
       }
@@ -96,9 +97,12 @@ class CandidateTableResolver implements ContextRewriter {
             cubeql.getCube().getName() + " does not have any facts");
       }
       for (CubeFactTable fact : factTables) {
-        StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact,
-            fact.getStorages().iterator().next(), "sc" + aliasCounter++, cubeql);
-        cubeql.getCandidates().add(sc);
+        Iterator<String> it = fact.getStorages().iterator();
+        while(it.hasNext()) {
+          StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact,
+            it.next(), "sc" + aliasCounter++, cubeql);
+          cubeql.getCandidates().add(sc);
+        }
       }
       log.info("Populated storage candidates: {}", cubeql.getCandidates());
     }
@@ -251,7 +255,7 @@ class CandidateTableResolver implements ContextRewriter {
         if (cand instanceof StorageCandidate) {
           StorageCandidate sc = (StorageCandidate) cand;
           if (validFactTables != null) {
-            if (!validFactTables.contains(sc.getName().toLowerCase())) {
+            if (!validFactTables.contains(sc.getFact().getName().toLowerCase())) {
               log.info("Not considering storage candidate:{} as it is not a valid candidate", sc);
               cubeql.addStoragePruningMsg(sc, new CandidateTablePruneCause(CandidateTablePruneCode.INVALID));
               i.remove();
@@ -522,12 +526,13 @@ class CandidateTableResolver implements ContextRewriter {
         if (removedCandidates.get(dim) != null) {
           for (CandidateTable candidate : removedCandidates.get(dim)) {
             if (!candidatesReachableThroughRefs.contains(candidate)) {
-              if (candidate instanceof CandidateFact) {
-                if (cubeql.getCandidateFacts().contains(candidate)) {
-                  log.info("Not considering fact:{} as its required optional dims are not reachable", candidate);
-                  cubeql.getCandidateFacts().remove(candidate);
-                  cubeql.addFactPruningMsgs(((CandidateFact) candidate).fact,
-                    CandidateTablePruneCause.columnNotFound(col));
+              if (candidate instanceof StorageCandidate) {
+                if (cubeql.getCandidates().contains(candidate)) {
+                  log.info("Not considering Storage:{} as its required optional dims are not reachable", candidate);
+                  cubeql.getCandidates().remove(candidate);
+                  // TODO union : Add pruning message
+                  // cubeql.addFactPruningMsgs(((CandidateFact) candidate).fact,
+                  // CandidateTablePruneCause.columnNotFound(col));
                 }
               } else if (cubeql.getCandidateDimTables().containsKey(((CandidateDim) candidate).getBaseTable())) {
                 log.info("Not considering dimtable:{} as its required optional dims are not reachable", candidate);

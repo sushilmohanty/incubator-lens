@@ -33,7 +33,6 @@ public class DefaultQueryAST implements QueryAST {
   private String fromString;
   private String whereString;
 
-
   public String getSelectString() {
     return HQLParser.getString(selectAST);
   }
@@ -67,5 +66,13 @@ public class DefaultQueryAST implements QueryAST {
       ast.getGroupByAST(), ast.getHavingAST(), ast.getJoinAST(), ast.getOrderByAST(), ast.getLimitValue(),
       ast.getFromString(),
       fact.getStorageWhereString(storageTable.substring(storageTable.indexOf(".") + 1)));
+  }
+  public static DefaultQueryAST fromStorageCandidate(StorageCandidate sc, QueryAST ast) throws
+      LensException {
+    return new DefaultQueryAST(ast.getSelectAST(),
+        null,
+        ast.getGroupByAST(), ast.getHavingAST(), ast.getJoinAST(), ast.getOrderByAST(), ast.getLimitValue(),
+        ast.getFromString(),
+        sc.getWhereString());
   }
 }

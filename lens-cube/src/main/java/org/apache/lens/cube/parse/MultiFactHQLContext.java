@@ -183,7 +183,7 @@ class MultiFactHQLContext extends SimpleHQLContext {
     if (havingAST.getChildren() != null) {
       for (int i = 0; i < havingAST.getChildCount(); i++) {
         ASTNode replaced = convertHavingToWhere((ASTNode) havingAST.getChild(i), context, cfacts, aliasDecider);
-        havingAST.setChild(i, replaced);
+          havingAST.setChild(i, replaced);
       }
     }
     return havingAST;

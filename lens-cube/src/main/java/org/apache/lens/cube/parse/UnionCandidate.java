@@ -2,11 +2,16 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
+import org.antlr.runtime.CommonToken;
+import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
 import lombok.Getter;
+
+import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
+import static org.apache.lens.cube.parse.HQLParser.*;
 
 /**
  * Represents a union of two candidates
@@ -21,29 +26,42 @@ public class UnionCandidate implements Candidate {
   String toStr;
   @Getter
   String alias;
+  CubeQueryContext cubeql;
   /**
    * List of child candidates that will be union-ed
    */
   private List<Candidate> childCandidates;
+  @Getter
+  private QueryAST queryAst;
 
-  public UnionCandidate(List<Candidate> childCandidates, String alias) {
+  public UnionCandidate(List<Candidate> childCandidates, String alias, CubeQueryContext cubeql) {
     this.childCandidates = childCandidates;
     this.alias = alias;
+    this.cubeql = cubeql;
   }
 
   @Override
-  public String toHQL() {
+  public String toHQL() throws LensException {
     return null;
   }
 
   @Override
-  public QueryAST getQueryAst() {
-    return null;
+  public ArrayList<Integer> getAnswerableMeasureIndices() {
+    ArrayList<Integer> mesureIndices = new ArrayList<>();
+    List<StorageCandidate> scs = new ArrayList<StorageCandidate>();
+    scs.addAll(CandidateUtil.getStorageCandidates(childCandidates));
+    // All children in the UnionCandiate will be having common quriable measure
+    for (StorageCandidate sc : scs) {
+      mesureIndices = (ArrayList<Integer>) sc.getAnswerableMeasureIndices();
+    }
+    return mesureIndices;
   }
 
   @Override
   public Collection<String> getColumns() {
-    return null;
+    // In UnionCandidate all columns are same, return the columns
+    // of first child
+    return childCandidates.iterator().next().getColumns();
   }
 
   @Override
@@ -109,11 +127,12 @@ public class UnionCandidate implements Candidate {
    * @return
    */
   @Override
-  public boolean evaluateCompleteness(TimeRange timeRange, boolean failOnPartialData) throws LensException {
-    Map<Candidate, TimeRange> candidateRange = getTimeRangeForChildren(timeRange);
+  public boolean evaluateCompleteness(TimeRange timeRange, TimeRange parentTimeRange, boolean failOnPartialData)
+    throws LensException {
+    Map<Candidate, TimeRange> candidateRange = splitTimeRangeForChildren(timeRange);
     boolean ret = true;
     for (Map.Entry<Candidate, TimeRange> entry : candidateRange.entrySet()) {
-      ret &= entry.getKey().evaluateCompleteness(entry.getValue(), failOnPartialData);
+      ret &= entry.getKey().evaluateCompleteness(entry.getValue(), parentTimeRange, failOnPartialData);
     }
     return ret;
   }
@@ -131,6 +150,11 @@ public class UnionCandidate implements Candidate {
       }
     }
     return true;
+  }
+
+  @Override
+  public void updateAnswerableSelectColumns(CubeQueryContext cubeql) {
+
   }
 
   @Override
@@ -153,56 +177,72 @@ public class UnionCandidate implements Candidate {
     return builder.toString();
   }
 
-  private Map<Candidate, TimeRange> getTimeRangeForChildren(TimeRange timeRange) {
+  /**
+   * Splits the parent time range for each candidate.
+   * The candidates are sorted based on their costs.
+   *
+   * @param timeRange
+   * @return
+   */
+  private Map<Candidate, TimeRange> splitTimeRangeForChildren(TimeRange timeRange) {
     Collections.sort(childCandidates, new Comparator<Candidate>() {
       @Override
       public int compare(Candidate o1, Candidate o2) {
         return o1.getCost() < o2.getCost() ? -1 : o1.getCost() == o2.getCost() ? 0 : 1;
       }
     });
-
-    Map<Candidate, TimeRange> candidateTimeRangeMap = new HashMap<>();
+    Map<Candidate, TimeRange> childrenTimeRangeMap = new HashMap<>();
     // Sorted list based on the weights.
     Set<TimeRange> ranges = new HashSet<>();
-
     ranges.add(timeRange);
     for (Candidate c : childCandidates) {
       TimeRange.TimeRangeBuilder builder = getClonedBuiler(timeRange);
-      TimeRange tr = resolveTimeRange(c, ranges, builder);
+      TimeRange tr = resolveTimeRangeForChildren(c, ranges, builder);
       if (tr != null) {
         // If the time range is not null it means this child candidate is valid for this union candidate.
-        candidateTimeRangeMap.put(c, tr);
+        childrenTimeRangeMap.put(c, tr);
       }
     }
-    return candidateTimeRangeMap;
+    return childrenTimeRangeMap;
   }
 
-  private TimeRange resolveTimeRange(Candidate c, Set<TimeRange> ranges, TimeRange.TimeRangeBuilder builder) {
+  /**
+   * Resolves the time range for this candidate based on overlap.
+   *
+   * @param candidate : Candidate for which the time range is to be calculated
+   * @param ranges    : Set of time ranges from which one has to be choosen.
+   * @param builder   : TimeRange builder created by the common AST.
+   * @return Calculated timeRange for the candidate. If it returns null then there is no suitable time range split for
+   * this candidate. This is the correct behaviour because an union candidate can have non participating child
+   * candidates for the parent time range.
+   */
+  private TimeRange resolveTimeRangeForChildren(Candidate candidate, Set<TimeRange> ranges,
+    TimeRange.TimeRangeBuilder builder) {
     Iterator<TimeRange> it = ranges.iterator();
     Set<TimeRange> newTimeRanges = new HashSet<>();
     TimeRange ret = null;
     while (it.hasNext()) {
       TimeRange range = it.next();
       // Check for out of range
-      if (c.getStartTime().getTime() >= range.getToDate().getTime() || c.getEndTime().getTime() <= range.getFromDate()
-        .getTime()) {
+      if (candidate.getStartTime().getTime() >= range.getToDate().getTime() || candidate.getEndTime().getTime() <= range
+        .getFromDate().getTime()) {
         continue;
       }
       // This means overlap.
-      if (c.getStartTime().getTime() <= range.getFromDate().getTime()) {
+      if (candidate.getStartTime().getTime() <= range.getFromDate().getTime()) {
         // Start time of the new time range will be range.getFromDate()
         builder.fromDate(range.getFromDate());
-        if (c.getEndTime().getTime() <= range.getToDate().getTime()) {
+        if (candidate.getEndTime().getTime() <= range.getToDate().getTime()) {
           // End time is in the middle of the range is equal to c.getEndTime().
-          builder.toDate(c.getEndTime());
+          builder.toDate(candidate.getEndTime());
         } else {
           // End time will be range.getToDate()
           builder.toDate(range.getToDate());
         }
       } else {
-        builder.fromDate(c.getStartTime());
-        if (c.getEndTime().getTime() <= range.getToDate().getTime()) {
-          builder.toDate(c.getEndTime());
+        builder.fromDate(candidate.getStartTime());
+        if (candidate.getEndTime().getTime() <= range.getToDate().getTime()) {
+          builder.toDate(candidate.getEndTime());
         } else {
           builder.toDate(range.getToDate());
         }
@@ -211,29 +251,28 @@ public class UnionCandidate implements Candidate {
       it.remove();
       ret = builder.build();
       if (ret.getFromDate().getTime() == range.getFromDate().getTime()) {
-        if (ret.getToDate().getTime() < range.getToDate().getTime()) {
-          // The end time is the start time of the new range.
-          TimeRange.TimeRangeBuilder b1 = getClonedBuiler(ret);
-          b1.fromDate(ret.getFromDate());
-          b1.toDate(range.getToDate());
-          newTimeRanges.add(b1.build());
-        }
+        checkAndUpdateNewTimeRanges(ret, range, newTimeRanges);
       } else {
         TimeRange.TimeRangeBuilder b1 = getClonedBuiler(ret);
         b1.fromDate(range.getFromDate());
         b1.toDate(ret.getFromDate());
         newTimeRanges.add(b1.build());
-        if (ret.getToDate().getTime() < range.getToDate().getTime()) {
-          TimeRange.TimeRangeBuilder b2 = getClonedBuiler(ret);
-          b2.fromDate(ret.getToDate());
-          b2.toDate(range.getToDate());
-          newTimeRanges.add(b2.build());
-        }
+        checkAndUpdateNewTimeRanges(ret, range, newTimeRanges);
+
       }
       break;
     }
     ranges.addAll(newTimeRanges);
     return ret;
+  }
+
+  private void checkAndUpdateNewTimeRanges(TimeRange ret, TimeRange range, Set<TimeRange> newTimeRanges) {
+    if (ret.getToDate().getTime() < range.getToDate().getTime()) {
+      TimeRange.TimeRangeBuilder b2 = getClonedBuiler(ret);
+      b2.fromDate(ret.getToDate());
+      b2.toDate(range.getToDate());
+      newTimeRanges.add(b2.build());
+    }
   }
 
   private TimeRange.TimeRangeBuilder getClonedBuiler(TimeRange timeRange) {
