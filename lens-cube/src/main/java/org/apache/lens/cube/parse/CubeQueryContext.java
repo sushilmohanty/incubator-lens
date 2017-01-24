@@ -951,7 +951,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     log.info("candidate: {}, dimsToQuery: {}", cand, dimsToQuery);
     if (autoJoinCtx != null) {
       // prune join paths for picked fact and dimensions
-      autoJoinCtx.pruneAllPaths(cube, cand, dimsToQuery);
+      autoJoinCtx.pruneAllPaths(cube, scSet, dimsToQuery);
     }
 
     Map<StorageCandidate, Set<Dimension>> factDimMap = new HashMap<>();
@@ -1045,7 +1045,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       hqlContext = new DimOnlyHQLContext(dimsToQuery, this, this);
       return hqlContext.toHQL();
     } else if (cand instanceof StorageCandidate) {
-      return cand.toHQL();
+      return ((StorageCandidate) cand).toHQL();
     } else {
       UnionQueryWriter uqc = new UnionQueryWriter(cand, this);
       return uqc.toHQL();

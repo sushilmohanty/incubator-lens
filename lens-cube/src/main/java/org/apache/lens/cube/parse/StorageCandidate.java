@@ -87,7 +87,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Setter
   private String whereString;
   @Getter
-  private final ArrayList<Integer> answerableMeasureIndices = Lists.newArrayList();
+  private final Set<Integer> answerableMeasureIndices = Sets.newHashSet();
   @Getter
   @Setter
   private String fromString;
@@ -115,8 +115,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
    * Non existing partitions
    */
   private Set<String> nonExistingPartitions = new HashSet<>();
-  @Getter
-  private String alias = null;
 
   public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName, String alias,
     CubeQueryContext cubeql) {
@@ -128,7 +126,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
     this.cubeql = cubeql;
     this.storageName = storageName;
     this.conf = cubeql.getConf();
-    this.alias = alias;
     this.name = MetastoreUtil.getFactOrDimtableStorageTableName(fact.getName(), storageName);
     rangeWriter = ReflectionUtils.newInstance(conf
       .getClass(CubeQueryConfUtil.TIME_RANGE_WRITER_CLASS, CubeQueryConfUtil.DEFAULT_TIME_RANGE_WRITER,
@@ -167,13 +164,15 @@ public class StorageCandidate implements Candidate, CandidateTable {
   protected void setMissingExpressions() throws LensException {
     setFromString(String.format("%s", getFromTable()));
     setWhereString(joinWithAnd(whereString, null));
+    if (cubeql.getHavingAST() != null) {
+      queryAst.setHavingAST(MetastoreUtil.copyAST(cubeql.getHavingAST()));
+    }
   }
 
   public void setAnswerableMeasureIndices(int index) {
     answerableMeasureIndices.add(index);
   }
 
-  @Override
   public String toHQL() throws LensException {
     setMissingExpressions();
     // Check if the picked candidate is a StorageCandidate and in that case
@@ -582,7 +581,15 @@ public class StorageCandidate implements Candidate, CandidateTable {
     return expr.isEvaluable(this);
   }
 
-  @Override
+  /**
+   * Update selectAST for StorageCandidate
+   * 1. Delete projected select expression if it's not answerable by StorageCandidate.
+   * 2. Replace the queried alias with select alias if both are different in a select expr.
+   *
+   * @param cubeql
+   * @throws LensException
+   */
+
   public void updateAnswerableSelectColumns(CubeQueryContext cubeql) throws LensException {
     // update select AST with selected fields
     int currentChild = 0;

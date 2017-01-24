@@ -106,6 +106,9 @@ public class CandidateUtil {
     if (sourceAst.getGroupByAST() != null) {
       targetAst.setGroupByAST(MetastoreUtil.copyAST(sourceAst.getGroupByAST()));
     }
+    if (sourceAst.getHavingAST() != null) {
+      targetAst.setHavingAST(MetastoreUtil.copyAST(sourceAst.getHavingAST()));
+    }
   }
 
   public static Set<StorageCandidate> getStorageCandidates(final Candidate candidate) {
@@ -268,22 +271,21 @@ public class CandidateUtil {
    * @param selectAST Outer query selectAST
    * @param cubeql Cubequery Context
    *
-   *  Update the final alias in the outer select query. Replace the query with final alias, if user hasn't \
-   *  specified any alias in final selectAST deelete the alias
+   *  Update the final alias in the outer select query.
    */
   public static void updateFinalAlias(ASTNode selectAST, CubeQueryContext cubeql) {
     for (int i = 0; i < selectAST.getChildCount(); i++) {
       ASTNode selectExpr = (ASTNode) selectAST.getChild(i);
       ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
       String finalAlias = cubeql.getSelectPhrases().get(i).getFinalAlias().replaceAll("`", "");
-      String actualAlias = cubeql.getSelectPhrases().get(i).getActualAlias();
-      if (actualAlias == null ) {
-        if (aliasNode != null){
-          //Since actual alias supplied by user is null, we should delete this alias node
-          selectExpr.deleteChild(1);
-        }
-        continue;
-      }
+//      String actualAlias = cubeql.getSelectPhrases().get(i).getActualAlias();
+//      if (actualAlias == null ) {
+//        if (aliasNode != null){
+//          //Since actual alias supplied by user is null, we should delete this alias node
+//          selectExpr.deleteChild(1);
+//        }
+//        continue;
+//      }
       if (aliasNode != null) {
         String queryAlias = aliasNode.getText();
         if (!queryAlias.equals(finalAlias)) {

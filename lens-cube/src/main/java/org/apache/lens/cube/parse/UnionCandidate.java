@@ -2,16 +2,9 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
-import org.antlr.runtime.CommonToken;
-import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
-
-import lombok.Getter;
-
-import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
-import static org.apache.lens.cube.parse.HQLParser.*;
 
 /**
  * Represents a union of two candidates
@@ -24,35 +17,27 @@ public class UnionCandidate implements Candidate {
   Date startTime = null;
   Date endTime = null;
   String toStr;
-  @Getter
-  String alias;
   CubeQueryContext cubeql;
   /**
    * List of child candidates that will be union-ed
    */
   private List<Candidate> childCandidates;
-  @Getter
   private QueryAST queryAst;
 
-  public UnionCandidate(List<Candidate> childCandidates, String alias, CubeQueryContext cubeql) {
+  public UnionCandidate(List<Candidate> childCandidates, CubeQueryContext cubeql) {
     this.childCandidates = childCandidates;
-    this.alias = alias;
+    //this.alias = alias;
     this.cubeql = cubeql;
   }
 
   @Override
-  public String toHQL() throws LensException {
-    return null;
-  }
-
-  @Override
-  public ArrayList<Integer> getAnswerableMeasureIndices() {
-    ArrayList<Integer> mesureIndices = new ArrayList<>();
+  public Set<Integer> getAnswerableMeasurePhraseIndices() {
+    Set<Integer> mesureIndices = new HashSet<>();
     List<StorageCandidate> scs = new ArrayList<StorageCandidate>();
     scs.addAll(CandidateUtil.getStorageCandidates(childCandidates));
     // All children in the UnionCandiate will be having common quriable measure
     for (StorageCandidate sc : scs) {
-      mesureIndices = (ArrayList<Integer>) sc.getAnswerableMeasureIndices();
+      mesureIndices = sc.getAnswerableMeasurePhraseIndices();
     }
     return mesureIndices;
   }
@@ -150,11 +135,6 @@ public class UnionCandidate implements Candidate {
       }
     }
     return true;
-  }
-
-  @Override
-  public void updateAnswerableSelectColumns(CubeQueryContext cubeql) {
-
   }
 
   @Override

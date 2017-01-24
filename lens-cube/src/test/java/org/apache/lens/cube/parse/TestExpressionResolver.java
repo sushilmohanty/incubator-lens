@@ -71,7 +71,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
     // select with expression
     String hqlQuery = rewrite("select avgmsr from testCube where " + TWO_DAYS_RANGE, conf);
     String expected =
-      getExpectedQuery(cubeName, "select avg(testCube.msr1 + testCube.msr2) FROM ", null, null,
+      getExpectedQuery(cubeName, "select avg(testCube.msr1 + testCube.msr2) as `avgmsr` FROM ", null, null,
         getWhereForHourly2days("C1_testfact2_raw"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
@@ -80,8 +80,8 @@ public class TestExpressionResolver extends TestQueryRewrite {
   public void testCubeQueryExpressionSelectionAlongWithColumn() throws Exception {
     String hqlQuery = rewrite("select dim1, roundedmsr2 from testCube" + " where " + TWO_DAYS_RANGE, conf);
     String expected =
-      getExpectedQuery(cubeName, "select testcube.dim1, round(sum(testcube.msr2)/1000) FROM ", null,
-        " group by testcube.dim1", getWhereForDailyAndHourly2days(cubeName, "c1_summary1"));
+      getExpectedQuery(cubeName, "select testcube.dim1 as `dim1`, round(sum(testcube.msr2)/1000) as `roundedmsr2` "
+          + "FROM ", null, " group by testcube.dim1", getWhereForDailyAndHourly2days(cubeName, "c1_summary1"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
 
   }
@@ -142,7 +142,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
       rewrite("select TC.substrexpr as subdim1, TC.avgmsr from testCube TC" + " where " + TWO_DAYS_RANGE
         + " and subdim1 != 'XYZ'", conf);
     String expected =
-      getExpectedQuery("tc", "select substr(tc.dim1, 3) as `subdim1`, avg(tc.msr1 + tc.msr2) FROM ", null,
+      getExpectedQuery("tc", "select substr(tc.dim1, 3) as `subdim1`, avg(tc.msr1 + tc.msr2) as `avgmsr` FROM ", null,
         " and subdim1 != 'XYZ' group by substr(tc.dim1, 3)", getWhereForHourly2days("tc", "C1_testfact2_raw"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
@@ -164,8 +164,8 @@ public class TestExpressionResolver extends TestQueryRewrite {
       rewrite("select avgmsr from testCube" + " where " + TWO_DAYS_RANGE
         + " and substrexpr != 'XYZ' group by booleancut", conf);
     String expected =
-      getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 ,"
-        + " avg(testCube.msr1 + testCube.msr2) FROM ", null, " and substr(testCube.dim1, 3) != 'XYZ'"
+      getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 as `avgmsr`,"
+        + " avg(testCube.msr1 + testCube.msr2) as `booleancut` FROM ", null, " and substr(testCube.dim1, 3) != 'XYZ'"
           + " group by testCube.dim1 != 'x' AND testCube.dim2 != 10", getWhereForHourly2days("C1_testfact2_raw"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
@@ -235,8 +235,8 @@ public class TestExpressionResolver extends TestQueryRewrite {
       rewrite("select booleancut, avgmsr from testCube" + " where " + TWO_DAYS_RANGE + " and substrexpr != 'XYZ'"
         + " having msr6 > 100.0", conf);
     String expected =
-      getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 ,"
-        + " avg(testCube.msr1 + testCube.msr2) FROM ", null, " and substr(testCube.dim1, 3) != 'XYZ' "
+      getExpectedQuery(cubeName, "select testCube.dim1 != 'x' AND testCube.dim2 != 10 as `booleancut`,"
+        + " avg(testCube.msr1 + testCube.msr2) as `avgmsr` FROM ", null, " and substr(testCube.dim1, 3) != 'XYZ' "
           + " group by testCube.dim1 != 'x' AND testCube.dim2 != 10"
           + " having (sum(testCube.msr2) + max(testCube.msr3))/ count(testcube.msr4) > 100.0",
           getWhereForHourly2days("C1_testfact2_raw"));
@@ -327,8 +327,8 @@ public class TestExpressionResolver extends TestQueryRewrite {
   public void testExprDimAttribute() throws Exception {
     // select with expression
     String hqlQuery = rewrite("select substrexpr from testCube where " + TWO_DAYS_RANGE, conf);
-    String expected = getExpectedQuery(cubeName, "select distinct substr(testCube.dim1, 3) FROM ", null, null,
-      getWhereForDailyAndHourly2days(cubeName, "c1_summary1"));
+    String expected = getExpectedQuery(cubeName, "select distinct substr(testCube.dim1, 3) as `substrexpr` "
+        + "FROM ", null, null, getWhereForDailyAndHourly2days(cubeName, "c1_summary1"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
 
