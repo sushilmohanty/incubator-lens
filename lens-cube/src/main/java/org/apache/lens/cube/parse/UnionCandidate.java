@@ -32,14 +32,8 @@ public class UnionCandidate implements Candidate {
 
   @Override
   public Set<Integer> getAnswerableMeasurePhraseIndices() {
-    Set<Integer> mesureIndices = new HashSet<>();
-    List<StorageCandidate> scs = new ArrayList<StorageCandidate>();
-    scs.addAll(CandidateUtil.getStorageCandidates(childCandidates));
     // All children in the UnionCandiate will be having common quriable measure
-    for (StorageCandidate sc : scs) {
-      mesureIndices = sc.getAnswerableMeasurePhraseIndices();
-    }
-    return mesureIndices;
+    return  getChildren().iterator().next().getAnswerableMeasurePhraseIndices();
   }
 
   @Override

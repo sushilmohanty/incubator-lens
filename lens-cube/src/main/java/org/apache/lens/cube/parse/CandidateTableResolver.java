@@ -75,7 +75,8 @@ class CandidateTableResolver implements ContextRewriter {
         // Before checking for candidate table columns, prune join paths containing non existing columns
         // in populated candidate tables
         //TODO rewrite : commented below line to compile
-        cubeql.getAutoJoinCtx().pruneAllPaths(cubeql.getCube(), cubeql.getCandidateFacts(), null);
+        cubeql.getAutoJoinCtx().pruneAllPaths(cubeql.getCube(),
+            CandidateUtil.getStorageCandidates(cubeql.getCandidates()), null);
         cubeql.getAutoJoinCtx().pruneAllPathsForCandidateDims(cubeql.getCandidateDimTables());
         cubeql.getAutoJoinCtx().refreshJoinPathColumns();
       }
@@ -100,8 +101,7 @@ class CandidateTableResolver implements ContextRewriter {
       for (CubeFactTable fact : factTables) {
         Iterator<String> it = fact.getStorages().iterator();
         while(it.hasNext()) {
-          StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact,
-            it.next(), "sc" + aliasCounter++, cubeql);
+          StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact, it.next(), cubeql);
           cubeql.getCandidates().add(sc);
         }
       }
@@ -532,9 +532,12 @@ class CandidateTableResolver implements ContextRewriter {
                 if (cubeql.getCandidates().contains(candidate)) {
                   log.info("Not considering Storage:{} as its required optional dims are not reachable", candidate);
                   cubeql.getCandidates().remove(candidate);
-                  // TODO union : Add pruning message
-                  // cubeql.addFactPruningMsgs(((CandidateFact) candidate).fact,
-                  // CandidateTablePruneCause.columnNotFound(col));
+                  cubeql.addStoragePruningMsg((StorageCandidate) candidate,
+                      CandidateTablePruneCause.columnNotFound(col));
+                  Collection<Candidate> prunedCandidates = CandidateUtil.
+                      filterCandidates(cubeql.getCandidates(), (StorageCandidate) candidate);
+                  cubeql.addCandidatePruningMsg(prunedCandidates,
+                      new CandidateTablePruneCause(CandidateTablePruneCode.ELEMENT_IN_SET_PRUNED));
                 }
               } else if (cubeql.getCandidateDimTables().containsKey(((CandidateDim) candidate).getBaseTable())) {
                 log.info("Not considering dimtable:{} as its required optional dims are not reachable", candidate);

@@ -297,8 +297,8 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     String expected1 = getExpectedQuery(cubeName, "SELECT (basecube.dim1) as `alias0`, 0.0 as `alias1`, "
         + "sum((basecube.msr12)) as `alias2` FROM ", null, " group by basecube.dim1",
         getWhereForDailyAndHourly2days(cubeName, "C1_testFact2_BASE"));
-    String expected2 = getExpectedQuery(cubeName, "select basecube.dim1 as `dim1`, round(sum(basecube.msr2)/1000) "
-        + "as `roundedmsr2` FROM ", null, " group by basecube.dim1",
+    String expected2 = getExpectedQuery(cubeName, "SELECT (basecube.dim1) as `alias0`, sum((basecube.msr2)) "
+        + "as `alias1`, 0.0 as `alias2` FROM ", null, " group by basecube.dim1",
         getWhereForDailyAndHourly2days(cubeName, "C1_testFact1_BASE"));
     compareContains(expected1, hqlQuery);
     compareContains(expected2, hqlQuery);

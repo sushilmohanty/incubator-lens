@@ -121,7 +121,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     List<UnionCandidate> unionCoveringSet =
         getCombinations(new ArrayList<Candidate>(allCandidatesPartiallyValid), cubeql);
     // Sort the Collection based on no of elements
-    Collections.sort(unionCoveringSet, new CandidateUtil.UnionCandidateComparator<UnionCandidate>());
+    Collections.sort(unionCoveringSet, new CandidateUtil.ChildrenSizeBasedCandidateComparator<UnionCandidate>());
     // prune non covering sets
     pruneUnionCandidatesNotCoveringAllRanges(unionCoveringSet, cubeql.getTimeRanges());
     // prune candidate set which doesn't contain any common measure i
@@ -273,7 +273,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       msrPhrase = qpcList.get(index);
       if (unionCandidate instanceof StorageCandidate && msrPhrase.isEvaluable(cubeql,
           (StorageCandidate) unionCandidate)) {
-        ((StorageCandidate) unionCandidate).setAnswerableMeasureIndices(index);
+        ((StorageCandidate) unionCandidate).setAnswerableMeasurePhraseIndices(index);
       } else if (unionCandidate instanceof UnionCandidate) {
         isEvaluable = true;
         for (Candidate childCandidate : unionCandidate.getChildren()) {
@@ -285,7 +285,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
         if (isEvaluable) {
           //Set the index for all the children in this case
           for (Candidate childCandidate : unionCandidate.getChildren()) {
-            ((StorageCandidate) childCandidate).setAnswerableMeasureIndices(index);
+            ((StorageCandidate) childCandidate).setAnswerableMeasurePhraseIndices(index);
           }
         }
       }

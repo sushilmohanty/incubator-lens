@@ -38,15 +38,13 @@ public class JoinCandidate implements Candidate {
   @Override
   public Date getStartTime() {
     return childCandidate1.getStartTime().after(childCandidate2.getStartTime())
-        ? childCandidate1.getStartTime()
-        : childCandidate2.getStartTime();
+        ? childCandidate1.getStartTime() : childCandidate2.getStartTime();
   }
 
   @Override
   public Date getEndTime() {
     return childCandidate1.getEndTime().before(childCandidate2.getEndTime())
-        ? childCandidate1.getEndTime()
-        : childCandidate2.getEndTime();
+        ? childCandidate1.getEndTime() : childCandidate2.getEndTime();
   }
 
   @Override
@@ -94,11 +92,8 @@ public class JoinCandidate implements Candidate {
   @Override
   public Set<Integer> getAnswerableMeasurePhraseIndices() {
     Set<Integer> mesureIndices = new HashSet<>();
-    Set<StorageCandidate> scs = new HashSet<>();
-    scs.addAll(CandidateUtil.getStorageCandidates(getChildren()));
-    // All children in the UnionCandiate will be having common quriable measure
-    for (StorageCandidate sc : scs) {
-      mesureIndices.addAll(sc.getAnswerableMeasurePhraseIndices());
+    for (Candidate cand : getChildren()) {
+      mesureIndices.addAll(cand.getAnswerableMeasurePhraseIndices());
     }
     return mesureIndices;
   }

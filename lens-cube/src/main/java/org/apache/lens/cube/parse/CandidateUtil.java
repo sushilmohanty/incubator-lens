@@ -214,10 +214,9 @@ public class CandidateUtil {
     return new StorageCandidate(sc);
   }
 
-  public static class UnionCandidateComparator<T> implements Comparator<UnionCandidate> {
-
+  public static class ChildrenSizeBasedCandidateComparator<T> implements Comparator<Candidate> {
     @Override
-    public int compare(UnionCandidate o1, UnionCandidate o2) {
+    public int compare(Candidate o1, Candidate o2) {
       return Integer.valueOf(o1.getChildren().size() - o2.getChildren().size());
     }
   }
@@ -271,21 +270,15 @@ public class CandidateUtil {
    * @param selectAST Outer query selectAST
    * @param cubeql Cubequery Context
    *
-   *  Update the final alias in the outer select query.
+   *  Update the final alias in the outer select expressions
+   *  1. Replace queriedAlias with finalAlias if both are not same
+   *  2. If queriedAlias is missing add finalAlias as alias
    */
   public static void updateFinalAlias(ASTNode selectAST, CubeQueryContext cubeql) {
     for (int i = 0; i < selectAST.getChildCount(); i++) {
       ASTNode selectExpr = (ASTNode) selectAST.getChild(i);
       ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
       String finalAlias = cubeql.getSelectPhrases().get(i).getFinalAlias().replaceAll("`", "");
-//      String actualAlias = cubeql.getSelectPhrases().get(i).getActualAlias();
-//      if (actualAlias == null ) {
-//        if (aliasNode != null){
-//          //Since actual alias supplied by user is null, we should delete this alias node
-//          selectExpr.deleteChild(1);
-//        }
-//        continue;
-//      }
       if (aliasNode != null) {
         String queryAlias = aliasNode.getText();
         if (!queryAlias.equals(finalAlias)) {

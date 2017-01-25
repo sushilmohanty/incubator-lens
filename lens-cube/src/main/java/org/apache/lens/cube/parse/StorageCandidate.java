@@ -87,7 +87,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Setter
   private String whereString;
   @Getter
-  private final Set<Integer> answerableMeasureIndices = Sets.newHashSet();
+  private final Set<Integer> answerableMeasurePhraseIndices = Sets.newHashSet();
   @Getter
   @Setter
   private String fromString;
@@ -116,9 +116,8 @@ public class StorageCandidate implements Candidate, CandidateTable {
    */
   private Set<String> nonExistingPartitions = new HashSet<>();
 
-  public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName, String alias,
-    CubeQueryContext cubeql) {
-    if ((cube == null) || (fact == null) || (storageName == null) || (alias == null)) {
+  public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName, CubeQueryContext cubeql) {
+    if ((cube == null) || (fact == null) || (storageName == null)) {
       throw new IllegalArgumentException("Cube,fact and storageName should be non null");
     }
     this.cube = cube;
@@ -142,7 +141,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
   }
 
   public StorageCandidate(StorageCandidate sc) {
-    this(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getAlias(), sc.getCubeql());
+    this(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getCubeql());
     // Copy update periods.
     for (UpdatePeriod updatePeriod : sc.getValidUpdatePeriods()) {
       this.validUpdatePeriods.add(updatePeriod);
@@ -161,7 +160,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
     return false;
   }
 
-  protected void setMissingExpressions() throws LensException {
+  private void setMissingExpressions() throws LensException {
     setFromString(String.format("%s", getFromTable()));
     setWhereString(joinWithAnd(whereString, null));
     if (cubeql.getHavingAST() != null) {
@@ -169,8 +168,8 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
   }
 
-  public void setAnswerableMeasureIndices(int index) {
-    answerableMeasureIndices.add(index);
+  public void setAnswerableMeasurePhraseIndices(int index) {
+    answerableMeasurePhraseIndices.add(index);
   }
 
   public String toHQL() throws LensException {
@@ -618,11 +617,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
       }
       currentChild++;
     }
-
-    // don't need to update where ast, since where is only on dim attributes and dim attributes
-    // are assumed to be common in multi fact queries.
-
-    // push down of having clauses happens just after this call in cubequerycontext
   }
 
   @Override
@@ -666,7 +660,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
   }
 
-  protected String getFromTable() throws LensException {
+  private String getFromTable() throws LensException {
     if (cubeql.isAutoJoinResolved()) {
         return fromString;
     } else {
