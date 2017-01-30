@@ -141,8 +141,9 @@ public class TestJoinResolver extends TestQueryRewrite {
         + " right outer join testDim4 on testdim3.testdim4id = testdim4.id and testDim4.name='TESTDIM4NAME'"
         + " WHERE " + TWO_DAYS_RANGE;
     String hqlQuery = rewrite(query, hconf);
-    String expected = getExpectedQuery("testcube", "select citydim.name, testDim4.name, sum(testcube.msr2) FROM ",
-      " left outer JOIN " + getDbName() + "c1_citytable citydim on testcube.cityid = citydim.id +"
+    String expected = getExpectedQuery("testcube", "SELECT (citydim.name) as `name`, (testdim4.name) as `name`, "
+        + "sum((testcube.msr2)) as `msr2` FROM ",
+        " left outer JOIN " + getDbName() + "c1_citytable citydim on testcube.cityid = citydim.id +"
         + " and (( citydim . name ) =  'FOOBAR' ) and (citydim.dt = 'latest')"
         + " right outer join " + getDbName()
         + "c1_testdim2tbl testdim2 on testcube.dim2 = testdim2.id and (testdim2.dt = 'latest')"
@@ -183,8 +184,8 @@ public class TestJoinResolver extends TestQueryRewrite {
     String query = "select cubecity.name, msr2 FROM testCube WHERE " + TWO_DAYS_RANGE;
     String hqlQuery = rewrite(query, tConf);
     // Check that aliases are preserved in the join clause
-    String expected = getExpectedQuery("testcube", "select cubecity.name, sum(testcube.msr2) FROM ",
-      " left outer join " + getDbName()
+    String expected = getExpectedQuery("testcube", "SELECT (cubecity.name) as `name`, sum((testcube.msr2)) " +
+        "as `msr2` FROM ", " left outer join " + getDbName()
         + "c1_citytable cubecity ON testcube.cityid = cubecity.id and (cubecity.dt = 'latest')",
       null, " group by cubecity.name", null, getWhereForHourly2days("testcube", "c1_testfact2"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
@@ -332,7 +333,8 @@ public class TestJoinResolver extends TestQueryRewrite {
     // Single joinchain with direct link
     query = "select cubestate.name, sum(msr2) from basecube where " + TWO_DAYS_RANGE + " group by cubestate.name";
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("basecube", "select cubestate.name, sum(basecube.msr2) FROM ",
+    expected = getExpectedQuery("basecube", "SELECT (cubestate.name) as `name`, sum((basecube.msr2)) "
+        + "as `sum(msr2)` FROM ",
       " join " + getDbName() + "c1_statetable cubestate ON basecube.stateid=cubeState.id and cubeState.dt= 'latest'",
       null, "group by cubestate.name",
       null, getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base"));
@@ -341,8 +343,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     // Single joinchain with two chains
     query = "select citystate.name, sum(msr2) from basecube where " + TWO_DAYS_RANGE + " group by citystate.name";
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("basecube", "select citystate.name, sum(basecube.msr2) FROM ",
-      " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
+    expected = getExpectedQuery("basecube", "SELECT (citystate.name) as `name`, sum((basecube.msr2)) "
+        + "as `sum(msr2)` FROM ",
+        " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
         + " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
       null, "group by citystate.name",
       null, getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base"));
@@ -351,7 +354,7 @@ public class TestJoinResolver extends TestQueryRewrite {
     // Single joinchain with two chains, accessed as refcolumn
     query = "select cityStateCapital, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("basecube", "select citystate.capital, sum(basecube.msr2) FROM ",
+    expected = getExpectedQuery("basecube", "SELECT (citystate.capital) as `citystatecapital`, sum((basecube.msr2)) as `sum(msr2)` FROM ",
       " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
         + " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
       null, "group by citystate.capital",
@@ -366,8 +369,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     // Adding Order by
     query = "select cityStateCapital, sum(msr2) from basecube where " + TWO_DAYS_RANGE + " order by cityStateCapital";
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("basecube", "select citystate.capital, sum(basecube.msr2) FROM ",
-      " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
+    expected = getExpectedQuery("basecube", "SELECT (citystate.capital) as `citystatecapital`, "
+        + "sum((basecube.msr2)) as `sum(msr2)` FROM ", " join "
+        + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
         + " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
       null, "group by citystate.capital order by citystate.capital asc",
       null, getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base"));
@@ -376,8 +380,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     // Single joinchain, but one column accessed as refcol and another as chain.column
     query = "select citystate.name, cityStateCapital, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("basecube", "select citystate.name, citystate.capital, sum(basecube.msr2) FROM ",
-      " join " + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
+    expected = getExpectedQuery("basecube", "SELECT (citystate.name) as `name`, (citystate.capital) "
+        + "as `citystatecapital`, sum((basecube.msr2)) as `sum(msr2)` FROM ", " join "
+        + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
         + " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
       null, "group by citystate.name, citystate.capital",
       null, getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base"));
@@ -387,7 +392,7 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select cubeState.name, cubecity.name, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube",
-      "select cubestate.name, cubecity.name, sum(basecube.msr2) FROM ",
+      "SELECT (cubestate.name) as `name`, (cubecity.name) as `name`, sum((basecube.msr2)) as `sum(msr2)` FROM ",
       " join " + getDbName() + "c1_statetable cubestate on basecube.stateid = cubestate.id and cubestate.dt = 'latest'"
         + " join " + getDbName() + "c1_citytable cubecity on basecube.cityid = cubecity.id and cubecity.dt = 'latest'",
       null, "group by cubestate.name,cubecity.name", null,
@@ -398,8 +403,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     // Multiple join chains with same destination table
     query = "select cityState.name, cubeState.name, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("basecube", "select citystate.name, cubestate.name, sum(basecube.msr2) FROM ",
-      " join " + getDbName() + "c1_statetable cubestate on basecube.stateid=cubestate.id and cubestate.dt='latest'"
+    expected = getExpectedQuery("basecube", "SELECT (citystate.name) as `name`, (cubestate.name) "
+        + "as `name`, sum((basecube.msr2)) as `sum(msr2)` FROM ", " join " + getDbName()
+        + "c1_statetable cubestate on basecube.stateid=cubestate.id and cubestate.dt='latest'"
         + " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and "
         + "citydim.dt = 'latest'"
         + " join " + getDbName() + "c1_statetable citystate on citydim.stateid = citystate.id and "
@@ -413,8 +419,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select cubestate.name, cityStateCapital, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube",
-      "select cubestate.name, citystate.capital, sum(basecube.msr2) FROM ",
-      ""
+      "SELECT (cubestate.name) as `name`, (citystate.capital) as `citystatecapital`, "
+          + "sum((basecube.msr2)) as `sum(msr2)` FROM ",
+        ""
         + " join " + getDbName() + "c1_statetable cubestate on basecube.stateid=cubestate.id and cubestate.dt='latest'"
         + " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and citydim.dt = 'latest'"
         + " join " + getDbName() + "c1_statetable citystate on citydim.stateid=citystate.id and citystate.dt='latest'"
@@ -428,7 +435,7 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select cityState.name, cityZip.f1, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube",
-      "select citystate.name, cityzip.f1, sum(basecube.msr2) FROM ",
+      "SELECT (citystate.name) as `name`, (cityzip.f1) as `f1`, sum((basecube.msr2)) as `sum(msr2)` FROM ",
       " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and "
         + "citydim.dt = 'latest'"
         + " join " + getDbName() + "c1_statetable citystate on citydim.stateid = citystate.id and "
@@ -445,7 +452,7 @@ public class TestJoinResolver extends TestQueryRewrite {
     query = "select cubeStateCountry.name, cubeCityStateCountry.name, sum(msr2) from basecube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
     expected = getExpectedQuery("basecube",
-      "select cubestatecountry.name, cubecitystatecountry.name, sum(basecube.msr2) FROM ",
+      "SELECT (cubestatecountry.name) as `name`, (cubecitystatecountry.name) as `name`, sum((basecube.msr2)) as `sum(msr2)` FROM ",
       ""
         + " join " + getDbName() + "c1_citytable citydim on basecube.cityid = citydim.id and (citydim.dt = 'latest')"
         + " join " + getDbName()
@@ -562,7 +569,8 @@ public class TestJoinResolver extends TestQueryRewrite {
 
     query = "select dim3chain.name, sum(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("testcube", "select dim3chain.name, sum(testcube.msr2) FROM ",
+    expected = getExpectedQuery("testcube", "SELECT (dim3chain.name) as `name`, sum((testcube.msr2)) "
+        + "as `sum(msr2)` FROM ",
       " join " + getDbName() + "c1_testdim3tbl dim3chain ON testcube.testdim3id=dim3chain.id and dim3chain.dt='latest'",
       null, "group by dim3chain.name",
       null, getWhereForDailyAndHourly2days("testcube", "c1_summary1"));
@@ -571,8 +579,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     // hit a fact where there is no direct path
     query = "select dim3chain.name, avg(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("testcube", "select dim3chain.name, avg(testcube.msr2) FROM ",
-      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
+    expected = getExpectedQuery("testcube", "SELECT (dim3chain.name) as `name`, avg((testcube.msr2)) "
+        + "as `avg(msr2)` FROM ", " join "
+        + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
         + " join " + getDbName() + "c1_testdim3tbl dim3chain "
         + "ON testdim2.testdim3id = dim3chain.id and dim3chain.dt = 'latest'",
       null, "group by dim3chain.name",
@@ -582,8 +591,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     // resolve denorm variable through multi hop chain paths
     query = "select testdim3id, avg(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("testcube", "select dim3chain.id, avg(testcube.msr2) FROM ",
-      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
+    expected = getExpectedQuery("testcube", "SELECT (dim3chain.id) as `testdim3id`, avg((testcube.msr2)) "
+        + "as `avg(msr2)` FROM", " join "
+        + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
         + " join " + getDbName() + "c1_testdim3tbl dim3chain "
         + "ON testdim2.testdim3id = dim3chain.id and dim3chain.dt = 'latest'",
       null, "group by dim3chain.id",
@@ -593,8 +603,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     // tests from multiple different chains
     query = "select dim4chain.name, testdim3id, avg(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("testcube", "select dim4chain.name, dim3chain.id, avg(testcube.msr2) FROM ",
-      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
+    expected = getExpectedQuery("testcube", "select dim4chain.name as `name`, dim3chain.id as `testdim3id`, "
+        + "avg(testcube.msr2) as `avg(msr2)` FROM ", " join "
+        + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
         + " join " + getDbName()
         + "c1_testdim3tbl dim3chain ON testdim2.testdim3id=dim3chain.id and dim3chain.dt='latest'"
         + " join " + getDbName() + "c1_testdim4tbl dim4chain ON dim3chain.testDim4id = dim4chain.id and"
@@ -604,9 +615,10 @@ public class TestJoinResolver extends TestQueryRewrite {
 
     query = "select cubecity.name, dim4chain.name, testdim3id, avg(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("testcube", "select cubecity.name, dim4chain.name, dim3chain.id, avg(testcube.msr2) "
-        + "FROM ",
-      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
+    expected = getExpectedQuery("testcube", "select cubecity.name as `name`, dim4chain.name as `name`, " +
+        "dim3chain.id as `testdim3id`, avg(testcube.msr2) as `avg(msr2)`"
+        + "FROM ", " join "
+        + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
         + " join " + getDbName()
         + "c1_testdim3tbl dim3chain ON testdim2.testdim3id=dim3chain.id and dim3chain.dt='latest'"
         + " join " + getDbName() + "c1_testdim4tbl dim4chain ON dim3chain.testDim4id = dim4chain.id and"
@@ -619,8 +631,9 @@ public class TestJoinResolver extends TestQueryRewrite {
     // test multi hops
     query = "select dim4chain.name, avg(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("testcube", "select dim4chain.name, avg(testcube.msr2) FROM ",
-      " join " + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
+    expected = getExpectedQuery("testcube", "select dim4chain.name as `name`, avg(testcube.msr2) "
+        + "as `avg(msr2)` FROM ", " join "
+        + getDbName() + "c1_testdim2tbl testdim2 ON testcube.dim2 = testdim2.id and testdim2.dt = 'latest'"
         + " join " + getDbName() + "c1_testdim3tbl testdim3 ON testdim2.testdim3id=testdim3.id and testdim3.dt='latest'"
         + " join " + getDbName() + "c1_testdim4tbl dim4chain ON testdim3.testDim4id = dim4chain.id and"
         + " dim4chain.dt = 'latest'", null, "group by dim4chain.name", null,
@@ -629,7 +642,7 @@ public class TestJoinResolver extends TestQueryRewrite {
 
     query = "select dim4chain.name, sum(msr2) from testcube where " + TWO_DAYS_RANGE;
     hqlQuery = rewrite(query, hconf);
-    expected = getExpectedQuery("testcube", "select dim4chain.name, sum(testcube.msr2) FROM ",
+    expected = getExpectedQuery("testcube", "select dim4chain.name as `name`, sum(testcube.msr2) as `sum(msr2)` FROM ",
       " join " + getDbName() + "c1_testdim3tbl testdim3 ON testcube.testdim3id = testdim3.id and testdim3.dt = 'latest'"
         + " join " + getDbName() + "c1_testdim4tbl dim4chain ON testdim3.testDim4id = dim4chain.id and"
         + " dim4chain.dt = 'latest'", null, "group by dim4chain.name", null,

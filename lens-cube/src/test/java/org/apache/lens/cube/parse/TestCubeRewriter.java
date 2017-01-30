@@ -624,68 +624,74 @@ public class TestCubeRewriter extends TestQueryRewrite {
      rewrite("select name, SUM(msr2) from" + " testCube join citydim on testCube.cityid = citydim.id where "
         + TWO_DAYS_RANGE, conf);
     String expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select citydim.name," + " sum(testcube.msr2) FROM ", "INNER JOIN " + getDbName()
-          + "c2_citytable citydim ON" + " testCube.cityid = citydim.id", null, " group by citydim.name ",
+      getExpectedQuery(TEST_CUBE_NAME, "select citydim.name as `name`, sum(testcube.msr2) as `sum(msr2)` FROM "
+          , "INNER JOIN " + getDbName() + "c2_citytable citydim ON" + " testCube.cityid = citydim.id",
+          null, " group by citydim.name ",
         null, getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
-      rewrite("select SUM(msr2) from testCube" + " join citydim on testCube.cityid = citydim.id" + " where "
+      rewrite("select SUM(msr2) from testCube join citydim on testCube.cityid = citydim.id  where "
         + TWO_DAYS_RANGE + " group by name", conf);
     compareQueries(hqlQuery, expected);
 
-    hqlQuery = rewrite("select cityid, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
+    hqlQuery = rewrite("select cityid, sum(msr2) from testCube where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select testcube.cityid," + " sum(testcube.msr2) FROM ", null,
-        " group by testcube.cityid ", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.cityid as `cityid`, sum(testcube.msr2) as `sum(msr2)` from ",
+          null, " group by testcube.cityid ", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
-    hqlQuery = rewrite("select round(cityid), SUM(msr2) from" + " testCube where " + TWO_DAYS_RANGE, conf);
+    hqlQuery = rewrite("select round(cityid), sum(msr2) from" + " testCube where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.cityid)," + " sum(testcube.msr2) FROM ", null,
+      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.cityid) as `round(cityid)`,"
+          + " sum(testcube.msr2) as `sum(msr2)` FROM ", null,
         " group by round(testcube.cityid) ", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
-      rewrite("select SUM(msr2) from testCube" + "  where " + TWO_DAYS_RANGE + "group by round(zipcode)", conf);
+      rewrite("select sum(msr2) from testCube where " + TWO_DAYS_RANGE + "group by round(zipcode)", conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.zipcode)," + " sum(testcube.msr2) FROM ", null,
+      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.zipcode) as `round(zipcode)`,"
+          + " sum(testcube.msr2)  as `sum(msr2)` FROM ", null,
         " group by round(testcube.zipcode) ", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
-      rewrite("select round(cityid), SUM(msr2) from" + " testCube where " + TWO_DAYS_RANGE + " group by zipcode",
+      rewrite("select round(cityid), sum(msr2) from" + " testCube where " + TWO_DAYS_RANGE + " group by zipcode",
         conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select " + " round(testcube.cityid), sum(testcube.msr2) FROM ", null,
+      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.cityid) as `round(cityid)`, "
+          + "sum(testcube.msr2) as `sum(msr2)` FROM ", null,
         " group by testcube.zipcode", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
-    hqlQuery = rewrite("select round(cityid), SUM(msr2) from" + " testCube where " + TWO_DAYS_RANGE, conf);
+    hqlQuery = rewrite("select round(cityid), sum(msr2) from testCube where " + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select " + " round(testcube.cityid), sum(testcube.msr2) FROM ", null,
+      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.cityid) as `round(cityid)`, "
+          + "sum(testcube.msr2) as `sum(msr2)` FROM ", null,
         " group by round(testcube.cityid)", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
-      rewrite("select cityid, SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE + " group by round(zipcode)",
+      rewrite("select cityid, sum(msr2) from testCube" + " where " + TWO_DAYS_RANGE + " group by round(zipcode)",
         conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select " + " testcube.cityid, sum(testcube.msr2) FROM ", null,
-        " group by round(testcube.zipcode)", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.cityid as `cityid`, sum(testcube.msr2) as `sum(msr2)` FROM ",
+          null, " group by round(testcube.zipcode)", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
-      rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE + " group by round(zipcode)", conf);
+      rewrite("select sum(msr2) from testCube where " + TWO_DAYS_RANGE + " group by round(zipcode)", conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.zipcode)," + " sum(testcube.msr2) FROM ", null,
-        " group by round(testcube.zipcode)", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.zipcode) as `round(zipcode)`, sum(testcube.msr2)  " +
+          "as `sum(msr2)` FROM ", null, " group by round(testcube.zipcode)",
+          getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     hqlQuery =
-      rewrite("select cityid, msr2 from testCube" + " where " + TWO_DAYS_RANGE + " group by round(zipcode)", conf);
+      rewrite("select cityid, msr2 from testCube where " + TWO_DAYS_RANGE + " group by round(zipcode)", conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select " + " testcube.cityid, sum(testcube.msr2) FROM ", null,
+      getExpectedQuery(TEST_CUBE_NAME, "select testcube.cityid as `cityid`, sum(testcube.msr2) as `msr2` FROM ", null,
         " group by round(testcube.zipcode)", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
@@ -693,24 +699,26 @@ public class TestCubeRewriter extends TestQueryRewrite {
       rewrite("select round(zipcode) rzc," + " msr2 from testCube where " + TWO_DAYS_RANGE + " group by zipcode"
         + " order by rzc", conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.zipcode) as `rzc`," + " sum(testcube.msr2) FROM ", null,
-        " group by testcube.zipcode  order by rzc asc", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
+      getExpectedQuery(TEST_CUBE_NAME, "select round(testcube.zipcode) as `rzc`, sum(testcube.msr2)  as `msr2` FROM ",
+          null, " group by testcube.zipcode  order by rzc asc",
+          getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     //Dim attribute with aggregate function
     hqlQuery =
-        rewrite("select countofdistinctcityid, zipcode from" + " testCube where " + TWO_DAYS_RANGE, conf);
+        rewrite("select countofdistinctcityid, zipcode from testCube where " + TWO_DAYS_RANGE, conf);
     expected =
-        getExpectedQuery(TEST_CUBE_NAME, "select " + " count(distinct (testcube.cityid)), (testcube.zipcode) FROM ",
-            null, " group by (testcube.zipcode)", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
+        getExpectedQuery(TEST_CUBE_NAME, "select count(distinct(testcube.cityid)) as `countofdistinctcityid`"
+            + ", (testcube.zipcode) as `zipcode` FROM ", null, " group by (testcube.zipcode)",
+            getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
     //Dim attribute with single row function
     hqlQuery =
         rewrite("select notnullcityid, zipcode from" + " testCube where " + TWO_DAYS_RANGE, conf);
     expected =
-        getExpectedQuery(TEST_CUBE_NAME, "select " + " distinct case  when (testcube.cityid) is null then 0 "
-                + "else (testcube.cityid) end, (testcube.zipcode)  FROM ", null,
+        getExpectedQuery(TEST_CUBE_NAME, "select distinct case  when (testcube.cityid) is null then 0 "
+                + "else (testcube.cityid) end as `notnullcityid`, (testcube.zipcode) as `zipcode` FROM ", null,
             "", getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact"));
     compareQueries(hqlQuery, expected);
 
@@ -1227,12 +1235,12 @@ public class TestCubeRewriter extends TestQueryRewrite {
     };
 
     String[] expectedQueries = {
-      getExpectedQuery("t", "SELECT t.cityid, sum(t.msr2) FROM ", null, " group by t.cityid",
+      getExpectedQuery("t", "SELECT t.cityid as `cityid`, sum(t.msr2) as `msr2` FROM ", null, " group by t.cityid",
         getWhereForDailyAndHourly2days("t", "C2_testfact")),
-      getExpectedQuery(TEST_CUBE_NAME, "SELECT testCube.cityid, sum(testCube.msr2)" + " FROM ",
+      getExpectedQuery(TEST_CUBE_NAME, "SELECT testCube.cityid as `cityid`, sum(testCube.msr2) as `msr2`" + " FROM ",
         " testcube.cityid > 100 ", " group by testcube.cityid having" + " sum(testCube.msr2) < 1000",
         getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact")),
-      getExpectedQuery(TEST_CUBE_NAME, "SELECT testCube.cityid, sum(testCube.msr2)" + " FROM ",
+      getExpectedQuery(TEST_CUBE_NAME, "SELECT testCube.cityid as `cityid`, sum(testCube.msr2) as `msr2`" + " FROM ",
         " testcube.cityid > 100 ", " group by testcube.cityid having"
           + " sum(testCube.msr2) < 1000 order by testCube.cityid asc",
         getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact")),
