@@ -585,20 +585,20 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
   public void testMultiFactQueryWithDenormColumn() throws Exception {
     // query with denorm variable
     String hqlQuery = rewrite("select dim2, msr13, roundedmsr2 from basecube where " + TWO_DAYS_RANGE, conf);
-    String expected1 = getExpectedQuery(cubeName, "select dim2chain.id as `dim2`, max(basecube.msr13) as `msr13` FROM ",
-        " JOIN " + getDbName() + "c1_testdim2tbl dim2chain ON basecube.dim12 = "
-            + " dim2chain.id and (dim2chain.dt = 'latest') ", null, " group by dim2chain.id", null,
+    String expected1 = getExpectedQuery(cubeName, "SELECT (dim2chain.id) as `alias0`, max((basecube.msr13)) "
+        + "as `alias1`, sum(0.0) as `alias2` FROM ", " JOIN " + getDbName()
+        + "c1_testdim2tbl dim2chain ON basecube.dim12 = "
+        + " dim2chain.id and (dim2chain.dt = 'latest') ", null, " group by dim2chain.id", null,
         getWhereForHourly2days(cubeName, "C1_testFact3_RAW_BASE"));
     String expected2 = getExpectedQuery(cubeName,
-        "select basecube.dim2 as `dim2`, round(sum(basecube.msr2)/1000) as `roundedmsr2` FROM ", null,
+        "SELECT (basecube.dim2) as `alias0`, max(0.0) as `alias1`, sum((basecube.msr2)) as `alias2` FROM ", null,
         " group by basecube.dim2", getWhereForHourly2days(cubeName, "C1_testfact1_raw_base"));
     compareContains(expected1, hqlQuery);
     compareContains(expected2, hqlQuery);
     assertTrue(hqlQuery.toLowerCase().startsWith(
-      "select coalesce(mq1.dim2, mq2.dim2) dim2, mq2.msr13 msr13, mq1.roundedmsr2 roundedmsr2 from ")
-      || hqlQuery.toLowerCase().startsWith(
-        "select coalesce(mq1.dim2, mq2.dim2) dim2, mq1.msr13 msr13, mq2.roundedmsr2 roundedmsr2 from "), hqlQuery);
-    assertTrue(hqlQuery.contains("mq1 full outer join ") && hqlQuery.endsWith("mq2 on mq1.dim2 <=> mq2.dim2"),
+      "select (basecube.alias0) as `dim2`, max((basecube.alias1)) as `msr13`, "
+          + "round((sum((basecube.alias2)) / 1000)) as `roundedmsr2` from"), hqlQuery);
+    assertTrue(hqlQuery.contains("UNION ALL") && hqlQuery.endsWith("GROUP BY (basecube.alias0)"),
       hqlQuery);
   }
 
@@ -607,20 +607,21 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     // query with denorm variable
     String hqlQuery = rewrite("select dim2, msr13, roundedmsr2 from basecube where dim2 == 10 and " + TWO_DAYS_RANGE,
       conf);
-    String expected1 = getExpectedQuery(cubeName, "select dim2chain.id as `dim2`, max(basecube.msr13) as `msr13` FROM ",
-      " JOIN " + getDbName() + "c1_testdim2tbl dim2chain ON basecube.dim12 = "
+    String expected1 = getExpectedQuery(cubeName, "SELECT (dim2chain.id) as `alias0`, max((basecube.msr13)) " +
+        "as `alias1`, sum(0.0) as `alias2` FROM ", " JOIN " + getDbName()
+        + "c1_testdim2tbl dim2chain ON basecube.dim12 = "
         + " dim2chain.id and (dim2chain.dt = 'latest') ", "dim2chain.id == 10", " group by dim2chain.id", null,
       getWhereForHourly2days(cubeName, "C1_testFact3_RAW_BASE"));
     String expected2 = getExpectedQuery(cubeName,
-      "select basecube.dim2 as `dim2`, round(sum(basecube.msr2)/1000) as `roundedmsr2` FROM ", "basecube.dim2 == 10",
-      " group by basecube.dim2", getWhereForHourly2days(cubeName, "C1_testfact1_raw_base"));
+      "SELECT (basecube.dim2) as `alias0`, max(0.0) as `alias1`, sum((basecube.msr2)) as `alias2` FROM ",
+        "basecube.dim2 == 10", " group by basecube.dim2",
+        getWhereForHourly2days(cubeName, "C1_testfact1_raw_base"));
     compareContains(expected1, hqlQuery);
     compareContains(expected2, hqlQuery);
     assertTrue(hqlQuery.toLowerCase().startsWith(
-      "select coalesce(mq1.dim2, mq2.dim2) dim2, mq2.msr13 msr13, mq1.roundedmsr2 roundedmsr2 from ")
-      || hqlQuery.toLowerCase().startsWith(
-        "select coalesce(mq1.dim2, mq2.dim2) dim2, mq1.msr13 msr13, mq2.roundedmsr2 roundedmsr2 from "), hqlQuery);
-    assertTrue(hqlQuery.contains("mq1 full outer join ") && hqlQuery.endsWith("mq2 on mq1.dim2 <=> mq2.dim2"),
+      "select (basecube.alias0) as `dim2`, max((basecube.alias1)) as `msr13`, " +
+          "round((sum((basecube.alias2)) / 1000)) as `roundedmsr2` from"), hqlQuery);
+    assertTrue(hqlQuery.contains("UNION ALL") && hqlQuery.endsWith("GROUP BY (basecube.alias0)"),
       hqlQuery);
   }
   //TODO union : Wrong fact picked
@@ -633,21 +634,22 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
         "select booleancut, round(sum(msr2)/1000), avg(msr13 + msr14) from basecube where " + TWO_DAYS_RANGE,
         conf);
     String expected1 =
-      getExpectedQuery(cubeName, "SELECT (((basecube.dim1) != 'x') and ((dim2chain.id) != 10)) as `alias0`, "
-          + "sum(0.0) as `alias1`, avg(((basecube.msr13) + (basecube.msr14))) as `alias2` FROM ", " JOIN " + getDbName()
-          + "c1_testdim2tbl dim2chain ON basecube.dim12 = " + " dim2chain.id and (dim2chain.dt = 'latest') ", null,
+      getExpectedQuery(cubeName, "SELECT (((basecube.dim1) != 'x') and ((dim2chain.id) != 10)) as `alias0`, " +
+          "sum(0.0) as `alias1`, avg(((basecube.msr13) + (basecube.msr14))) as `alias2` FROM ", " JOIN "
+          + getDbName() + "c1_testdim2tbl dim2chain ON basecube.dim12 = "
+          + " dim2chain.id and (dim2chain.dt = 'latest') ", null,
         " group by basecube.dim1 != 'x' AND dim2chain.id != 10", null,
         getWhereForHourly2days(cubeName, "C1_testfact3_raw_base"));
     String expected2 =
       getExpectedQuery(cubeName, "SELECT (((basecube.dim1) != 'x') and ((basecube.dim2) != 10)) as `alias0`, "
-          + "sum((basecube.msr2)) as `alias1`, sum(0.0) as `alias2` FROM ", null,
-        " group by basecube.dim1 != 'x' AND basecube.dim2 != 10",
+          + "sum((basecube.msr2)) as `alias1`, avg(0.0) as `alias2` FROM", null,
+          " group by basecube.dim1 != 'x' AND basecube.dim2 != 10",
         getWhereForHourly2days(cubeName, "C1_testfact1_raw_base"));
     compareContains(expected1, hqlQuery);
     compareContains(expected2, hqlQuery);
     assertTrue(hqlQuery.toLowerCase().startsWith("select (basecube.alias0) as `booleancut`, "
         + "round((sum((basecube.alias1)) / 1000)) as `round((sum(msr2) / 1000))`, "
-        + "avg((basecube.alias2)) as `avg((msr13 + msr14))` from "), hqlQuery);
+        + "avg((basecube.alias2)) as `avg((msr13 + msr14))` from"), hqlQuery);
     assertTrue(hqlQuery.contains("UNION ALL")
       && hqlQuery.endsWith("GROUP BY (basecube.alias0)"),
       hqlQuery);

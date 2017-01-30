@@ -69,7 +69,7 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
     hqlQuery = rewrite("select dim2big1, cubecity.name, max(msr3)," + " msr2 from testCube" + " where "
       + TWO_DAYS_RANGE_IT, conf);
     String expecteddim2big1WithAnotherTable = getExpectedQuery(cubeName,
-      "select (testcube.dim2big1) as `dim2big1`, max((testcube.msr3)) as `max(msr3)`, "
+      "SELECT (testcube.dim2big1) as `dim2big1`, (cubecity.name) as `name`, max((testcube.msr3)) as `max(msr3)`, "
           + "sum((testcube.msr2)) as `msr2` FROM ", " JOIN " + getDbName() + "c1_citytable cubecity "
             + "on testcube.cityid = cubecity.id and cubecity.dt = 'latest' ", null,
       " group by testcube.dim2big1, cubecity.name", null,
@@ -79,9 +79,9 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
 
     hqlQuery = rewrite("select dim2big2, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE_IT, conf);
     String expecteddim2big2 =
-      getExpectedQuery(cubeName, "select testcube.dim2big2, max(testcube.msr3), sum(testcube.msr2) FROM ", null,
-        " group by testcube.dim2big2", getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "it", "C2_summary4"),
-        null);
+      getExpectedQuery(cubeName, "SELECT (testcube.dim2big2) as `dim2big2`, max((testcube.msr3)) as `max(msr3)`, "
+          + "sum((testcube.msr2)) as `msr2` FROM ", null, " group by testcube.dim2big2",
+          getWhereForDailyAndHourly2daysWithTimeDim(cubeName, "it", "C2_summary4"), null);
     TestCubeRewriter.compareQueries(hqlQuery, expecteddim2big2);
 
     Configuration conf2 = new Configuration(conf);
@@ -90,7 +90,8 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
       + TWO_DAYS_RANGE_IT, conf2);
     String expected =
       getExpectedQuery(cubeName,
-        "select dim3chain.name, testcube.dim2big1, max(testcube.msr3), sum(testcube.msr2) FROM ", " JOIN "
+        "SELECT (dim3chain.name) as `name`, (testcube.dim2big1) as `dim2big1`, max((testcube.msr3)) as `max(msr3)`,"
+            + " sum((testcube.msr2)) as `msr2` FROM ", " JOIN "
           + getDbName() + "c2_testdim2tbl3 testdim2 " + "on testcube.dim2big1 = testdim2.bigid1" + " join "
           + getDbName() + "c2_testdim3tbl dim3chain on " + "testdim2.testdim3id = dim3chain.id", null,
         " group by dim3chain.name, (testcube.dim2big1)", null,
