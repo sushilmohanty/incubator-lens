@@ -20,6 +20,7 @@ package org.apache.lens.cube.parse;
 
 import static org.apache.lens.cube.metadata.MetastoreUtil.getFactOrDimtableStorageTableName;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE;
+import static org.apache.lens.cube.parse.CandidateTablePruneCause.missingPartitions;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.noCandidateStorages;
 import static org.apache.lens.cube.parse.StorageUtil.getFallbackRange;
 
@@ -154,6 +155,9 @@ class StorageTableResolver implements ContextRewriter {
       if (!isComplete) {
         candidateIterator.remove();
         // TODO union : Prune this candidate?
+        //  get all storage candidates for this candidate
+        //  get missing parts for a storage
+        //  if (missing parts not empty) ... cubeql.addStoragePruningMsg(stirage, missingPartitions(nonExistingParts));
         //
       }
     }
@@ -271,7 +275,6 @@ class StorageTableResolver implements ContextRewriter {
         it.remove();
         continue;
       }
-
       boolean valid = false;
       // There could be multiple causes for the same time range.
       Set<CandidateTablePruneCause.CandidateTablePruneCode> pruningCauses = new HashSet<>();
@@ -285,6 +288,7 @@ class StorageTableResolver implements ContextRewriter {
         boolean partitionColumnExists = client.partColExists(storageTable, range.getPartitionColumn());
         valid = partitionColumnExists;
         if (!partitionColumnExists) {
+          //TODO union : handle prune cause below case.
           String timeDim = cubeql.getBaseCube().getTimeDimOfPartitionColumn(range.getPartitionColumn());
           //          if (!sc.getFact().getColumns().contains(timeDim)) {
           //           // Not a time dimension so no fallback required.

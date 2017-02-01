@@ -112,6 +112,8 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
           continue;
         } else if (CandidateUtil.isPartiallyValidForTimeRanges(sc, cubeql.getTimeRanges())) {
           allCandidatesPartiallyValid.add(CandidateUtil.cloneStorageCandidate(sc));
+        } else {
+          //TODO union : Add cause
         }
       } else {
         throw new LensException("Not a StorageCandidate!!");

@@ -94,12 +94,21 @@ class CandidateTableResolver implements ContextRewriter {
     int aliasCounter = 0;
     if (cubeql.getCube() != null) {
       List<CubeFactTable> factTables = cubeql.getMetastoreClient().getAllFacts(cubeql.getCube());
+      // TODO union : Check for cube table partially valid, else remove it.
       if (factTables.isEmpty()) {
         throw new LensException(LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE.getLensErrorInfo(),
             cubeql.getCube().getName() + " does not have any facts");
       }
       for (CubeFactTable fact : factTables) {
         Iterator<String> it = fact.getStorages().iterator();
+        //TODO union : Add MISSING_STORAGES pruning message
+        /* Moved this from StorageTableResolver
+        if (fact.getUpdatePeriods().isEmpty()) {
+          cubeql.addFactPruningMsgs(fact, new CandidateTablePruneCause(CandidateTablePruneCode.MISSING_STORAGES));
+          i.remove();
+          continue;
+        }
+        */
         while(it.hasNext()) {
           StorageCandidate sc = new StorageCandidate(cubeql.getCube(), fact, it.next(), cubeql);
           cubeql.getCandidates().add(sc);

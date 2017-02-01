@@ -56,6 +56,28 @@ public class CandidateTablePruneCause {
         };
       }
     },
+
+
+    // Moved from Stoarge causes .
+    //The storage is removed as its not set in property "lens.cube.query.valid.fact.<fact_name>.storagetables"
+    INVALID_STORAGE("Invalid Storage"),
+    // storage table does not exist. Commented as its not being used anywhere in master.
+    // STOARGE_TABLE_DOES_NOT_EXIST("Storage table does not exist"),
+    // storage has no update periods queried. Commented as its not being used anywhere in master.
+    // MISSING_UPDATE_PERIODS("Storage has no update periods"),
+    // no candidate update periods, update period cause will have why each
+    // update period is not a candidate
+    NO_CANDIDATE_UPDATE_PERIODS("Storage update periods are not candidate"),
+    // storage table has no partitions queried
+    NO_PARTITIONS("Storage table has no partitions"),
+    // partition column does not exist
+    PART_COL_DOES_NOT_EXIST("Partition column does not exist"),
+    // Range is not supported by this storage table
+    TIME_RANGE_NOT_ANSWERABLE("Range not answerable"),
+    // storage is not supported by execution engine/driver
+    UNSUPPORTED_STORAGE("Unsupported Storage"),
+
+
     // least weight not satisfied
     MORE_WEIGHT("Picked table had more weight than minimum."),
     // partial data is enabled, another fact has more data.
@@ -77,8 +99,8 @@ public class CandidateTablePruneCause {
     // candidate table tries to get denormalized field from dimension and the
     // referred dimension is invalid.
     INVALID_DENORM_TABLE("Referred dimension is invalid in one of the candidate tables"),
-    // column not valid in cube table
-    COLUMN_NOT_VALID("Column not valid in cube table"),
+    // column not valid in cube table. Commented the below line as it's not being used in master.
+    //COLUMN_NOT_VALID("Column not valid in cube table"),
     // column not found in cube table
     COLUMN_NOT_FOUND("%s are not %s") {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
@@ -159,25 +181,7 @@ public class CandidateTablePruneCause {
         }
         return new String[]{incompletePartitions.toString()};
       }
-    },
-
-    // Moved from Stoarge causes
-    INVALID_STORAGE("Invalid Storage"),
-    // storage table does not exist
-    STOARGE_TABLE_DOES_NOT_EXIST("Storage table does not exist"),
-    // storage has no update periods queried
-    MISSING_UPDATE_PERIODS("Storage has no update periods"),
-    // no candidate update periods, update period cause will have why each
-    // update period is not a candidate
-    NO_CANDIDATE_UPDATE_PERIODS("Storage update periods are not candidate"),
-    // storage table has no partitions queried
-    NO_PARTITIONS("Storage table has no partitions"),
-    // partition column does not exist
-    PART_COL_DOES_NOT_EXIST("Partition column does not exist"),
-    // Range is not supported by this storage table
-    TIME_RANGE_NOT_ANSWERABLE("Range not answerable"),
-    // storage is not supported by execution engine
-    UNSUPPORTED_STORAGE("Unsupported Storage");
+    };
 
     String errorFormat;
 

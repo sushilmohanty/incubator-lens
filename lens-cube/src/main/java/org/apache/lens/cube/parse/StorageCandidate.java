@@ -212,6 +212,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   @Override
   public Date getStartTime() {
+    // TODO union : get storage stat time and take max out of it
     return fact.getStartTime();
   }
 

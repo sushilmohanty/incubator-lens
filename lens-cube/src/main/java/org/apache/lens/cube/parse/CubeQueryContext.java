@@ -1044,10 +1044,10 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     } else if (cand instanceof StorageCandidate) {
       StorageCandidate sc = (StorageCandidate) cand;
       sc.updateAnswerableSelectColumns(this);
-      return sc.toHQL();
+      return getInsertClause() + sc.toHQL();
     } else {
       UnionQueryWriter uqc = new UnionQueryWriter(cand, this);
-      return uqc.toHQL();
+      return getInsertClause() + uqc.toHQL();
     }
   }
 
@@ -1164,7 +1164,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   public String getInsertClause() {
     ASTNode destTree = qb.getParseInfo().getDestForClause(clauseName);
     if (destTree != null && ((ASTNode) (destTree.getChild(0))).getToken().getType() != TOK_TMP_FILE) {
-      return "INSERT OVERWRITE" + HQLParser.getString(destTree);
+      return "INSERT OVERWRITE " + HQLParser.getString(destTree) + " ";
     }
     return "";
   }

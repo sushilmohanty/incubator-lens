@@ -56,13 +56,14 @@ public class TestRewriterPlan extends TestQueryRewrite {
     RewriterPlan plan = new RewriterPlan(Collections.singleton(ctx));
     Assert.assertNotNull(plan);
     Assert.assertFalse(plan.getTablesQueried().isEmpty());
-    Assert.assertTrue(plan.getTablesQueried().contains("TestQueryRewrite.c2_testfact"));
-    Assert.assertEquals(plan.getTableWeights().get("TestQueryRewrite.c2_testfact"), 1.0);
+    Assert.assertTrue(plan.getTablesQueried().contains("c2_testfact"));
+    Assert.assertEquals(plan.getTableWeights().get("c2_testfact"), 1.0);
     Assert.assertFalse(plan.getPartitions().isEmpty());
-    Assert.assertFalse(plan.getPartitions().get("testfact").isEmpty());
-    Assert.assertTrue(plan.getPartitions().get("testfact").size() > 1);
+    Assert.assertFalse(plan.getPartitions().get("c2_testfact").isEmpty());
+    Assert.assertTrue(plan.getPartitions().get("c2_testfact").size() > 1);
   }
 
+  //TODO union : Wrong fact name picked. Check after MaxCoveringSetResolver changes.
   @Test
   public void testPlanExtractionForComplexQuery() throws Exception {
     // complex query
@@ -85,6 +86,7 @@ public class TestRewriterPlan extends TestQueryRewrite {
     Assert.assertEquals(plan.getPartitions().get("citytable").size(), 1);
   }
 
+  //TODO union : Wrong fact name picked. Check after MaxCoveringSetResolver changes.
   @Test
   public void testPlanExtractionForMultipleQueries() throws Exception {
     // simple query
