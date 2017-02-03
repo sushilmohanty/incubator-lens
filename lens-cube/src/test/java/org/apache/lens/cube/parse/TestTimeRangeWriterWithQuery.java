@@ -105,7 +105,7 @@ public class TestTimeRangeWriterWithQuery extends TestQueryRewrite {
       getDbName() + "c1_testfact",
       TestBetweenTimeRangeWriter.getBetweenClause(cubeName, "dt",
         getDateWithOffset(DAILY, -2), getDateWithOffset(DAILY, 0), CONTINUOUS.format()));
-    String expected = getExpectedQuery(cubeName, "select sum(testcube.msr2) FROM ", null, null, whereClauses);
+    String expected = getExpectedQuery(cubeName, "select sum(testcube.msr2) as `sum(msr2)` FROM ", null, null, whereClauses);
     System.out.println("HQL:" + hqlQuery);
     TestCubeRewriter.compareQueries(hqlQuery, expected);
 

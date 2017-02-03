@@ -118,7 +118,11 @@ public class UnionCandidate implements Candidate {
 
   @Override
   public Set<FactPartition> getParticipatingPartitions() {
-    return null;
+    Set<FactPartition> factPartitionSet = new HashSet<>();
+    for (Candidate c : childCandidates) {
+      factPartitionSet.addAll(c.getParticipatingPartitions());
+    }
+    return factPartitionSet;
   }
 
   @Override

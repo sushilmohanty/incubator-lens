@@ -296,8 +296,8 @@ public class TestExpressionResolver extends TestQueryRewrite {
   public void testMaterializedExpressionPickingExpression() throws Exception {
     // select with expression
     String hqlQuery = rewrite("select msr5 from testCube where " + TWO_DAYS_RANGE, conf);
-    String expected = getExpectedQuery(cubeName, "select sum(testCube.msr2) + max(testCube.msr3) FROM ", null, null,
-      getWhereForHourly2days(cubeName, "C1_testfact2"));
+    String expected = getExpectedQuery(cubeName, "select (sum(testCube.msr2) + max(testCube.msr3)) as `msr5` FROM ",
+      null, null, getWhereForHourly2days(cubeName, "C1_testfact2"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
 
