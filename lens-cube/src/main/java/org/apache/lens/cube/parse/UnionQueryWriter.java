@@ -55,13 +55,12 @@ public class UnionQueryWriter {
   }
 
   public String toHQL() throws LensException {
-    // Set the default value for the non queriable measures. If a measure is not
-    // answerable from a StorageCandidate set it as 0.0
+    StorageCandidate firstCandidate = storageCandidates.iterator().next();
+    // Set the default queryAST for the outer query
+    queryAst = DefaultQueryAST.fromStorageCandidate(firstCandidate,
+        firstCandidate.getQueryAst());
     updateAsts();
     updateInnterSelectASTWithDefault();
-    // Set the default queryAST for the outer query
-    queryAst = DefaultQueryAST.fromStorageCandidate(storageCandidates.iterator().next(),
-        storageCandidates.iterator().next().getQueryAst());
     processSelectAndHavingAST();
     processGroupByAST();
     processOrderByAST();
@@ -258,6 +257,12 @@ public class UnionQueryWriter {
     return false;
   }
 
+  /**
+   * Set the default value for the non queriable measures. If a measure is not
+   * answerable from a StorageCandidate set it as 0.0
+   *
+   * @throws LensException
+   */
   private void updateInnterSelectASTWithDefault() throws LensException {
     for (int i = 0; i < cubeql.getSelectPhrases().size(); i++) {
       SelectPhraseContext phrase = cubeql.getSelectPhrases().get(i);

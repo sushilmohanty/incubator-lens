@@ -957,7 +957,9 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     Map<StorageCandidate, Set<Dimension>> factDimMap = new HashMap<>();
     if (cand != null) {
       // copy ASTs for each storage candidate
-      for (StorageCandidate sc : CandidateUtil.getStorageCandidates(cand)) {
+      for (StorageCandidate sc : scSet) {
+        // Set the default queryAST for StorageCandidate and copy child ASTs from cubeql.
+        // Later in the rewrite flow each Storage candidate will modify them accordingly.
         sc.setQueryAst(DefaultQueryAST.fromStorageCandidate(sc, this));
         CandidateUtil.copyASTs(this, sc.getQueryAst());
         factDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
@@ -966,7 +968,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
         addRangeClauses(sc);
       }
     }
-
+    
     // pick dimension tables required during expression expansion for the picked fact and dimensions
     Set<Dimension> exprDimensions = new HashSet<>();
     if (!scSet.isEmpty()) {

@@ -14,9 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 public class CandidateCoveringSetsResolver implements ContextRewriter {
 
   private List<Candidate> finalCandidates = new ArrayList<>();
-  //private int unionCandidatealiasCounter = 0;
-  //private int joinCandidatealiasCounter = 0;
-
   public CandidateCoveringSetsResolver(Configuration conf) {
   }
 
@@ -33,46 +30,32 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     if (queriedMsrs.isEmpty()) {
       finalCandidates.addAll(cubeql.getCandidates());
     }
-
     List<Candidate> timeRangeCoveringSet = resolveTimeRangeCoveringFactSet(cubeql, queriedMsrs, qpcList);
     List<List<Candidate>> measureCoveringSets = resolveJoinCandidates(timeRangeCoveringSet, queriedMsrs, cubeql);
     updateFinalCandidates(measureCoveringSets, cubeql);
     log.info("Covering candidate sets :{}", finalCandidates);
-
-    String msrString = CandidateUtil.getColumns(queriedMsrs).toString();
-
-    if (!finalCandidates.isEmpty()) {
-      // update final candidate sets in CubeQueryContext
-      cubeql.getCandidates().clear();
-      cubeql.getCandidates().addAll(finalCandidates);
-    } else if (finalCandidates.isEmpty() && cubeql.getCandidateDims().isEmpty()) {
-      throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(), msrString);
-    }
+    cubeql.getCandidates().clear();
+    cubeql.getCandidates().addAll(finalCandidates);
   }
 
-  private Candidate createJoinCandidate(List<Candidate> ucs, CubeQueryContext cubeql) {
+  private Candidate createJoinCandidate(List<Candidate> childCandidates, CubeQueryContext cubeql) {
     Candidate cand;
-   // if (ucs.size() >= 2) {
-      Candidate first = ucs.get(0);
-      Candidate second = ucs.get(1);
-      //cand = new JoinCandidate(first, second, "jc" + joinCandidatealiasCounter++, cubeql);
-      cand = new JoinCandidate(first, second, cubeql);
-      for (int i = 2; i < ucs.size(); i++) {
-        cand = new JoinCandidate(cand, ucs.get(i), cubeql);
-      }
-    //} else {
-      //cand = ucs.get(0);
-    //}
+    Candidate first = childCandidates.get(0);
+    Candidate second = childCandidates.get(1);
+    cand = new JoinCandidate(first, second, cubeql);
+    for (int i = 2; i < childCandidates.size(); i++) {
+      cand = new JoinCandidate(cand, childCandidates.get(i), cubeql);
+    }
     return cand;
   }
 
-  private void updateFinalCandidates(List<List<Candidate>> jcs, CubeQueryContext cubeql) {
-    for (Iterator<List<Candidate>> itr = jcs.iterator(); itr.hasNext(); ) {
-      List<Candidate> jc = itr.next();
-      if (jc.size() == 1) {
-        finalCandidates.add(jc.iterator().next());
+  private void updateFinalCandidates(List<List<Candidate>> joinCandidates, CubeQueryContext cubeql) {
+    for (Iterator<List<Candidate>> itr = joinCandidates.iterator(); itr.hasNext(); ) {
+      List<Candidate> joinCandidate = itr.next();
+      if (joinCandidate.size() == 1) {
+        finalCandidates.add(joinCandidate.iterator().next());
       } else {
-        finalCandidates.add(createJoinCandidate(jc, cubeql));
+        finalCandidates.add(createJoinCandidate(joinCandidate, cubeql));
       }
     }
   }

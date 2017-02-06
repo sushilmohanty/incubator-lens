@@ -677,4 +677,5 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
     return ret;
   }
+
 }

@@ -5,6 +5,7 @@ import java.util.*;
 import org.antlr.runtime.CommonToken;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
+import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
@@ -305,5 +306,16 @@ public class CandidateUtil {
       }
     }
     return false;
+  }
+
+
+  public static Set<String> getMissingPartitions(StorageCandidate sc) {
+    Set<String> missingParts = new HashSet<>();
+    for (FactPartition part : sc.getParticipatingPartitions()) {
+      if (!part.isFound()) {
+        missingParts.add(part.toString()); //TODOD union . add approprite partition String
+      }
+    }
+    return missingParts;
   }
 }

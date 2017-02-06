@@ -23,7 +23,6 @@ public class JoinCandidate implements Candidate {
   public JoinCandidate(Candidate childCandidate1, Candidate childCandidate2, CubeQueryContext cubeql) {
     this.childCandidate1 = childCandidate1;
     this.childCandidate2 = childCandidate2;
-    //this.alias = alias;
     this.cubeql = cubeql;
   }
 

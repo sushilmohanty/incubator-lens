@@ -216,11 +216,11 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
       }
 
       if (entry.getKey().equals("summary4")) {
-        List<CandidateTablePruneCause> expectedPruneCauses = Arrays.asList(CandidateTablePruneCause.noCandidateStorages(
-          new HashMap<String, CandidateTablePruneCause.SkipStorageCause>() {
+        List<CandidateTablePruneCause> expectedPruneCauses =
+            Arrays.asList(CandidateTablePruneCause.noCandidateStoragesForDimtable(
+          new HashMap<String, CandidateTablePruneCode>() {
             {
-              put("C2", new CandidateTablePruneCause.SkipStorageCause(
-                CandidateTablePruneCause.SkipStorageCode.UNSUPPORTED));
+              put("C2", CandidateTablePruneCode.UNSUPPORTED_STORAGE);
             }
           }));
         Assert.assertTrue(entry.getValue().equals(expectedPruneCauses));

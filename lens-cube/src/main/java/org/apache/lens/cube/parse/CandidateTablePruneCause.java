@@ -76,8 +76,7 @@ public class CandidateTablePruneCause {
     TIME_RANGE_NOT_ANSWERABLE("Range not answerable"),
     // storage is not supported by execution engine/driver
     UNSUPPORTED_STORAGE("Unsupported Storage"),
-
-
+    
     // least weight not satisfied
     MORE_WEIGHT("Picked table had more weight than minimum."),
     // partial data is enabled, another fact has more data.
@@ -202,28 +201,6 @@ public class CandidateTablePruneCause {
     }
   }
 
-  //TODO union : Remove this enum. All values moved to CandidateTablePruneCode
-  @Deprecated
-  public enum SkipStorageCode {
-    // invalid storage table
-    INVALID,
-    // storage table does not exist
-    TABLE_NOT_EXIST,
-    // storage has no update periods queried
-    MISSING_UPDATE_PERIODS,
-    // no candidate update periods, update period cause will have why each
-    // update period is not a candidate
-    NO_CANDIDATE_PERIODS,
-    // storage table has no partitions queried
-    NO_PARTITIONS,
-    // partition column does not exist
-    PART_COL_DOES_NOT_EXIST,
-    // Range is not supported by this storage table
-    RANGE_NOT_ANSWERABLE,
-    // storage is not supported by execution engine
-    UNSUPPORTED
-  }
-
   public enum SkipUpdatePeriodCode {
     // invalid update period
     INVALID,
@@ -231,46 +208,12 @@ public class CandidateTablePruneCause {
     QUERY_INTERVAL_BIGGER
   }
 
-  @JsonWriteNullProperties(false)
-  @Data
-  @NoArgsConstructor
-  //TODO union:deprecate this sub class
-  @Deprecated
-  public static class SkipStorageCause {
-    private SkipStorageCode cause;
-    // update period to skip cause
-    private Map<String, SkipUpdatePeriodCode> updatePeriodRejectionCause;
-
-    private List<String> nonExistantPartCols;
-
-    @Deprecated
-    public SkipStorageCause(SkipStorageCode cause) {
-      this.cause = cause;
-    }
-
-    @Deprecated
-    public static SkipStorageCause partColDoesNotExist(String... partCols) {
-      SkipStorageCause ret = new SkipStorageCause(SkipStorageCode.PART_COL_DOES_NOT_EXIST);
-      ret.nonExistantPartCols = new ArrayList<String>();
-      for (String s : partCols) {
-        ret.nonExistantPartCols.add(s);
-      }
-      return ret;
-    }
-
-    @Deprecated
-    public static SkipStorageCause noCandidateUpdatePeriod(Map<String, SkipUpdatePeriodCode> causes) {
-      SkipStorageCause ret = new SkipStorageCause(SkipStorageCode.NO_CANDIDATE_PERIODS);
-      ret.updatePeriodRejectionCause = causes;
-      return ret;
-    }
-  }
+  // Used for Test cases only.
+  // storage to skip storage cause for  dim table
+  private Map<String, CandidateTablePruneCode> dimStoragePruningCauses;
 
   // cause for cube table
   private CandidateTablePruneCode cause;
-  // storage to skip storage cause
-  private Map<String, SkipStorageCause> storageCauses;
-
   // populated only incase of missing partitions cause
   private Set<String> missingPartitions;
   // populated only incase of incomplete partitions cause
@@ -376,22 +319,26 @@ public class CandidateTablePruneCause {
     return cause;
   }
 
- //TDOO union : Remove this method
- @Deprecated
- public static CandidateTablePruneCause noCandidateStorages(Map<String, SkipStorageCause> storageCauses) {
-    CandidateTablePruneCause cause = new CandidateTablePruneCause(NO_CANDIDATE_STORAGES);
-    cause.setStorageCauses(new HashMap<String, SkipStorageCause>());
-    for (Map.Entry<String, SkipStorageCause> entry : storageCauses.entrySet()) {
-      String key = entry.getKey();
-      key = key.substring(0, (key.indexOf("_") + key.length() + 1) % (key.length() + 1)); // extract the storage part
-      cause.getStorageCauses().put(key.toLowerCase(), entry.getValue());
-    }
-    return cause;
-  }
-
   public static CandidateTablePruneCause missingDefaultAggregate(String... names) {
     CandidateTablePruneCause cause = new CandidateTablePruneCause(MISSING_DEFAULT_AGGREGATE);
     cause.setColumnsMissingDefaultAggregate(Lists.newArrayList(names));
+    return cause;
+  }
+
+  /**
+   * This factroy menthod can be used when a Dim Table is pruned because all its Storages are pruned.
+   * @param dimStoragePruningCauses
+   * @return
+   */
+  public static CandidateTablePruneCause noCandidateStoragesForDimtable(
+      Map<String, CandidateTablePruneCode> dimStoragePruningCauses) {
+    CandidateTablePruneCause cause = new CandidateTablePruneCause(NO_CANDIDATE_STORAGES);
+    cause.setDimStoragePruningCauses(new HashMap<String, CandidateTablePruneCode>());
+    for (Map.Entry<String, CandidateTablePruneCode> entry : dimStoragePruningCauses.entrySet()) {
+      String key = entry.getKey();
+      key = key.substring(0, (key.indexOf("_") + key.length() + 1) % (key.length() + 1)); // extract the storage part
+      cause.getDimStoragePruningCauses().put(key.toLowerCase(), entry.getValue());
+    }
     return cause;
   }
 

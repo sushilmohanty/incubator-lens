@@ -325,10 +325,10 @@ class CandidateTableResolver implements ContextRewriter {
         } else {
           throw new LensException("Not a storage candidate!!");
         }
-        if (cubeql.getCandidates().size() == 0) {
-          throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(),
-              getColumns(cubeql.getQueriedPhrases()).toString());
-        }
+      }
+      if (cubeql.getCandidates().size() == 0) {
+        throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(),
+            getColumns(cubeql.getQueriedPhrases()).toString());
       }
     }
   }
@@ -438,8 +438,6 @@ class CandidateTableResolver implements ContextRewriter {
       for (Iterator<StorageCandidate> i =
            CandidateUtil.getStorageCandidates(cubeql.getCandidates()).iterator(); i.hasNext();) {
         StorageCandidate sc = i.next();
-        //CubeFactTable factTable =  i.next().getFact();
-
         // for each join path check for columns involved in path
         for (Map.Entry<Aliased<Dimension>, Map<AbstractCubeTable, List<String>>> joincolumnsEntry : cubeql
           .getAutoJoinCtx()
