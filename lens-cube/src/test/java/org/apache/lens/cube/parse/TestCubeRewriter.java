@@ -24,7 +24,6 @@ import static org.apache.lens.cube.metadata.UpdatePeriod.*;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.*;
 import static org.apache.lens.cube.parse.CubeQueryConfUtil.*;
 import static org.apache.lens.cube.parse.CubeTestSetup.*;
-
 import static org.testng.Assert.*;
 
 import java.text.DateFormat;
@@ -153,9 +152,9 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.set(DRIVER_SUPPORTED_STORAGES, "C1,C2,C4");
     CubeQueryContext cubeQueryContext =
       rewriteCtx("select SUM(msr2) from testCube where " + THIS_YEAR_RANGE, conf);
-    PruneCauses<CubeFactTable> pruneCause = cubeQueryContext.getFactPruningMsgs();
+    PruneCauses<StorageCandidate> pruneCause = cubeQueryContext.getStoragePruningMsgs();
     int lessDataCauses = 0;
-    for (Map.Entry<CubeFactTable, List<CandidateTablePruneCause>> entry : pruneCause.entrySet()) {
+    for (Map.Entry<StorageCandidate, List<CandidateTablePruneCause>> entry : pruneCause.entrySet()) {
       for (CandidateTablePruneCause cause : entry.getValue()) {
         if (cause.getCause().equals(LESS_DATA)) {
           lessDataCauses++;
@@ -389,7 +388,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.set(DRIVER_SUPPORTED_STORAGES, "C1");
     hqlQuery = rewrite("select SUM(msr2) from testCube" + " where " + TWO_DAYS_RANGE, conf);
     expected = getExpectedQuery(TEST_CUBE_NAME,
-      "select sum(testcube.msr2) as `sum(msr2)` FROM ", null, null, getWhereForHourly2days("c1_testfact"));
+      "select sum(testcube.msr2) as `sum(msr2)` FROM ", null, null, getWhereForHourly2days("c1_testfact2"));
     compareQueries(hqlQuery, expected);
   }
 
@@ -964,7 +963,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     Configuration conf = getConf();
     conf.setStrings(CubeQueryConfUtil.COMPLETENESS_CHECK_PART_COL, "dt");
     String hqlQuery = rewrite("select SUM(msr1) from basecube where " + TWO_DAYS_RANGE, conf);
-    String expected = getExpectedQuery("basecube", "select sum(basecube.msr1) FROM ", null, null,
+    String expected = getExpectedQuery("basecube", "select sum(basecube.msr1)  as `sum(msr1)` FROM ", null, null,
             getWhereForHourly2days("basecube", "c1_testfact1_raw_base"));
     compareQueries(hqlQuery, expected);
   }
@@ -978,7 +977,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     Configuration conf = getConf();
     conf.setStrings(CubeQueryConfUtil.COMPLETENESS_CHECK_PART_COL, "dt");
     String hqlQuery = rewrite("select SUM(msr9) from basecube where " + TWO_DAYS_RANGE, conf);
-    String expected = getExpectedQuery("basecube", "select sum(basecube.msr9) FROM ", null, null,
+    String expected = getExpectedQuery("basecube", "select sum(basecube.msr9) as `sum(msr9)` FROM ", null, null,
             getWhereForHourly2days("basecube", "c1_testfact5_raw_base"));
     compareQueries(hqlQuery, expected);
   }

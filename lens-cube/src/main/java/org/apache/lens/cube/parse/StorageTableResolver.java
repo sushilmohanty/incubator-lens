@@ -28,8 +28,6 @@ package org.apache.lens.cube.parse;
 //import static org.apache.lens.cube.parse.StorageUtil.getFallbackRange;
 
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.apache.lens.cube.metadata.*;
@@ -39,7 +37,6 @@ import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.ReflectionUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,15 +52,10 @@ class StorageTableResolver implements ContextRewriter {
   private final boolean allStoragesSupported;
   private final boolean failOnPartialData;
   private final List<String> validDimTables;
-  private final Map<CubeFactTable, Map<UpdatePeriod, Set<String>>> validStorageMap = new HashMap<>();
   private final UpdatePeriod maxInterval;
   // TODO union : Remove this. All partitions are stored in the StorageCandidate.
   private final Map<String, Set<String>> nonExistingPartitions = new HashMap<>();
   CubeMetastoreClient client;
-  Map<String, List<String>> storagePartMap = new HashMap<String, List<String>>();
-  private String processTimePartCol = null;
-  private TimeRangeWriter rangeWriter;
-  private DateFormat partWhereClauseFormat = null;
   private PHASE phase;
   // TODO union : we do not need this. Remove the storage candidate
   //private HashMap<CubeFactTable, Map<String, SkipStorageCause>> skipStorageCausesPerFact;
@@ -77,24 +69,14 @@ class StorageTableResolver implements ContextRewriter {
     this.failOnPartialData = conf.getBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, false);
     String str = conf.get(CubeQueryConfUtil.VALID_STORAGE_DIM_TABLES);
     validDimTables = StringUtils.isBlank(str) ? null : Arrays.asList(StringUtils.split(str.toLowerCase(), ","));
-    this.processTimePartCol = conf.get(CubeQueryConfUtil.PROCESS_TIME_PART_COL);
     String maxIntervalStr = conf.get(CubeQueryConfUtil.QUERY_MAX_INTERVAL);
     if (maxIntervalStr != null) {
       this.maxInterval = UpdatePeriod.valueOf(maxIntervalStr);
     } else {
       this.maxInterval = null;
     }
-    rangeWriter = ReflectionUtils.newInstance(conf
-      .getClass(CubeQueryConfUtil.TIME_RANGE_WRITER_CLASS, CubeQueryConfUtil.DEFAULT_TIME_RANGE_WRITER,
-        TimeRangeWriter.class), this.conf);
     String formatStr = conf.get(CubeQueryConfUtil.PART_WHERE_CLAUSE_DATE_FORMAT);
-    if (formatStr != null) {
-      partWhereClauseFormat = new SimpleDateFormat(formatStr);
-    }
     this.phase = PHASE.first();
-    completenessThreshold = conf
-      .getFloat(CubeQueryConfUtil.COMPLETENESS_THRESHOLD, CubeQueryConfUtil.DEFAULT_COMPLETENESS_THRESHOLD);
-    completenessPartCol = conf.get(CubeQueryConfUtil.COMPLETENESS_CHECK_PART_COL);
   }
 
   private List<String> getSupportedStorages(Configuration conf) {

@@ -968,7 +968,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
         addRangeClauses(sc);
       }
     }
-    
+
     // pick dimension tables required during expression expansion for the picked fact and dimensions
     Set<Dimension> exprDimensions = new HashSet<>();
     if (!scSet.isEmpty()) {

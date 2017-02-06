@@ -78,9 +78,15 @@ public class JoinCandidate implements Candidate {
         && this.childCandidate2.evaluateCompleteness(timeRange, parentTimeRange, failOnPartialData);
   }
 
+  /**
+   * @return all the partitions from the children
+   */
   @Override
   public Set<FactPartition> getParticipatingPartitions() {
-    return null;
+    Set<FactPartition> factPartitionsSet = new HashSet<>();
+    factPartitionsSet.addAll(childCandidate1.getParticipatingPartitions());
+    factPartitionsSet.addAll(childCandidate2.getParticipatingPartitions());
+    return factPartitionsSet;
   }
 
   @Override
