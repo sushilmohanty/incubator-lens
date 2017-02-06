@@ -19,16 +19,18 @@
 
 package org.apache.lens.cube.parse;
 
-import static org.apache.lens.cube.metadata.DateFactory.*;
+import static org.apache.lens.cube.metadata.DateFactory.TWO_DAYS_RANGE;
 import static org.apache.lens.cube.parse.CubeTestSetup.*;
 import static org.apache.lens.cube.parse.TestCubeRewriter.compareQueries;
 
-import static org.testng.Assert.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.lens.cube.error.LensCubeErrorCode;
-import org.apache.lens.cube.metadata.*;
+import org.apache.lens.cube.metadata.CubeMetastoreClient;
+import org.apache.lens.cube.metadata.Dimension;
 import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.lang.StringUtils;
@@ -193,7 +195,7 @@ public class TestJoinResolver extends TestQueryRewrite {
     tConf.set(CubeQueryConfUtil.JOIN_TYPE_KEY, "FULLOUTER");
     hqlQuery = rewrite(query, tConf);
     // Check that aliases are preserved in the join clause
-    expected = getExpectedQuery("testcube", "select cubecity.name, sum(testcube.msr2) FROM ",
+    expected = getExpectedQuery("testcube", "select cubecity.name as `name`, sum(testcube.msr2) as `msr2` FROM ",
       " full outer join " + getDbName()
         + "c1_citytable cubecity ON testcube.cityid = cubecity.id and (cubecity.dt = 'latest')",
       null, " group by cubecity.name", null, getWhereForHourly2days("testcube", "c1_testfact2"));
@@ -202,7 +204,7 @@ public class TestJoinResolver extends TestQueryRewrite {
     tConf.set(CubeQueryConfUtil.JOIN_TYPE_KEY, "RIGHTOUTER");
     hqlQuery = rewrite(query, tConf);
     // Check that aliases are preserved in the join clause
-    expected = getExpectedQuery("testcube", "select cubecity.name, sum(testcube.msr2) FROM ",
+    expected = getExpectedQuery("testcube", "select cubecity.name as `name`, sum(testcube.msr2) as `msr2` FROM ",
       " right outer join " + getDbName()
         + "c1_citytable cubecity ON testcube.cityid = cubecity.id",
       null, " and (cubecity.dt = 'latest') group by cubecity.name", null,
@@ -218,7 +220,7 @@ public class TestJoinResolver extends TestQueryRewrite {
     String hqlQuery = rewrite(query, tConf);
     // Check that aliases are preserved in the join clause
     // Conf will be ignored in this case since user has specified the join condition
-    String expected = getExpectedQuery("t", "select c.name, sum(t.msr2) FROM ",
+    String expected = getExpectedQuery("t", "select c.name as `name`, sum(t.msr2) as `msr2` FROM ",
       " inner join " + getDbName() + "c1_citytable c ON t.cityid = c.id and c.dt = 'latest'",
       null, " group by c.name", null, getWhereForHourly2days("t", "c1_testfact2"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
@@ -231,7 +233,7 @@ public class TestJoinResolver extends TestQueryRewrite {
     String query = "select cubecity.name, t.msr2 FROM testCube t WHERE " + TWO_DAYS_RANGE;
     String hqlQuery = rewrite(query, tConf);
     // Check that aliases are preserved in the join clause
-    String expected = getExpectedQuery("t", "select cubecity.name, sum(t.msr2) FROM ",
+    String expected = getExpectedQuery("t", "select cubecity.name as `name`, sum(t.msr2) as `msr2` FROM ",
       " left outer join " + getDbName()
         + "c1_citytable cubecity ON t.cityid = cubecity.id and (cubecity.dt = 'latest')",
       null, " group by cubecity.name", null, getWhereForHourly2days("t", "c1_testfact2"));

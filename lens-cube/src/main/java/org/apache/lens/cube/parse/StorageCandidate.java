@@ -40,7 +40,6 @@ import org.apache.hadoop.util.ReflectionUtils;
 
 import org.antlr.runtime.CommonToken;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.Setter;
@@ -68,7 +67,8 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Getter
   private TreeSet<UpdatePeriod> validUpdatePeriods = new TreeSet<>();
   private Configuration conf = null;
-  private Map<String, Map<String, Float>> incompleteMeasureData = new HashMap<>();
+  @Getter
+  private Map<String, Map<String, Float>> dataCompletenessMap = new HashMap<>();
   private SimpleDateFormat partWhereClauseFormat = null;
   /**
    * Participating fact, storage and dimensions for this StorageCandidate
@@ -115,6 +115,8 @@ public class StorageCandidate implements Candidate, CandidateTable {
    * Non existing partitions
    */
   private Set<String> nonExistingPartitions = new HashSet<>();
+  @Getter
+  private int numQueriedParts = 0;
 
   public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName, CubeQueryContext cubeql) {
     if ((cube == null) || (fact == null) || (storageName == null)) {
@@ -427,9 +429,9 @@ public class StorageCandidate implements Candidate, CandidateTable {
     // Check the measure tags.
     if (!evaluateMeasuresCompleteness(timeRange)) {
       log
-        .info("Fact table:{} has partitions with incomplete data: {} for given ranges: {}", fact, incompleteMeasureData,
+        .info("Fact table:{} has partitions with incomplete data: {} for given ranges: {}", fact, dataCompletenessMap,
           cubeql.getTimeRanges());
-      cubeql.addStoragePruningMsg(this, incompletePartitions(incompleteMeasureData));
+      cubeql.addStoragePruningMsg(this, incompletePartitions(dataCompletenessMap));
       if (failOnPartialData) {
         return false;
       }
@@ -480,6 +482,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
         break;
       }
     }
+    numQueriedParts += rangeParts.size();
     if (!unsupportedTimeDims.isEmpty()) {
       log.info("Not considering fact table:{} as it doesn't support time dimensions: {}", this.getFact(),
         unsupportedTimeDims);
@@ -550,10 +553,10 @@ public class StorageCandidate implements Candidate, CandidateTable {
             log.info("Completeness for the measure_tag {} is {}, threshold: {}, for the hour {}", tag,
               completenessResult.getValue(), completenessThreshold, formatter.format(completenessResult.getKey()));
             String measureorExprFromTag = tagToMeasureOrExprMap.get(tag);
-            Map<String, Float> incompletePartition = incompleteMeasureData.get(measureorExprFromTag);
+            Map<String, Float> incompletePartition = dataCompletenessMap.get(measureorExprFromTag);
             if (incompletePartition == null) {
               incompletePartition = new HashMap<>();
-              incompleteMeasureData.put(measureorExprFromTag, incompletePartition);
+              dataCompletenessMap.put(measureorExprFromTag, incompletePartition);
             }
             incompletePartition.put(formatter.format(completenessResult.getKey()), completenessResult.getValue());
             isDataComplete = true;
@@ -669,9 +672,14 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
   }
 
-  protected String getAliasForTable(String alias) {
+  public String getAliasForTable(String alias) {
     String database = SessionState.get().getCurrentDatabase();
-    String ret = name + " " + alias;
+    String ret;
+    if (alias == null || alias.isEmpty()) {
+      ret = name;
+    } else {
+      ret = name + " " + alias;
+    }
     if (StringUtils.isNotBlank(database) && !"default".equalsIgnoreCase(database)) {
       ret = database + "." + ret;
     }
