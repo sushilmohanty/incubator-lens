@@ -101,7 +101,6 @@ class QueriedPhraseContext extends TracksQueriedColumns implements TrackQueriedC
   }
 
   /**
-   * TODO union: change CandidateFact to StorageCandidate. Let the callers typecast and send for now.
    * @param cubeQl
    * @param sc
    * @return

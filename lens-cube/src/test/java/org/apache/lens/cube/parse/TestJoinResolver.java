@@ -186,8 +186,8 @@ public class TestJoinResolver extends TestQueryRewrite {
     String query = "select cubecity.name, msr2 FROM testCube WHERE " + TWO_DAYS_RANGE;
     String hqlQuery = rewrite(query, tConf);
     // Check that aliases are preserved in the join clause
-    String expected = getExpectedQuery("testcube", "SELECT (cubecity.name) as `name`, sum((testcube.msr2)) " +
-        "as `msr2` FROM ", " left outer join " + getDbName()
+    String expected = getExpectedQuery("testcube", "SELECT (cubecity.name) as `name`, sum((testcube.msr2)) "
+        + "as `msr2` FROM ", " left outer join " + getDbName()
         + "c1_citytable cubecity ON testcube.cityid = cubecity.id and (cubecity.dt = 'latest')",
       null, " group by cubecity.name", null, getWhereForHourly2days("testcube", "c1_testfact2"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);

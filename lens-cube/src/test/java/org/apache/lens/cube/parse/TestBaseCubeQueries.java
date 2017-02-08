@@ -85,60 +85,61 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
   @Test
   public void testColumnErrors() throws Exception {
     LensException e;
-
-//    e = getLensExceptionInRewrite("select msr11 + msr2 from basecube" + " where " + TWO_DAYS_RANGE, conf);
-//    e.buildLensErrorResponse(new ErrorCollectionFactory().createErrorCollection(), null, "testid");
-//    assertEquals(e.getErrorCode(),
-//      LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo().getErrorCode());
-//    assertTrue(e.getMessage().contains("msr11"), e.getMessage());
-//    assertTrue(e.getMessage().contains("msr2"), e.getMessage());
+    e = getLensExceptionInRewrite("select msr11 + msr2 from basecube" + " where " + TWO_DAYS_RANGE, conf);
+    e.buildLensErrorResponse(new ErrorCollectionFactory().createErrorCollection(), null, "testid");
+    assertEquals(e.getErrorCode(),
+      LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo().getErrorCode());
+    assertTrue(e.getMessage().contains("msr11"), e.getMessage());
+    assertTrue(e.getMessage().contains("msr2"), e.getMessage());
     // no fact has the all the dimensions queried
     e = getLensExceptionInRewrite("select dim1, test_time_dim, msr3, msr13 from basecube where "
       + TWO_DAYS_RANGE, conf);
     assertEquals(e.getErrorCode(),
         LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE.getLensErrorInfo().getErrorCode());
-    // TODO union :  Commented below line. With the new changes We are keeping only one
-    // TODO union : datastrucucture for candidates. Hence pruning candidateSet using Candidate is not happening.
-    // TODO union : Exception is thrown in later part of rewrite.
     NoCandidateFactAvailableException ne = (NoCandidateFactAvailableException) e;
-    PruneCauses.BriefAndDetailedError pruneCauses = ne.getJsonMessage();
-    String regexp = String.format(CandidateTablePruneCause.CandidateTablePruneCode.COLUMN_NOT_FOUND.errorFormat,
-      "Column Sets: (.*?)", "queriable together");
-    Matcher matcher = Pattern.compile(regexp).matcher(pruneCauses.getBrief());
-    assertTrue(matcher.matches(), pruneCauses.getBrief());
-    assertEquals(matcher.groupCount(), 1);
-    String columnSetsStr = matcher.group(1);
-    assertNotEquals(columnSetsStr.indexOf("test_time_dim"), -1, columnSetsStr);
-    assertNotEquals(columnSetsStr.indexOf("msr3, msr13"), -1);
-
-    /**
-     * Verifying the BriefAndDetailedError:
-     * 1. Check for missing columns(COLUMN_NOT_FOUND)
-     *    and check the respective tables for each COLUMN_NOT_FOUND
-     * 2. check for ELEMENT_IN_SET_PRUNED
-     *
-     */
-    boolean columnNotFound = false;
-    List<String> testTimeDimFactTables = Arrays.asList("c1_testfact3_raw_base",
-        "c1_testfact5_base", "c1_testfact6_base", "c1_testfact1_raw_base",
-        "c1_testfact4_raw_base", "c1_testfact3_base");
-    List<String> factTablesForMeasures = Arrays.asList(
-        "c2_testfact2_base","c2_testfact_deprecated","c1_union_join_ctx_fact1","c1_union_join_ctx_fact2",
-        "c1_union_join_ctx_fact3","c1_union_join_ctx_fact5","c1_testfact2_base",
-        "c1_union_join_ctx_fact6","c1_testfact2_raw_base","c1_testfact5_raw_base",
-        "c3_testfact_deprecated","c1_testfact_deprecated","c4_testfact_deprecated",
-        "c3_testfact2_base","c4_testfact2_base");
-    for (Map.Entry<String, List<CandidateTablePruneCause>> entry : pruneCauses.getDetails().entrySet()) {
-      if (entry.getValue().contains(CandidateTablePruneCause.columnNotFound("test_time_dim"))) {
-        columnNotFound = true;
-        compareStrings(testTimeDimFactTables, entry);
-      }
-      if (entry.getValue().contains(CandidateTablePruneCause.columnNotFound("msr3", "msr13"))) {
-        columnNotFound = true;
-        compareStrings(factTablesForMeasures, entry);
-      }
-    }
-    Assert.assertTrue(columnNotFound);
+    //ne.briefAndDetailedError.getBriefCause()
+    //ne.getJsonMessage().brief
+    assertTrue(CandidateTablePruneCode.UNSUPPORTED_STORAGE.errorFormat.equals(ne.getJsonMessage().getBrief()));
+//    PruneCauses.BriefAndDetailedError pruneCauses = ne.getJsonMessage();
+//    String regexp = String.format(CandidateTablePruneCode.UNSUPPORTED_STORAGE.errorFormat,
+//      "Column Sets: (.*?)", "queriable together");
+//    Matcher matcher = Pattern.compile(regexp).matcher(pruneCauses.getBrief());
+//    assertTrue(matcher.matches(), pruneCauses.getBrief());
+//    assertEquals(matcher.groupCount(), 1);
+//    String columnSetsStr = matcher.group(1);
+//    assertNotEquals(columnSetsStr.indexOf("test_time_dim"), -1, columnSetsStr);
+//    assertNotEquals(columnSetsStr.indexOf("msr3, msr13"), -1);
+//
+//    /**
+//     * Verifying the BriefAndDetailedError:
+//     * 1. Check for missing columns(COLUMN_NOT_FOUND)
+//     *    and check the respective tables for each COLUMN_NOT_FOUND
+//     * 2. check for ELEMENT_IN_SET_PRUNED
+//     *
+//     */
+//    boolean columnNotFound = false;
+//    List<String> testTimeDimFactTables = Arrays.asList("c1_testfact3_raw_base",
+//        "c1_testfact5_base", "c1_testfact6_base", "c1_testfact1_raw_base",
+//        "c1_testfact4_raw_base", "c1_testfact3_base");
+//    List<String> factTablesForMeasures = Arrays.asList(
+//        "c2_testfact2_base","c2_testfact_deprecated","c1_union_join_ctx_fact1","c1_union_join_ctx_fact2",
+//        "c1_union_join_ctx_fact3","c1_union_join_ctx_fact5","c1_testfact2_base",
+//        "c1_union_join_ctx_fact6","c1_testfact2_raw_base","c1_testfact5_raw_base",
+//        "c3_testfact_deprecated","c1_testfact_deprecated","c4_testfact_deprecated",
+//        "c3_testfact2_base","c4_testfact2_base");
+//    for (Map.Entry<String, List<CandidateTablePruneCause>> entry : pruneCauses.getDetails().entrySet()) {
+//      if (entry.getValue().contains(CandidateTablePruneCause.columnNotFound(
+//          CandidateTablePruneCode.COLUMN_NOT_FOUND, "test_time_dim"))) {
+//        columnNotFound = true;
+//        compareStrings(testTimeDimFactTables, entry);
+//      }
+//      if (entry.getValue().contains(CandidateTablePruneCause.columnNotFound(
+//          CandidateTablePruneCode.COLUMN_NOT_FOUND, "msr3", "msr13"))) {
+//        columnNotFound = true;
+//        compareStrings(factTablesForMeasures, entry);
+//      }
+//    }
+//    Assert.assertTrue(columnNotFound);
  //   assertEquals(pruneCauses.getDetails().get("testfact1_base"),
  //     Arrays.asList(new CandidateTablePruneCause(CandidateTablePruneCode.ELEMENT_IN_SET_PRUNED)));
   }
@@ -190,72 +191,65 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
           " group by basecube.dim1", getWhereForDailyAndHourly2days(cubeName, "C1_testFact2_BASE"));
     compareQueries(hqlQuery, expected);
   }
-  // TODO union : Fix after CandidateFact deleted
-  /*
+
   @Test
   public void testMultiFactQueryWithNoDimensionsSelected() throws Exception {
     CubeQueryContext ctx = rewriteCtx("select roundedmsr2, msr12 from basecube" + " where " + TWO_DAYS_RANGE, conf);
-    Set<String> candidateFacts = new HashSet<String>();
-    for (CandidateFact cfact : ctx.getCandidateFacts()) {
-      candidateFacts.add(cfact.getName().toLowerCase());
+    Set<String> storageCandidates = new HashSet<String>();
+    Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(ctx.getCandidates());
+    for (StorageCandidate sc : scSet) {
+      storageCandidates.add(sc.getName());
     }
-    Assert.assertTrue(candidateFacts.contains("testfact1_base"));
-    Assert.assertTrue(candidateFacts.contains("testfact2_base"));
+    Assert.assertTrue(storageCandidates.contains("c1_testfact1_base"));
+    Assert.assertTrue(storageCandidates.contains("c1_testfact2_base"));
     String hqlQuery = ctx.toHQL();
     String expected1 =
-      getExpectedQuery(cubeName, "select sum(basecube.msr12) as `msr12` FROM ", null,
+      getExpectedQuery(cubeName, "SELECT sum(0.0) as `alias0`, sum((basecube.msr12)) as `alias1` FROM ", null,
         null, getWhereForDailyAndHourly2days(cubeName, "C1_testFact2_BASE"));
     String expected2 =
-      getExpectedQuery(cubeName, "select round(sum(basecube.msr2)/1000) as `roundedmsr2` FROM ", null,
+      getExpectedQuery(cubeName, "SELECT sum((basecube.msr2)) as `alias0`, sum(0.0) as `alias1` FROM ", null,
         null, getWhereForDailyAndHourly2days(cubeName, "C1_testFact1_BASE"));
     compareContains(expected1, hqlQuery);
     compareContains(expected2, hqlQuery);
     String lower = hqlQuery.toLowerCase();
-    assertTrue(lower.startsWith("select mq2.roundedmsr2 roundedmsr2, mq1.msr12 msr12 from ")
-      || lower.startsWith("select mq1.roundedmsr2 roundedmsr2, mq2.msr12 msr12 from "), hqlQuery);
-    assertTrue(lower.contains("mq1 full outer join") && lower.endsWith("mq2"), hqlQuery);
-    assertFalse(lower.contains("mq2 on"), hqlQuery);
-    assertFalse(lower.contains("<=>"), hqlQuery);
+    assertTrue(lower.startsWith("select round((sum((basecube.alias0)) / 1000)) as `roundedmsr2`, " +
+        "sum((basecube.alias1)) as `msr12` from "), hqlQuery);
+    assertFalse(lower.contains("UNION ALL"), hqlQuery);
   }
-*/
 
-  // TODO union : Fix after CandidateFact deleted
-  /*
   @Test
   public void testMoreThanTwoFactQueryWithNoDimensionsSelected() throws Exception {
     CubeQueryContext ctx = rewriteCtx("select roundedmsr2, msr14, msr12 from basecube" + " where " + TWO_DAYS_RANGE,
       conf);
-    Set<String> candidateFacts = new HashSet<String>();
-    for (CandidateFact cfact : ctx.getCandidateFacts()) {
-      candidateFacts.add(cfact.getName().toLowerCase());
+    Set<String> storageCandidates = new HashSet<String>();
+    Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(ctx.getCandidates());
+    for (StorageCandidate sc : scSet) {
+      storageCandidates.add(sc.getName());
     }
-    Assert.assertEquals(candidateFacts.size(), 3);
-    Assert.assertTrue(candidateFacts.contains("testfact1_base"));
-    Assert.assertTrue(candidateFacts.contains("testfact2_base"));
-    Assert.assertTrue(candidateFacts.contains("testfact3_base"));
+    Assert.assertEquals(storageCandidates.size(), 3);
+    Assert.assertTrue(storageCandidates.contains("c1_testfact1_base"));
+    Assert.assertTrue(storageCandidates.contains("c1_testfact2_base"));
+    Assert.assertTrue(storageCandidates.contains("c1_testfact3_base"));
     String hqlQuery = ctx.toHQL();
-    String expected1 = getExpectedQuery(cubeName, "select sum(basecube.msr12) as `msr12` FROM ", null, null,
+    String expected1 = getExpectedQuery(cubeName, "SELECT sum(0.0) as `alias0`, count(0.0) as `alias1`, "
+        + "sum((basecube.msr12)) as `alias2` FROM ", null, null,
       getWhereForDailyAndHourly2days(cubeName, "C1_testFact2_BASE"));
-    String expected2 = getExpectedQuery(cubeName, "select round(sum(basecube.msr2)/1000) as `roundedmsr2` FROM ", null,
+    String expected2 = getExpectedQuery(cubeName, "SELECT sum((basecube.msr2)) as `alias0`, count(0.0) as `alias1`, "
+        + "sum(0.0) as `alias2` FROM ", null,
       null, getWhereForDailyAndHourly2days(cubeName, "C1_testFact1_BASE"));
-    String expected3 = getExpectedQuery(cubeName, "select count((basecube.msr14)) as `msr14` FROM ", null, null,
+    String expected3 = getExpectedQuery(cubeName, "SELECT sum(0.0) as `alias0`, count((basecube.msr14)) as `alias1`, "
+        + "sum(0.0) as `alias2` FROM ", null, null,
       getWhereForDailyAndHourly2days(cubeName, "C1_testFact3_BASE"));
     compareContains(expected1, hqlQuery);
     compareContains(expected2, hqlQuery);
     compareContains(expected3, hqlQuery);
     String lower = hqlQuery.toLowerCase();
-    assertTrue(lower.startsWith("select mq1.roundedmsr2 roundedmsr2, mq3.msr14 msr14, mq2.msr12 msr12 from ") || lower
-      .startsWith("select mq3.roundedmsr2 roundedmsr2, mq1.msr14 msr14, mq2.msr12 msr12 from ") || lower
-      .startsWith("select mq2.roundedmsr2 roundedmsr2, mq3.msr14 msr14, mq1.msr12 msr12 from ") || lower
-      .startsWith("select mq3.roundedmsr2 roundedmsr2, mq2.msr14 msr14, mq1.msr12 msr12 from ") || lower
-      .startsWith("select mq1.roundedmsr2 roundedmsr2, mq2.msr14 msr14, mq3.msr12 msr12 from ") || lower
-      .startsWith("select mq2.roundedmsr2 roundedmsr2, mq1.msr14 msr14, mq3.msr12 msr12 from "), hqlQuery);
-    assertTrue(lower.contains("mq1 full outer join") && lower.endsWith("mq3"));
-    assertFalse(lower.contains("mq3 on"), hqlQuery);
-    assertFalse(lower.contains("mq2 on"), hqlQuery);
-    assertFalse(lower.contains("<=>"), hqlQuery);
+    assertTrue(lower.startsWith("select round((sum((basecube.alias0)) / 1000)) as `roundedmsr2`, " +
+        "count((basecube.alias1)) as `msr14`, sum((basecube.alias2)) as `msr12` from"), hqlQuery);
+    assertTrue(lower.contains("union all"));
+    assertFalse(lower.endsWith("basecube"), hqlQuery);
   }
-*/
+
   @Test
   public void testMultiFactQueryWithSingleCommonDimension() throws Exception {
     String hqlQuery = rewrite("select dim1, roundedmsr2, msr12 from basecube" + " where " + TWO_DAYS_RANGE, conf);
@@ -632,7 +626,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     assertTrue(hqlQuery.contains("UNION ALL") && hqlQuery.endsWith("GROUP BY (basecube.alias0)"),
       hqlQuery);
   }
-  //TODO union : Wrong fact picked
+
   @Test
   public void testMultiFactQueryWithExpressionInvolvingDenormVariable() throws Exception {
     // query with expression

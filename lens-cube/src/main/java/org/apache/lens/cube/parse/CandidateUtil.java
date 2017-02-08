@@ -307,15 +307,4 @@ public class CandidateUtil {
     }
     return false;
   }
-
-
-  public static Set<String> getMissingPartitions(StorageCandidate sc) {
-    Set<String> missingParts = new HashSet<>();
-    for (FactPartition part : sc.getParticipatingPartitions()) {
-      if (!part.isFound()) {
-        missingParts.add(part.toString()); //TODOD union . add approprite partition String
-      }
-    }
-    return missingParts;
-  }
 }

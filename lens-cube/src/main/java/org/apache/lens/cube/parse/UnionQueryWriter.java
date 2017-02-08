@@ -25,6 +25,7 @@ import org.apache.hadoop.hive.ql.lib.Node;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.lens.cube.metadata.Dimension;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.server.api.error.LensException;
 
@@ -35,6 +36,10 @@ import static org.apache.lens.cube.parse.HQLParser.*;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Utility class to write union query. Given any complex Join or Union Candidate,
+ * this class rewrites union query for all the participating StorageCandidates.
+ */
 @Slf4j
 public class UnionQueryWriter {
 
@@ -54,7 +59,7 @@ public class UnionQueryWriter {
     storageCandidates = CandidateUtil.getStorageCandidates(cand);
   }
 
-  public String toHQL() throws LensException {
+  public String toHQL(Map<StorageCandidate, Set<Dimension>> factDimMap) throws LensException {
     StorageCandidate firstCandidate = storageCandidates.iterator().next();
     // Set the default queryAST for the outer query
     queryAst = DefaultQueryAST.fromStorageCandidate(firstCandidate,
@@ -65,7 +70,7 @@ public class UnionQueryWriter {
     processGroupByAST();
     processOrderByAST();
     CandidateUtil.updateFinalAlias(queryAst.getSelectAST(), cubeql);
-    return CandidateUtil.buildHQLString(queryAst.getSelectString(), getFromString(), null,
+    return CandidateUtil.buildHQLString(queryAst.getSelectString(), getFromString(factDimMap), null,
         queryAst.getGroupByString(), queryAst.getOrderByString(),
         queryAst.getHavingString(), queryAst.getLimitValue());
   }
@@ -232,15 +237,15 @@ public class UnionQueryWriter {
     if (!sc.getColumns().containsAll(cols)) {
       return true;
     }
-  return false;
+    return false;
   }
 
   private ASTNode setDefaultValueInExprForAggregateNodes(ASTNode node, StorageCandidate sc)
       throws LensException {
     if (HQLParser.isAggregateAST(node)
         && isNodeAnswerableForStorageCandidate(sc, node)) {
-      node.setChild(1, getSelectExpr(null, null, true) );
-      }
+      node.setChild(1, getSelectExpr(null, null, true));
+    }
     for (int i = 0; i < node.getChildCount(); i++) {
       ASTNode child = (ASTNode) node.getChild(i);
       setDefaultValueInExprForAggregateNodes(child, sc);
@@ -250,10 +255,10 @@ public class UnionQueryWriter {
 
 
   private boolean isAggregateFunctionUsedInAST(ASTNode node) {
-      if (HQLParser.isAggregateAST(node)
-          || HQLParser.hasAggregate(node)) {
-        return true;
-      }
+    if (HQLParser.isAggregateAST(node)
+        || HQLParser.hasAggregate(node)) {
+      return true;
+    }
     return false;
   }
 
@@ -361,22 +366,21 @@ public class UnionQueryWriter {
   }
 
   /*
+  Perform a DFS on the provided AST, and Create an AST of similar structure with changes specific to the
+  inner query - outer query dynamics. The resultant AST is supposed to be used in outer query.
 
-Perform a DFS on the provided AST, and Create an AST of similar structure with changes specific to the
-inner query - outer query dynamics. The resultant AST is supposed to be used in outer query.
-
-Base cases:
- 1. ast is null => null
- 2. ast is aggregate_function(table.column) => add aggregate_function(table.column) to inner select expressions,
-          generate alias, return aggregate_function(cube.alias). Memoize the mapping
-          aggregate_function(table.column) => aggregate_function(cube.alias)
-          Assumption is aggregate_function is transitive i.e. f(a,b,c,d) = f(f(a,b), f(c,d)). SUM, MAX, MIN etc
-          are transitive, while AVG, COUNT etc are not. For non-transitive aggregate functions, the re-written
-          query will be incorrect.
- 3. ast has aggregates - iterate over children and add the non aggregate nodes as is and recursively get outer ast
- for aggregate.
- 4. If no aggregates, simply select its alias in outer ast.
- 5. If given ast is memorized as mentioned in the above cases, return the mapping.
+  Base cases:
+   1. ast is null => null
+   2. ast is aggregate_function(table.column) => add aggregate_function(table.column) to inner select expressions,
+            generate alias, return aggregate_function(cube.alias). Memoize the mapping
+            aggregate_function(table.column) => aggregate_function(cube.alias)
+            Assumption is aggregate_function is transitive i.e. f(a,b,c,d) = f(f(a,b), f(c,d)). SUM, MAX, MIN etc
+            are transitive, while AVG, COUNT etc are not. For non-transitive aggregate functions, the re-written
+            query will be incorrect.
+   3. ast has aggregates - iterate over children and add the non aggregate nodes as is and recursively get outer ast
+   for aggregate.
+   4. If no aggregates, simply select its alias in outer ast.
+   5. If given ast is memorized as mentioned in the above cases, return the mapping.
  */
   private ASTNode getOuterAST(ASTNode astNode, ASTNode innerSelectAST,
       AliasDecider aliasDecider, StorageCandidate sc, boolean isSelectAst) throws LensException {
@@ -469,7 +473,7 @@ Base cases:
     return outerExpression;
   }
 
-  private void processHavingExpression(ASTNode innerSelectAst,Set<ASTNode> havingAggASTs,
+  private void processHavingExpression(ASTNode innerSelectAst, Set<ASTNode> havingAggASTs,
       AliasDecider aliasDecider, StorageCandidate sc) throws LensException {
     // iterate over all children of the ast and get outer ast corresponding to it.
     for (ASTNode child : havingAggASTs) {
@@ -516,11 +520,12 @@ Base cases:
    * @return
    * @throws LensException
    */
-  private String getFromString() throws LensException {
+  private String getFromString(Map<StorageCandidate, Set<Dimension>> factDimMap) throws LensException {
     StringBuilder from = new StringBuilder();
     List<String> hqlQueries = new ArrayList<>();
     for (StorageCandidate sc : storageCandidates) {
-      hqlQueries.add(" ( " + sc.toHQL() + " ) ");
+      Set<Dimension> queriedDims = factDimMap.get(sc);
+      hqlQueries.add(" ( " + sc.toHQL(queriedDims) + " ) ");
     }
     return from.append(" ( ")
         .append(StringUtils.join(" UNION ALL ", hqlQueries))

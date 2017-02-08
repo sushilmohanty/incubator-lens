@@ -18,16 +18,6 @@
  */
 package org.apache.lens.cube.parse;
 
-//import static org.apache.lens.cube.metadata.MetastoreUtil.getFactOrDimtableStorageTableName;
-//import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE;
-//import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.INVALID;
-//import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.UNSUPPORTED_STORAGE;
-//import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.NO_PARTITIONS;
-//import static org.apache.lens.cube.parse.CandidateTablePruneCause.missingPartitions;
-//import static org.apache.lens.cube.parse.CandidateTablePruneCause.noCandidateStorages;
-//import static org.apache.lens.cube.parse.StorageUtil.getFallbackRange;
-
-
 import java.util.*;
 
 import org.apache.lens.cube.metadata.*;
@@ -57,8 +47,6 @@ class StorageTableResolver implements ContextRewriter {
   private final Map<String, Set<String>> nonExistingPartitions = new HashMap<>();
   CubeMetastoreClient client;
   private PHASE phase;
-  // TODO union : we do not need this. Remove the storage candidate
-  //private HashMap<CubeFactTable, Map<String, SkipStorageCause>> skipStorageCausesPerFact;
   private float completenessThreshold;
   private String completenessPartCol;
 
@@ -140,11 +128,9 @@ class StorageTableResolver implements ContextRewriter {
         candidateIterator.remove();
 
         Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(candidate);
-        Set<String> missingPartitions;
         for (StorageCandidate sc : scSet) {
-          missingPartitions = CandidateUtil.getMissingPartitions(sc);
-          if (!missingPartitions.isEmpty()) {
-            cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.missingPartitions(missingPartitions));
+          if (!sc.getNonExistingPartitions().isEmpty()) {
+            cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.missingPartitions(sc.getNonExistingPartitions()));
           }
         }
       }
@@ -278,13 +264,12 @@ class StorageTableResolver implements ContextRewriter {
         boolean partitionColumnExists = client.partColExists(storageTable, range.getPartitionColumn());
         valid = partitionColumnExists;
         if (!partitionColumnExists) {
-          //TODO union : handle prune cause below case.
           String timeDim = cubeql.getBaseCube().getTimeDimOfPartitionColumn(range.getPartitionColumn());
-          //          if (!sc.getFact().getColumns().contains(timeDim)) {
-          //           // Not a time dimension so no fallback required.
-          //          pruningCauses.add(TIMEDIM_NOT_SUPPORTED);
-          //        continue;
-          //       }
+          if (!sc.getFact().getColumns().contains(timeDim)) {
+            // Not a time dimension so no fallback required.
+            pruningCauses.add(CandidateTablePruneCode.TIMEDIM_NOT_SUPPORTED);
+            continue;
+          }
           TimeRange fallBackRange = StorageUtil.getFallbackRange(range, sc.getFact().getCubeName(), cubeql);
           if (fallBackRange == null) {
             log.info("No partitions for range:{}. fallback range: {}", range, fallBackRange);

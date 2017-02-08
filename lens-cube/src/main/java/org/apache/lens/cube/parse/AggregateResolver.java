@@ -71,7 +71,9 @@ class AggregateResolver implements ContextRewriter {
       || hasMeasuresNotInDefaultAggregates(cubeql, cubeql.getHavingAST(), null, aggregateResolverDisabled)
       || hasMeasures(cubeql, cubeql.getWhereAST()) || hasMeasures(cubeql, cubeql.getGroupByAST())
       || hasMeasures(cubeql, cubeql.getOrderByAST())) {
-      //TODO union : Note : Pending : cube segmentation design may change the above assumption and Set<Candidate> can contain and mix of StorageCandidate and UnionSegmentCandidate. This step can then ignore UnionSegmentCandidate
+      //TODO union : Note : Pending : cube segmentation design may change the above assumption
+      //TODO union : and Set<Candidate> can contain and mix of StorageCandidate and UnionSegmentCandidate.
+      //TODO union : This step can then ignore UnionSegmentCandidate
       Iterator<Candidate> candItr = cubeql.getCandidates().iterator();
       while (candItr.hasNext()) {
         Candidate candidate = candItr.next();

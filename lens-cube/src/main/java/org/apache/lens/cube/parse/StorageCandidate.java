@@ -114,6 +114,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
   /**
    * Non existing partitions
    */
+  @Getter
   private Set<String> nonExistingPartitions = new HashSet<>();
   @Getter
   private int numQueriedParts = 0;
@@ -150,32 +151,67 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
   }
 
-  static boolean containsAny(Collection<String> srcSet, Collection<String> colSet) {
-    if (colSet == null || colSet.isEmpty()) {
-      return true;
-    }
-    for (String column : colSet) {
-      if (srcSet.contains(column)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private void setMissingExpressions() throws LensException {
+  private void setMissingExpressions(Set<Dimension> queriedDims) throws LensException {
     setFromString(String.format("%s", getFromTable()));
-    setWhereString(joinWithAnd(whereString, null));
+    setWhereString(joinWithAnd(
+        genWhereClauseWithDimPartitions(whereString, queriedDims),cubeql.getConf().getBoolean(
+            CubeQueryConfUtil.REPLACE_TIMEDIM_WITH_PART_COL, CubeQueryConfUtil.DEFAULT_REPLACE_TIMEDIM_WITH_PART_COL)
+            ? getPostSelectionWhereClause() : null));
     if (cubeql.getHavingAST() != null) {
       queryAst.setHavingAST(MetastoreUtil.copyAST(cubeql.getHavingAST()));
     }
+  }
+
+  private String genWhereClauseWithDimPartitions(String originalWhere, Set<Dimension> queriedDims) {
+    StringBuilder whereBuf;
+    if (originalWhere != null) {
+      whereBuf = new StringBuilder(originalWhere);
+    } else {
+      whereBuf = new StringBuilder();
+    }
+
+    // add where clause for all dimensions
+    if (cubeql != null) {
+      boolean added = (originalWhere != null);
+      for (Dimension dim : queriedDims) {
+        CandidateDim cdim = dimsToQuery.get(dim);
+        String alias = cubeql.getAliasForTableName(dim.getName());
+        if (!cdim.isWhereClauseAdded() && !StringUtils.isBlank(cdim.getWhereClause())) {
+          appendWhereClause(whereBuf, StorageUtil.getWhereClause(cdim, alias), added);
+          added = true;
+        }
+      }
+    }
+    if (whereBuf.length() == 0) {
+      return null;
+    }
+    return whereBuf.toString();
+  }
+
+  static void appendWhereClause(StringBuilder filterCondition, String whereClause, boolean hasMore) {
+    // Make sure we add AND only when there are already some conditions in where
+    // clause
+    if (hasMore && !filterCondition.toString().isEmpty() && !StringUtils.isBlank(whereClause)) {
+      filterCondition.append(" AND ");
+    }
+
+    if (!StringUtils.isBlank(whereClause)) {
+      filterCondition.append("(");
+      filterCondition.append(whereClause);
+      filterCondition.append(")");
+    }
+  }
+
+  protected String getPostSelectionWhereClause() throws LensException {
+    return null;
   }
 
   public void setAnswerableMeasurePhraseIndices(int index) {
     answerableMeasurePhraseIndices.add(index);
   }
 
-  public String toHQL() throws LensException {
-    setMissingExpressions();
+  public String toHQL(Set<Dimension> queriedDims) throws LensException {
+    setMissingExpressions(queriedDims);
     // Check if the picked candidate is a StorageCandidate and in that case
     // update the selectAST with final alias.
     if (this == cubeql.getPickedCandidate()) {
@@ -482,6 +518,8 @@ public class StorageCandidate implements Candidate, CandidateTable {
         break;
       }
     }
+    // Add all the partitions. participatingPartitions contains all the partitions for previous time ranges also.
+    this.participatingPartitions.addAll(rangeParts);
     numQueriedParts += rangeParts.size();
     if (!unsupportedTimeDims.isEmpty()) {
       log.info("Not considering fact table:{} as it doesn't support time dimensions: {}", this.getFact(),
@@ -505,8 +543,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
       rangeToWhere.put(parentTimeRange, rangeWriter
         .getTimeRangeWhereClause(cubeql, cubeql.getAliasForTableName(cubeql.getCube().getName()), rangeParts));
     }
-    // Add all the partitions. participatingPartitions contains all the partitions for previous time ranges also.
-    this.participatingPartitions.addAll(rangeParts);
     return true;
   }
 
@@ -685,5 +721,4 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
     return ret;
   }
-
 }

@@ -38,7 +38,6 @@ import lombok.NoArgsConstructor;
 @JsonWriteNullProperties(false)
 @Data
 @NoArgsConstructor
-//TODO union: Since we are working on StoargeCandidates now, we might need some chnages here
 public class CandidateTablePruneCause {
 
   public enum CandidateTablePruneCode {
@@ -57,6 +56,28 @@ public class CandidateTablePruneCause {
       }
     },
 
+    COLUMN_NOT_FOUND("%s are not %s") {
+      Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
+        if (causes.size() == 1) {
+          return new String[]{
+              "Columns " + causes.iterator().next().getMissingColumns(),
+              "present in any table",
+          };
+        } else {
+          List<List<String>> columnSets = new ArrayList<List<String>>();
+          for (CandidateTablePruneCause cause : causes) {
+            columnSets.add(cause.getMissingColumns());
+          }
+          return new String[]{
+              "Column Sets: " + columnSets,
+              "queriable together",
+          };
+        }
+      }
+    },
+    // candidate table tries to get denormalized field from dimension and the
+    // referred dimension is invalid.
+    INVALID_DENORM_TABLE("Referred dimension is invalid in one of the candidate tables"),
 
     // Moved from Stoarge causes .
     //The storage is removed as its not set in property "lens.cube.query.valid.fact.<fact_name>.storagetables"
@@ -76,7 +97,7 @@ public class CandidateTablePruneCause {
     TIME_RANGE_NOT_ANSWERABLE("Range not answerable"),
     // storage is not supported by execution engine/driver
     UNSUPPORTED_STORAGE("Unsupported Storage"),
-    
+
     // least weight not satisfied
     MORE_WEIGHT("Picked table had more weight than minimum."),
     // partial data is enabled, another fact has more data.
@@ -95,18 +116,15 @@ public class CandidateTablePruneCause {
         return new String[]{columns.toString()};
       }
     },
-    // candidate table tries to get denormalized field from dimension and the
-    // referred dimension is invalid.
-    INVALID_DENORM_TABLE("Referred dimension is invalid in one of the candidate tables"),
     // column not valid in cube table. Commented the below line as it's not being used in master.
     //COLUMN_NOT_VALID("Column not valid in cube table"),
     // column not found in cube table
-    COLUMN_NOT_FOUND("%s are not %s") {
+    DENORM_COLUMN_NOT_FOUND("%s are not %s") {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
         if (causes.size() == 1) {
           return new String[]{
-            "Columns " + causes.iterator().next().getMissingColumns(),
-            "present in any table",
+              "Columns " + causes.iterator().next().getMissingColumns(),
+              "present in any table",
           };
         } else {
           List<List<String>> columnSets = new ArrayList<List<String>>();
@@ -114,8 +132,8 @@ public class CandidateTablePruneCause {
             columnSets.add(cause.getMissingColumns());
           }
           return new String[]{
-            "Column Sets: " + columnSets,
-            "queriable together",
+              "Column Sets: " + columnSets,
+              "queriable together",
           };
         }
       }
@@ -258,22 +276,22 @@ public class CandidateTablePruneCause {
     return cause;
   }
 
-  public static CandidateTablePruneCause columnNotFound(Collection<String>... missingColumns) {
+  public static CandidateTablePruneCause columnNotFound(CandidateTablePruneCode pruneCode, Collection<String>... missingColumns) {
     List<String> colList = new ArrayList<String>();
     for (Collection<String> missing : missingColumns) {
       colList.addAll(missing);
     }
-    CandidateTablePruneCause cause = new CandidateTablePruneCause(COLUMN_NOT_FOUND);
+    CandidateTablePruneCause cause = new CandidateTablePruneCause(pruneCode);
     cause.setMissingColumns(colList);
     return cause;
   }
 
-  public static CandidateTablePruneCause columnNotFound(String... columns) {
+  public static CandidateTablePruneCause columnNotFound(CandidateTablePruneCode pruneCode, String... columns) {
     List<String> colList = new ArrayList<String>();
     for (String column : columns) {
       colList.add(column);
     }
-    return columnNotFound(colList);
+    return columnNotFound(pruneCode, colList);
   }
 
   public static CandidateTablePruneCause expressionNotEvaluable(String... exprs) {

@@ -346,7 +346,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
         return false;
       }
     } catch (LensException e) {
-      //TODO: check if catch can be removed
       return false;
     }
     return true;
@@ -486,26 +485,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     return candidateDims;
   }
 
-  /**
-   * TODO union : deprecate this method and use
-   * {@link # addFactPruningMsg(CubeInterface, CubeFactTable, CandidateTablePruneCause)}
-   * or
-   * {@link #addStoragePruningMsg(StorageCandidate, CandidateTablePruneCause)}
-   * */
-  @Deprecated
-  public void addFactPruningMsgs(CubeFactTable fact, CandidateTablePruneCause factPruningMsg) {
-    throw new IllegalStateException("This method is deprecate");
-  }
-
-  //TODO union : not required as all the pruning happening at StorageCandidate
-  /*
-  public void addFactPruningMsg(CubeInterface cube, CubeFactTable fact, CandidateTablePruneCause factPruningMsg) {
-    log.info("Pruning fact {} with cause: {}", fact, factPruningMsg);
-    for (String storageName : fact.getStorages()) {
-      addStoragePruningMsg(new StorageCandidate(cube, fact, storageName), factPruningMsg);
-    }
-  }
-*/
   public void addCandidatePruningMsg(Collection<Candidate> candidateCollection, CandidateTablePruneCause pruneCause) {
     for (Candidate c : candidateCollection){
       addCandidatePruningMsg(c, pruneCause);
@@ -922,7 +901,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   private HQLContextInterface hqlContext;
 
   @Getter
-  //TODO union : This will be the final Candidate . private Candidate pickedCandidate
   private Candidate pickedCandidate;
   @Getter
   private Collection<CandidateDim> pickedDimTables;
@@ -956,10 +934,9 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
     Map<StorageCandidate, Set<Dimension>> factDimMap = new HashMap<>();
     if (cand != null) {
-      // copy ASTs for each storage candidate
+      // Set the default queryAST for StorageCandidate and copy child ASTs from cubeql.
+      // Later in the rewrite flow each Storage candidate will modify them accordingly.
       for (StorageCandidate sc : scSet) {
-        // Set the default queryAST for StorageCandidate and copy child ASTs from cubeql.
-        // Later in the rewrite flow each Storage candidate will modify them accordingly.
         sc.setQueryAst(DefaultQueryAST.fromStorageCandidate(sc, this));
         CandidateUtil.copyASTs(this, sc.getQueryAst());
         factDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
@@ -1046,10 +1023,10 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     } else if (cand instanceof StorageCandidate) {
       StorageCandidate sc = (StorageCandidate) cand;
       sc.updateAnswerableSelectColumns(this);
-      return getInsertClause() + sc.toHQL();
+      return getInsertClause() + sc.toHQL(factDimMap.get(sc));
     } else {
       UnionQueryWriter uqc = new UnionQueryWriter(cand, this);
-      return getInsertClause() + uqc.toHQL();
+      return getInsertClause() + uqc.toHQL(factDimMap);
     }
   }
 
@@ -1231,63 +1208,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   public void addQueriedExprsWithMeasures(Set<String> exprs) {
     queriedExprsWithMeasures.addAll(exprs);
   }
-
-  /**
-   * Prune candidate fact sets with respect to available candidate facts.
-   * <p></p>
-   * Prune a candidate set, if any of the fact is missing.
-   *
-   */
-  //TODO union : deprecated
-  @Deprecated
-  /*
-  public void pruneCandidateFactSet(CandidateTablePruneCode pruneCause) {
-    // remove candidate fact sets that have missing facts
-    for (Iterator<Set<CandidateFact>> i = candidateFactSets.iterator(); i.hasNext();) {
-      Set<CandidateFact> cfacts = i.next();
-      if (!candidateFacts.containsAll(cfacts)) {
-        log.info("Not considering fact table set:{} as they have non candidate tables and facts missing because of {}",
-          cfacts, pruneCause);
-        i.remove();
-      }
-    }
-    // prune candidate facts
-    pruneCandidateFactWithCandidateSet(CandidateTablePruneCode.ELEMENT_IN_SET_PRUNED);
-  }
-*/
-  /**
-   * Prune candidate fact with respect to available candidate fact sets.
-   * <p></p>
-   * If candidate fact is not present in any of the candidate fact sets, remove it.
-   *
-   * @param pruneCause
-   */
-/*
-  public void pruneCandidateFactWithCandidateSet(CandidateTablePruneCode pruneCause) {
-    // remove candidate facts that are not part of any covering set
-    pruneCandidateFactWithCandidateSet(new CandidateTablePruneCause(pruneCause));
-  }
-*/
-  //TODO union : deprecated
-  /*
-  @Deprecated
-
-  public void pruneCandidateFactWithCandidateSet(CandidateTablePruneCause pruneCause) {
-    // remove candidate facts that are not part of any covering set
-    Set<CandidateFact> allCoveringFacts = new HashSet<CandidateFact>();
-    for (Set<CandidateFact> set : candidateFactSets) {
-      allCoveringFacts.addAll(set);
-    }
-    for (Iterator<CandidateFact> i = candidateFacts.iterator(); i.hasNext();) {
-      CandidateFact cfact = i.next();
-      if (!allCoveringFacts.contains(cfact)) {
-        log.info("Not considering fact table:{} as {}", cfact, pruneCause);
-        addFactPruningMsgs(cfact.fact, pruneCause);
-        i.remove();
-      }
-    }
-  }
-*/
 
   public void addQueriedTimeDimensionCols(final String timeDimColName) {
 
