@@ -51,20 +51,20 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       finalCandidates.addAll(cubeql.getCandidates());
     }
     List<Candidate> timeRangeCoveringSet = resolveTimeRangeCoveringFactSet(cubeql, queriedMsrs, qpcList);
-    if (timeRangeCoveringSet.isEmpty()) {
-      throw new NoCandidateFactAvailableException(cubeql.getCube().getName()
-        + " does not have any facts that can cover the requested time range " + cubeql.getTimeRanges().toString()
-        + " and queried measure set " + getColumns(queriedMsrs).toString(),
-        cubeql.getStoragePruningMsgs());
-    }
+//    if (timeRangeCoveringSet.isEmpty()) {
+//      throw new NoCandidateFactAvailableException(cubeql.getCube().getName()
+//        + " does not have any facts that can cover the requested time range " + cubeql.getTimeRanges().toString()
+//        + " and queried measure set " + getColumns(queriedMsrs).toString(),
+//        cubeql.getStoragePruningMsgs());
+//    }
     log.info("Time covering candidates :{}", timeRangeCoveringSet);
     List<List<Candidate>> measureCoveringSets = resolveJoinCandidates(timeRangeCoveringSet, queriedMsrs, cubeql);
-    if (measureCoveringSets.isEmpty()) {
-      throw  new NoCandidateFactAvailableException(cubeql.getCube().getName()
-        + " does not have any facts that can cover the queried measure set "
-        + getColumns(queriedMsrs).toString(),
-        cubeql.getStoragePruningMsgs());
-    }
+//    if (measureCoveringSets.isEmpty()) {
+//      throw new NoCandidateFactAvailableException(cubeql.getCube().getName()
+//        + " does not have any facts that can cover the queried measure set "
+//        + getColumns(queriedMsrs).toString(),
+//        cubeql.getStoragePruningMsgs());
+//    }
     updateFinalCandidates(measureCoveringSets, cubeql);
     log.info("Final Time and Measure covering candidates :{}", finalCandidates);
     cubeql.getCandidates().clear();
