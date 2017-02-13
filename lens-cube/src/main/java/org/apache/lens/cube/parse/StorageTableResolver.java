@@ -18,6 +18,8 @@
  */
 package org.apache.lens.cube.parse;
 
+import static org.apache.lens.cube.parse.CandidateTablePruneCause.incompletePartitions;
+
 import java.util.*;
 
 import org.apache.lens.cube.metadata.*;
@@ -27,8 +29,6 @@ import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-
-import static org.apache.lens.cube.parse.CandidateTablePruneCause.incompletePartitions;
 
 import lombok.extern.slf4j.Slf4j;
 /**
@@ -269,11 +269,6 @@ class StorageTableResolver implements ContextRewriter {
         valid = partitionColumnExists;
         if (!partitionColumnExists) {
           String timeDim = cubeql.getBaseCube().getTimeDimOfPartitionColumn(range.getPartitionColumn());
-          if (!sc.getFact().getColumns().contains(timeDim)) {
-            // Not a time dimension so no fallback required.
-            //pruningCauses.add(CandidateTablePruneCode.TIMEDIM_NOT_SUPPORTED);
-           // continue;
-          }
           TimeRange fallBackRange = StorageUtil.getFallbackRange(range, sc.getFact().getCubeName(), cubeql);
           if (fallBackRange == null) {
             log.info("No partitions for range:{}. fallback range: {}", range, fallBackRange);

@@ -80,10 +80,10 @@ public class JoinCandidate implements Candidate {
 
   @Override
   public Collection<Candidate> getChildren() {
-    return new ArrayList() {{
-        add(childCandidate1);
-        add(childCandidate2);
-      }};
+    ArrayList<Candidate> joinCandidates = new ArrayList<>();
+    joinCandidates.add(childCandidate1);
+    joinCandidates.add(childCandidate2);
+    return joinCandidates;
   }
 
   /**

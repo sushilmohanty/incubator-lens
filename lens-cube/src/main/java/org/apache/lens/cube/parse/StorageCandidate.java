@@ -18,7 +18,6 @@
  */
 package org.apache.lens.cube.parse;
 
-import static org.apache.hadoop.hive.ql.parse.HiveParser.Identifier;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.*;
 import static org.apache.lens.cube.parse.StorageUtil.*;
 
@@ -636,7 +635,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
       ASTNode selectExpr = (ASTNode) queryAst.getSelectAST().getChild(currentChild);
       Set<String> exprCols = HQLParser.getColsInExpr(cubeql.getAliasForTableName(cubeql.getCube()), selectExpr);
       if (getColumns().containsAll(exprCols)) {
-        ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
+        ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, HiveParser.Identifier);
         String alias = cubeql.getSelectPhrases().get(i).getSelectAlias();
         if (aliasNode != null) {
           String queryAlias = aliasNode.getText();

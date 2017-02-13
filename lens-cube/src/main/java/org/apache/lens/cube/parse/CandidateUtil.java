@@ -129,9 +129,7 @@ public class CandidateUtil {
   }
 
   public static Set<StorageCandidate> getStorageCandidates(final Candidate candidate) {
-    return getStorageCandidates(new HashSet<Candidate>(1) {{
-      add(candidate);
-    }});
+    return getStorageCandidates(new HashSet<Candidate>(1) {{ add(candidate); }});
   }
 
 

@@ -20,6 +20,7 @@
 package org.apache.lens.cube.parse;
 
 import static org.apache.lens.cube.parse.HQLParser.*;
+
 import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
 
 import java.util.*;
