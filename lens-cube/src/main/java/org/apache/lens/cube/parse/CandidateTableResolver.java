@@ -256,7 +256,7 @@ class CandidateTableResolver implements ContextRewriter {
         }
       }
       // Remove storage candidates based on whether they are valid or not.
-      for (Iterator<Candidate> i = cubeql.getCandidates().iterator(); i.hasNext(); ) {
+      for (Iterator<Candidate> i = cubeql.getCandidates().iterator(); i.hasNext();) {
         Candidate cand = i.next();
         if (cand instanceof StorageCandidate) {
           StorageCandidate sc = (StorageCandidate) cand;

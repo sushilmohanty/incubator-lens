@@ -28,8 +28,9 @@ import org.apache.lens.server.api.error.LensException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
-import lombok.extern.slf4j.Slf4j;
+import static org.apache.lens.cube.parse.CandidateTablePruneCause.incompletePartitions;
 
+import lombok.extern.slf4j.Slf4j;
 /**
  * Resolve storages and partitions of all candidate tables and prunes candidate tables with missing storages or
  * partitions.
@@ -131,6 +132,8 @@ class StorageTableResolver implements ContextRewriter {
         for (StorageCandidate sc : scSet) {
           if (!sc.getNonExistingPartitions().isEmpty()) {
             cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.missingPartitions(sc.getNonExistingPartitions()));
+          } else if (!sc.getDataCompletenessMap().isEmpty()) {
+            cubeql.addStoragePruningMsg(sc, incompletePartitions(sc.getDataCompletenessMap()));
           }
         }
       }
@@ -165,10 +168,11 @@ class StorageTableResolver implements ContextRewriter {
         Map<String, CandidateTablePruneCode> skipStorageCauses = new HashMap<>();
         for (String storage : dimtable.getStorages()) {
           if (isStorageSupportedOnDriver(storage)) {
-            String tableName = MetastoreUtil.getFactOrDimtableStorageTableName(dimtable.getName(), storage).toLowerCase();
+            String tableName = MetastoreUtil.getFactOrDimtableStorageTableName(dimtable.getName(),
+                storage).toLowerCase();
             if (validDimTables != null && !validDimTables.contains(tableName)) {
               log.info("Not considering dim storage table:{} as it is not a valid dim storage", tableName);
-              skipStorageCauses.put(tableName,CandidateTablePruneCode.INVALID);
+              skipStorageCauses.put(tableName, CandidateTablePruneCode.INVALID);
               continue;
             }
 
@@ -267,8 +271,8 @@ class StorageTableResolver implements ContextRewriter {
           String timeDim = cubeql.getBaseCube().getTimeDimOfPartitionColumn(range.getPartitionColumn());
           if (!sc.getFact().getColumns().contains(timeDim)) {
             // Not a time dimension so no fallback required.
-            pruningCauses.add(CandidateTablePruneCode.TIMEDIM_NOT_SUPPORTED);
-            continue;
+            //pruningCauses.add(CandidateTablePruneCode.TIMEDIM_NOT_SUPPORTED);
+           // continue;
           }
           TimeRange fallBackRange = StorageUtil.getFallbackRange(range, sc.getFact().getCubeName(), cubeql);
           if (fallBackRange == null) {

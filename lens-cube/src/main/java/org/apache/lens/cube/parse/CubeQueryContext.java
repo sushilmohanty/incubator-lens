@@ -36,7 +36,6 @@ import org.apache.lens.cube.error.NoCandidateDimAvailableException;
 import org.apache.lens.cube.error.NoCandidateFactAvailableException;
 import org.apache.lens.cube.metadata.*;
 import org.apache.lens.cube.metadata.join.TableRelationship;
-import org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode;
 import org.apache.lens.cube.parse.join.AutoJoinContext;
 import org.apache.lens.cube.parse.join.JoinClause;
 import org.apache.lens.cube.parse.join.JoinTree;
@@ -180,10 +179,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   @Getter
   @Setter
   private DenormalizationResolver.DenormalizationContext deNormCtx;
-  //TODO union : deprecate factPruningMsgs
-  @Getter
-  @Deprecated
-  private PruneCauses<CubeFactTable> factPruningMsgs = new PruneCauses<>();
   @Getter
   private PruneCauses<StorageCandidate>  storagePruningMsgs = new PruneCauses<>();
   @Getter
@@ -714,7 +709,8 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     qb.getParseInfo().setDestLimit(getClause(), 0, value);
   }
 
-  private String getStorageStringWithAlias(StorageCandidate candidate, Map<Dimension, CandidateDim> dimsToQuery, String alias) {
+  private String getStorageStringWithAlias(StorageCandidate candidate, Map<Dimension,
+      CandidateDim> dimsToQuery, String alias) {
     if (cubeTbls.get(alias) instanceof CubeInterface) {
       return candidate.getAliasForTable(alias);
     } else {
@@ -794,7 +790,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     }
   }
 
-  // TODO union : Reevaluate this method.
   void setNonexistingParts(Map<String, Set<String>> nonExistingParts) throws LensException {
     if (!nonExistingParts.isEmpty()) {
       ByteArrayOutputStream out = null;
@@ -891,7 +886,8 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
             }
           }
         }
-        log.error("Query rewrite failed due to NO_CANDIDATE_FACT_AVAILABLE, Cause {}", storagePruningMsgs.toJsonObject());
+        log.error("Query rewrite failed due to NO_CANDIDATE_FACT_AVAILABLE, Cause {}",
+            storagePruningMsgs.toJsonObject());
         throw new NoCandidateFactAvailableException(storagePruningMsgs);
       }
     }

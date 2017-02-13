@@ -60,8 +60,8 @@ public class CandidateTablePruneCause {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
         if (causes.size() == 1) {
           return new String[]{
-              "Columns " + causes.iterator().next().getMissingColumns(),
-              "present in any table",
+            "Columns " + causes.iterator().next().getMissingColumns(),
+            "present in any table",
           };
         } else {
           List<List<String>> columnSets = new ArrayList<List<String>>();
@@ -69,8 +69,8 @@ public class CandidateTablePruneCause {
             columnSets.add(cause.getMissingColumns());
           }
           return new String[]{
-              "Column Sets: " + columnSets,
-              "queriable together",
+            "Column Sets: " + columnSets,
+            "queriable together",
           };
         }
       }
@@ -123,8 +123,8 @@ public class CandidateTablePruneCause {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
         if (causes.size() == 1) {
           return new String[]{
-              "Columns " + causes.iterator().next().getMissingColumns(),
-              "present in any table",
+            "Columns " + causes.iterator().next().getMissingColumns(),
+            "present in any table",
           };
         } else {
           List<List<String>> columnSets = new ArrayList<List<String>>();
@@ -132,8 +132,8 @@ public class CandidateTablePruneCause {
             columnSets.add(cause.getMissingColumns());
           }
           return new String[]{
-              "Column Sets: " + columnSets,
-              "queriable together",
+            "Column Sets: " + columnSets,
+            "queriable together",
           };
         }
       }
@@ -250,8 +250,6 @@ public class CandidateTablePruneCause {
   // the fact is not partitioned by part col of the time dim and time dim is not a dim attribute
   private Set<String> unsupportedTimeDims;
   // time covered
-  // TODO union : Fix this after MaxCoveringFactResolver chnaged wrt. Candidate
-  //private MaxCoveringFactResolver.TimeCovered maxTimeCovered;
   // ranges in which fact is invalid
   private List<TimeRange> invalidRanges;
 
@@ -276,7 +274,8 @@ public class CandidateTablePruneCause {
     return cause;
   }
 
-  public static CandidateTablePruneCause columnNotFound(CandidateTablePruneCode pruneCode, Collection<String>... missingColumns) {
+  public static CandidateTablePruneCause columnNotFound(CandidateTablePruneCode pruneCode,
+      Collection<String>... missingColumns) {
     List<String> colList = new ArrayList<String>();
     for (Collection<String> missing : missingColumns) {
       colList.addAll(missing);
@@ -318,14 +317,6 @@ public class CandidateTablePruneCause {
     return cause;
   }
 
-  // TODO union : uncomment the below method after MaxCoveringFactResolver is fixed wrt. Candidate
-  /*
-  public static CandidateTablePruneCause lessData(MaxCoveringFactResolver.TimeCovered timeCovered) {
-    CandidateTablePruneCause cause = new CandidateTablePruneCause(LESS_DATA);
-    cause.setMaxTimeCovered(timeCovered);
-    return cause;
-  }
-*/
   public static CandidateTablePruneCause noColumnPartOfAJoinPath(final Collection<String> colSet) {
     CandidateTablePruneCause cause =
       new CandidateTablePruneCause(NO_COLUMN_PART_OF_A_JOIN_PATH);

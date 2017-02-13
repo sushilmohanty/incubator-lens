@@ -18,7 +18,6 @@
  */
 package org.apache.lens.cube.error;
 
-import org.apache.lens.cube.metadata.CubeFactTable;
 import org.apache.lens.cube.parse.PruneCauses;
 import org.apache.lens.cube.parse.StorageCandidate;
 import org.apache.lens.server.api.error.LensException;

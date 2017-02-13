@@ -24,6 +24,7 @@ import static org.apache.lens.cube.metadata.UpdatePeriod.*;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.*;
 import static org.apache.lens.cube.parse.CubeQueryConfUtil.*;
 import static org.apache.lens.cube.parse.CubeTestSetup.*;
+
 import static org.testng.Assert.*;
 
 import java.text.DateFormat;
@@ -51,6 +52,7 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 
@@ -102,10 +104,9 @@ public class TestCubeRewriter extends TestQueryRewrite {
     System.out.println("expected " + expected);
     compareQueries(rewrittenQuery.toHQL(), expected);
 
-    //TODO union : Fact names are different. Check after MaXCoveringFactResolver.
     //test with msr2 on different fact
     rewrittenQuery = rewriteCtx("select SUM(msr2) from testCube where " + timeRangeString, conf);
-    expected = "select SUM((testCube.msr2)) as `sum(msr2)` from TestQueryRewrite.c0_testFact testcube"
+    expected = "select SUM((testCube.msr2)) as `sum(msr2)` from TestQueryRewrite.c2_testfact testcube"
       + " WHERE ((( testcube . dt ) between  '" + from + "'  and  '" + to + "' ))";
     System.out.println("rewrittenQuery.toHQL() " + rewrittenQuery.toHQL());
     System.out.println("expected " + expected);
@@ -188,16 +189,14 @@ public class TestCubeRewriter extends TestQueryRewrite {
     assertEquals(th.getErrorCode(), LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE.getLensErrorInfo().getErrorCode());
     NoCandidateFactAvailableException ne = (NoCandidateFactAvailableException) th;
     PruneCauses.BriefAndDetailedError pruneCauses = ne.getJsonMessage();
-    //TODO union : check the error code. Its coming as "Columns [msr2] are not present in any table"
-    //TODO union : Need to  check partition resolution flow in StorageTableResolver.
-//    int endIndex = MISSING_PARTITIONS.errorFormat.length() - 3;
-//    assertEquals(
-//      pruneCauses.getBrief().substring(0, endIndex),
-//      MISSING_PARTITIONS.errorFormat.substring(0, endIndex)
-//    );
-//    assertEquals(pruneCauses.getDetails().get("testfact").size(), 1);
-//    assertEquals(pruneCauses.getDetails().get("testfact").iterator().next().getCause(),
-//      MISSING_PARTITIONS);
+    int endIndex = MISSING_PARTITIONS.errorFormat.length() - 3;
+    assertEquals(
+      pruneCauses.getBrief().substring(0, endIndex),
+      MISSING_PARTITIONS.errorFormat.substring(0, endIndex)
+    );
+    assertEquals(pruneCauses.getDetails().get("c1_testfact").size(), 1);
+    assertEquals(pruneCauses.getDetails().get("c1_testfact").iterator().next().getCause(),
+      MISSING_PARTITIONS);
   }
 
   @Test
@@ -208,9 +207,10 @@ public class TestCubeRewriter extends TestQueryRewrite {
       getExpectedQuery(DERIVED_CUBE_NAME, "select sum(derivedCube.msr2) as `sum(msr2)` FROM ", null, null,
         getWhereForDailyAndHourly2days(DERIVED_CUBE_NAME, "C2_testfact"));
     compareQueries(rewrittenQuery.toHQL(), expected);
-    System.out.println("Non existing parts:" + rewrittenQuery.getNonExistingParts());
-    //TODO union: Check this in a better way.
-//    assertNotNull(rewrittenQuery.getNonExistingParts());
+
+    System.out.println("Non existing parts:" + ((StorageCandidate) rewrittenQuery.getCandidates().iterator().next())
+        .getNonExistingPartitions());
+    assertNotNull(((StorageCandidate) rewrittenQuery.getCandidates().iterator().next()).getNonExistingPartitions());
 
     LensException th = getLensExceptionInRewrite(
       "select SUM(msr4) from derivedCube where " + TWO_DAYS_RANGE, getConf());
@@ -413,8 +413,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
       "select cubestate.name, cubestate.countryid, msr2 from" + " testCube" + " where cubestate.countryid = 5 and "
         + TWO_DAYS_RANGE, conf);
     expected =
-      getExpectedQuery(TEST_CUBE_NAME, "select cubestate.name as `name`, " +
-          "cubestate.countryid as `countryid`, sum(testcube.msr2) as `msr2`" + " FROM ",
+      getExpectedQuery(TEST_CUBE_NAME, "select cubestate.name as `name`, "
+          + "cubestate.countryid as `countryid`, sum(testcube.msr2) as `msr2`" + " FROM ",
         " JOIN " + getDbName()
           + "c3_statetable_partitioned cubestate ON" + " testCube.stateid = cubestate.id and cubestate.dt = 'latest'",
         "cubestate.countryid=5",
@@ -447,7 +447,6 @@ public class TestCubeRewriter extends TestQueryRewrite {
         getConfWithStorages("C2"));
     compareQueries(hqlQuery, expected);
 
-    //TODO union : Wrong fact selected. Verify after MaxCoveringFactResolver changes.
     // q2
     hqlQuery =
       rewrite("select statedim.name, SUM(msr2) from" + " testCube" + " join citydim on testCube.cityid = citydim.id"
@@ -465,7 +464,6 @@ public class TestCubeRewriter extends TestQueryRewrite {
         getWhereForHourly2days(TEST_CUBE_NAME, "C1_testfact2"));
     compareQueries(hqlQuery, expected);
 
-    //TODO union : Wrong fact selected. Verify after MaxCoveringFactResolver changes.
     // q3
     hqlQuery =
       rewrite("select st.name, SUM(msr2) from" + " testCube TC" + " join citydim CT on TC.cityid = CT.id"
@@ -481,7 +479,6 @@ public class TestCubeRewriter extends TestQueryRewrite {
         getWhereForHourly2days("tc", "C1_testfact2"));
     compareQueries(hqlQuery, expected);
 
-    //TODO union : Wrong fact selected. Verify after MaxCoveringFactResolver changes.
     // q4
     hqlQuery =
       rewrite("select citydim.name, SUM(msr2) from" + " testCube"
@@ -633,8 +630,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
     Configuration conf = getConf();
     conf.set(DRIVER_SUPPORTED_STORAGES, "C2");
 
-   String hqlQuery =
-     rewrite("select name, SUM(msr2) from" + " testCube join citydim on testCube.cityid = citydim.id where "
+    String hqlQuery =
+      rewrite("select name, SUM(msr2) from" + " testCube join citydim on testCube.cityid = citydim.id where "
         + TWO_DAYS_RANGE, conf);
     String expected =
       getExpectedQuery(TEST_CUBE_NAME, "select citydim.name as `name`, sum(testcube.msr2) as `sum(msr2)` FROM "
@@ -968,21 +965,20 @@ public class TestCubeRewriter extends TestQueryRewrite {
 
   @Test
   public void testQueryWithMeasureWithDataCompletenessPresentInMultipleFacts() throws ParseException,
-          LensException {
+      LensException {
     /*In this query a measure is used which is present in two facts with different %completeness. While resolving the
     facts, the fact with the higher dataCompletenessFactor gets picked up.*/
     Configuration conf = getConf();
     conf.setStrings(CubeQueryConfUtil.COMPLETENESS_CHECK_PART_COL, "dt");
     String hqlQuery = rewrite("select SUM(msr9) from basecube where " + TWO_DAYS_RANGE, conf);
     String expected = getExpectedQuery("basecube", "select sum(basecube.msr9) as `sum(msr9)` FROM ", null, null,
-            getWhereForHourly2days("basecube", "c1_testfact5_raw_base"));
+        getWhereForHourly2days("basecube", "c1_testfact5_raw_base"));
     compareQueries(hqlQuery, expected);
   }
 
-  // TODO union : check after MaxCoveringFactResolver
- @Test
+  @Test
   public void testCubeWhereQueryWithMeasureWithDataCompletenessAndFailIfPartialDataFlagSet() throws ParseException,
-          LensException {
+      LensException {
     /*In this query a measure is used for which dataCompletenessTag is set and the flag FAIL_QUERY_ON_PARTIAL_DATA is
     set. The partitions for the queried range are present but some of the them have incomplete data. So, the query
     throws NO_CANDIDATE_FACT_AVAILABLE Exception*/
@@ -990,15 +986,16 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.setStrings(CubeQueryConfUtil.COMPLETENESS_CHECK_PART_COL, "dt");
     conf.setBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, true);
 
-    LensException e = getLensExceptionInRewrite("select SUM(msr9) from basecube where " + TWO_DAYS_RANGE, conf);
+    LensException e = getLensExceptionInRewrite("select SUM(msr9) from basecube where "
+        + TWO_DAYS_RANGE, conf);
     assertEquals(e.getErrorCode(), LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE.getLensErrorInfo().getErrorCode());
     NoCandidateFactAvailableException ne = (NoCandidateFactAvailableException) e;
     PruneCauses.BriefAndDetailedError pruneCauses = ne.getJsonMessage();
     /*Since the Flag FAIL_QUERY_ON_PARTIAL_DATA is set, and thhe queried fact has incomplete data, hence, we expect the
     prune cause to be INCOMPLETE_PARTITION. The below check is to validate this.*/
     assertEquals(pruneCauses.getBrief().substring(0, INCOMPLETE_PARTITION.errorFormat.length() - 3),
-            INCOMPLETE_PARTITION.errorFormat.substring(0,
-                    INCOMPLETE_PARTITION.errorFormat.length() - 3), pruneCauses.getBrief());
+        INCOMPLETE_PARTITION.errorFormat.substring(0,
+            INCOMPLETE_PARTITION.errorFormat.length() - 3), pruneCauses.getBrief());
   }
 
   @Test
@@ -1018,8 +1015,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
         MISSING_PARTITIONS.errorFormat.length() - 3), pruneCauses.getBrief());
 
     Set<String> expectedSet =
-      Sets.newTreeSet(Arrays.asList("c1_testfact2_raw","c1_summary3","c1_summary2",
-          "c1_summary1","c2_testfact","c1_testfact"));
+      Sets.newTreeSet(Arrays.asList("c1_testfact2_raw", "c1_summary3", "c1_summary2",
+          "c1_summary1", "c2_testfact", "c1_testfact"));
     boolean missingPartitionCause = false;
     for (String key : pruneCauses.getDetails().keySet()) {
       Set<String> actualKeySet = Sets.newTreeSet(Splitter.on(',').split(key));
@@ -1320,8 +1317,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
         getConf());
     expected =
       getExpectedQuery(TEST_CUBE_NAME, "select testcube.dim1 as `dim1`, testcube,dim2 as `dim2`, "
-          + "count(testcube.msr4) as `count(msr4)`, sum(testcube.msr2) as `sum(msr2)`, " +
-          "max(testcube.msr3) as `msr3` FROM ", null, " group by testcube.dim1, testcube.dim2",
+          + "count(testcube.msr4) as `count(msr4)`, sum(testcube.msr2) as `sum(msr2)`, "
+          + "max(testcube.msr3) as `msr3` FROM ", null, " group by testcube.dim1, testcube.dim2",
         getWhereForDailyAndHourly2daysWithTimeDim(TEST_CUBE_NAME, "it", "C2_summary2"),
         null);
     compareQueries(hqlQuery, expected);
@@ -1391,8 +1388,6 @@ public class TestCubeRewriter extends TestQueryRewrite {
     compareQueries(hqlQuery, expected);
   }
 
-  // TODO union : Uncomment below test after deleting CandidateFact
-  /*
   @Test
   public void testLookAhead() throws Exception {
 
@@ -1408,8 +1403,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
     Date nextDay = DateUtils.addDays(ceilDay, 1);
     Date nextToNextDay = DateUtils.addDays(nextDay, 1);
     HashSet<String> storageTables = Sets.newHashSet();
-    for (String storageTable : candidateFact.getStorageTables()) {
-      storageTables.add(storageTable.split("\\.")[1]);
+    for (StorageCandidate sc : CandidateUtil.getStorageCandidates(candidate)) {
+      storageTables.add(sc.getName());
     }
     TreeSet<FactPartition> expectedPartsQueried = Sets.newTreeSet();
     for (TimePartition p : Iterables.concat(
@@ -1430,11 +1425,11 @@ public class TestCubeRewriter extends TestQueryRewrite {
     conf.setInt(CubeQueryConfUtil.LOOK_AHEAD_PT_PARTS_PFX, 3);
     ctx = rewriteCtx("select dim1, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE_IT,
       conf);
-    partsQueried = new TreeSet<>(ctx.candidateFacts.iterator().next().getPartsQueried());
+    partsQueried = new TreeSet<>(((StorageCandidate)ctx.getCandidates().iterator().next())
+        .getParticipatingPartitions());
     // pt does not exist beyond 1 day. So in this test, max look ahead possible is 3
     assertEquals(partsQueried, expectedPartsQueried);
   }
-*/
 
   @Test
   public void testCubeQueryWithMultipleRanges() throws Exception {

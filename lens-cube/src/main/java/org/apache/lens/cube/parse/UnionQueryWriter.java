@@ -19,20 +19,21 @@
 
 package org.apache.lens.cube.parse;
 
+import static org.apache.lens.cube.parse.HQLParser.*;
+import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
 
-import org.antlr.runtime.CommonToken;
-import org.apache.hadoop.hive.ql.lib.Node;
-import org.apache.hadoop.hive.ql.parse.ASTNode;
-import org.apache.hadoop.hive.ql.parse.HiveParser;
-import org.apache.hadoop.util.StringUtils;
+import java.util.*;
+
 import org.apache.lens.cube.metadata.Dimension;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.server.api.error.LensException;
 
-import java.util.*;
+import org.apache.hadoop.hive.ql.lib.Node;
+import org.apache.hadoop.hive.ql.parse.ASTNode;
+import org.apache.hadoop.hive.ql.parse.HiveParser;
+import org.apache.hadoop.util.StringUtils;
 
-import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
-import static org.apache.lens.cube.parse.HQLParser.*;
+import org.antlr.runtime.CommonToken;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -112,7 +113,7 @@ public class UnionQueryWriter {
    * @throws LensException
    */
   private ASTNode processHavingAST(ASTNode innerAst, AliasDecider aliasDecider, StorageCandidate sc)
-      throws LensException {
+    throws LensException {
     if (cubeql.getHavingAST() != null) {
       ASTNode havingCopy = MetastoreUtil.copyAST(cubeql.getHavingAST());
       Set<ASTNode> havingAggChildrenASTs = new LinkedHashSet<>();
@@ -126,7 +127,7 @@ public class UnionQueryWriter {
   }
 
   /**
-   * Update havingAST with proper alias name projected.
+   * Update outer havingAST with proper alias name projected.
    *
    * @param node
    * @return
@@ -136,9 +137,9 @@ public class UnionQueryWriter {
         && (HQLParser.isAggregateAST(node))) {
       if (innerToOuterSelectASTs.containsKey(new HQLParser.HashableASTNode(node))
           || innerToOuterHavingASTs.containsKey(new HQLParser.HashableASTNode(node))) {
-        ASTNode expr = innerToOuterSelectASTs.containsKey(new HQLParser.HashableASTNode(node)) ?
-            innerToOuterSelectASTs.get(new HQLParser.HashableASTNode(node)) :
-            innerToOuterHavingASTs.get(new HQLParser.HashableASTNode(node));
+        ASTNode expr = innerToOuterSelectASTs.containsKey(new HQLParser.HashableASTNode(node))
+            ? innerToOuterSelectASTs.get(new HQLParser.HashableASTNode(node))
+            : innerToOuterHavingASTs.get(new HQLParser.HashableASTNode(node));
         node.getParent().setChild(0, expr);
       }
     }
@@ -195,15 +196,18 @@ public class UnionQueryWriter {
     return outerExpression;
   }
 
-  private ASTNode getDefaultNode(ASTNode aliasNode) throws LensException {
-    ASTNode defaultNode = getSelectExprAST();
-    defaultNode.addChild(HQLParser.parseExpr(DEFAULT_MEASURE));
-    defaultNode.addChild(aliasNode);
-    return defaultNode;
-  }
-
+  /**
+   * Get the select expression. In case of node is default retunrs "0.0" with alias
+   * otherwise the select phrase with alias.
+   *
+   * @param nodeWithoutAlias
+   * @param aliasNode
+   * @param isDefault
+   * @return
+   * @throws LensException
+   */
   private ASTNode getSelectExpr(ASTNode nodeWithoutAlias, ASTNode aliasNode, boolean isDefault)
-      throws LensException {
+    throws LensException {
     ASTNode node = getSelectExprAST();
     if (nodeWithoutAlias == null && isDefault) {
       node.addChild(HQLParser.parseExpr(DEFAULT_MEASURE));
@@ -220,6 +224,15 @@ public class UnionQueryWriter {
     return new ASTNode(new CommonToken(HiveParser.TOK_SELEXPR, "TOK_SELEXPR"));
   }
 
+
+  /**
+   * Get the aggregate node for the SelectPhrase index. A given measure might not be answerable
+   * for a StorageCanddate. In that case get the non default aggregate node wcich ideally not "0.0",
+   * from otherStorage candidate.
+   *
+   * @param position
+   * @return
+   */
   private ASTNode getAggregateNodesExpression(int position) {
     ASTNode node = null;
     for (StorageCandidate sc : storageCandidates) {
@@ -231,6 +244,12 @@ public class UnionQueryWriter {
     return MetastoreUtil.copyAST(node);
   }
 
+  /**
+   *  Check if ASTNode is answerable by StorageCandidate
+   * @param sc
+   * @param node
+   * @return
+   */
   private boolean isNodeAnswerableForStorageCandidate(StorageCandidate sc, ASTNode node) {
     Set<String> cols = new LinkedHashSet<>();
     getAllColumnsOfNode(node, cols);
@@ -240,8 +259,14 @@ public class UnionQueryWriter {
     return false;
   }
 
-  private ASTNode setDefaultValueInExprForAggregateNodes(ASTNode node, StorageCandidate sc)
-      throws LensException {
+  /**
+   * Set the default value "0.0" in the non answerable aggreagte expressions.
+   * @param node
+   * @param sc
+   * @return
+   * @throws LensException
+   */
+  private ASTNode setDefaultValueInExprForAggregateNodes(ASTNode node, StorageCandidate sc) throws LensException {
     if (HQLParser.isAggregateAST(node)
         && isNodeAnswerableForStorageCandidate(sc, node)) {
       node.setChild(1, getSelectExpr(null, null, true));
@@ -252,7 +277,6 @@ public class UnionQueryWriter {
     }
     return node;
   }
-
 
   private boolean isAggregateFunctionUsedInAST(ASTNode node) {
     if (HQLParser.isAggregateAST(node)
@@ -317,6 +341,11 @@ public class UnionQueryWriter {
     }
   }
 
+  /**
+   * Update Select and Having clause of outer query.
+   *
+   * @throws LensException
+   */
   private void processSelectAndHavingAST() throws LensException {
     ASTNode outerSelectAst = new ASTNode(queryAst.getSelectAST());
     DefaultAliasDecider aliasDecider = new DefaultAliasDecider();
@@ -336,6 +365,15 @@ public class UnionQueryWriter {
     }
   }
 
+  /**
+   * Get the inner and outer AST with alias for each child of StorageCandidate
+   *
+   * @param sc
+   * @param outerSelectAst
+   * @param innerSelectAST
+   * @param aliasDecider
+   * @throws LensException
+   */
   private void processSelectExpression(StorageCandidate sc, ASTNode outerSelectAst, ASTNode innerSelectAST,
       AliasDecider aliasDecider) throws LensException {
     //ASTNode selectAST = sc.getQueryAst().getSelectAST();
@@ -406,7 +444,7 @@ public class UnionQueryWriter {
           if (hasAggregate(childAST) && sc.getColumns().containsAll(msrCols)) {
             outerAST.addChild(getOuterAST(childAST, innerSelectAST, aliasDecider, sc, isSelectAst));
           } else if (hasAggregate(childAST) && !sc.getColumns().containsAll(msrCols)) {
-            childAST.replaceChildren(1, 1, getDefaultNode(null));
+            childAST.replaceChildren(1, 1,  getSelectExpr(null, null, true));
             outerAST.addChild(getOuterAST(childAST, innerSelectAST, aliasDecider, sc, isSelectAst));
           } else {
             outerAST.addChild(childAST);
@@ -460,6 +498,14 @@ public class UnionQueryWriter {
     return outerAST;
   }
 
+  /**
+   * GroupbyAST is having dim only columns all the columns should have been
+   * projected. Get the alias for the projected columns and add to group by clause.
+   *
+   * @param astNode
+   * @return
+   * @throws LensException
+   */
 
   private ASTNode processGroupByExpression(ASTNode astNode) throws LensException {
     ASTNode outerExpression = new ASTNode(astNode);
@@ -473,12 +519,21 @@ public class UnionQueryWriter {
     return outerExpression;
   }
 
+  /**
+   * Process having clause, if a columns is not projected add it
+   * to the projected columns of inner selectAST.
+   *
+   * @param innerSelectAst
+   * @param havingAggASTs
+   * @param aliasDecider
+   * @param sc
+   * @throws LensException
+   */
+
   private void processHavingExpression(ASTNode innerSelectAst, Set<ASTNode> havingAggASTs,
       AliasDecider aliasDecider, StorageCandidate sc) throws LensException {
     // iterate over all children of the ast and get outer ast corresponding to it.
     for (ASTNode child : havingAggASTs) {
-      //ASTNode node = MetastoreUtil.copyAST(child);
-      //setDefaultValueInExprForAggregateNodes(node, sc);
       if (!innerToOuterSelectASTs.containsKey(new HQLParser.HashableASTNode(child))) {
         getOuterAST(child, innerSelectAst, aliasDecider, sc, false);
       }
@@ -487,6 +542,7 @@ public class UnionQueryWriter {
 
   /**
    * Gets all aggreage nodes used in having
+   *
    * @param node
    * @param havingClauses
    * @return
@@ -502,6 +558,13 @@ public class UnionQueryWriter {
     return havingClauses;
   }
 
+  /**
+   * Get columns used in ASTNode
+   *
+   * @param node
+   * @param msrs
+   * @return
+   */
   private Set<String> getAllColumnsOfNode(ASTNode node, Set<String> msrs) {
     if (node.getToken().getType() == HiveParser.DOT) {
       String table = HQLParser.findNodeByPath(node, TOK_TABLE_OR_COL, Identifier).toString();
@@ -517,6 +580,7 @@ public class UnionQueryWriter {
   /**
    * Gets from string of the ouer query, this is a union query of all
    * StorageCandidates participated.
+   *
    * @return
    * @throws LensException
    */

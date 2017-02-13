@@ -93,9 +93,10 @@ public class TestTimeRangeResolver extends TestQueryRewrite {
     CubeQueryContext ctx =
       rewriteCtx("select msr12 from basecube where " + TWO_DAYS_RANGE + " or " + TWO_DAYS_RANGE_BEFORE_4_DAYS,
         getConf());
-    assertEquals(ctx.getFactPruningMsgs().get(ctx.getMetastoreClient().getCubeFact("testfact_deprecated")).size(), 1);
+    assertEquals(ctx.getStoragePruningMsgs().get(ctx.getMetastoreClient()
+        .getCubeFact("testfact_deprecated")).size(), 1);
     CandidateTablePruneCause pruningMsg =
-      ctx.getFactPruningMsgs().get(ctx.getMetastoreClient().getCubeFact("testfact_deprecated")).get(0);
+      ctx.getStoragePruningMsgs().get(ctx.getMetastoreClient().getCubeFact("testfact_deprecated")).get(0);
     // testfact_deprecated's validity should be in between of both ranges. So both ranges should be in the invalid list
     // That would prove that parsing of properties has gone through successfully
     assertEquals(pruningMsg.getCause(), FACT_NOT_AVAILABLE_IN_RANGE);

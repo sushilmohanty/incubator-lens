@@ -47,7 +47,8 @@ public class TestQueryMetrics extends TestQueryRewrite {
     Assert.assertTrue(reg.getGauges().keySet().containsAll(Arrays.asList(
         "lens.MethodMetricGauge.testCubeRewriteStackName-org.apache.lens.cube.parse.AggregateResolver-ITER-6",
         "lens.MethodMetricGauge.testCubeRewriteStackName-org.apache.lens.cube.parse.AliasReplacer-ITER-1",
-        "lens.MethodMetricGauge.testCubeRewriteStackName-org.apache.lens.cube.parse.CandidateCoveringSetsResolver-ITER-13",
+        "lens.MethodMetricGauge.testCubeRewriteStackName-org.apache.lens.cube.parse"
+            + ".CandidateCoveringSetsResolver-ITER-13",
         "lens.MethodMetricGauge.testCubeRewriteStackName-org.apache.lens.cube.parse.CandidateTableResolver-ITER-12",
         "lens.MethodMetricGauge.testCubeRewriteStackName-org.apache.lens.cube.parse.CandidateTableResolver-ITER-5",
         "lens.MethodMetricGauge.testCubeRewriteStackName-org.apache.lens.cube.parse.ColumnResolver-ITER-0",

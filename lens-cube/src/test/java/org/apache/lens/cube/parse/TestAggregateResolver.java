@@ -108,8 +108,8 @@ public class TestAggregateResolver extends TestQueryRewrite {
           + "from ", null, "group by testcube.cityid",
           getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
     String expectedq4 =
-      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, sum(testCube.msr2) as `sum(testCube.msr2)` " +
-          "from ", null, "group by testcube.cityid having" + " sum(testCube.msr2) > 100",
+      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, sum(testCube.msr2) as `sum(testCube.msr2)` "
+          + "from ", null, "group by testcube.cityid having" + " sum(testCube.msr2) > 100",
         getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
     String expectedq5 =
       getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, sum(testCube.msr2) as `msr2` from ", null,
@@ -176,7 +176,8 @@ public class TestAggregateResolver extends TestQueryRewrite {
     String query2 = "SELECT count (distinct testcube.cityid) from testcube where " + TWO_DAYS_RANGE;
     String hQL2 = rewrite(query2, conf);
     String expectedQL2 =
-      getExpectedQuery(cubeName, "SELECT count (distinct testcube.cityid) as `count(distinct testcube.cityid)`" + " from ", null, null,
+      getExpectedQuery(cubeName, "SELECT count (distinct testcube.cityid) as `count(distinct testcube.cityid)`"
+          + " from ", null, null,
         getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
     compareQueries(hQL2, expectedQL2);
 
@@ -255,8 +256,8 @@ public class TestAggregateResolver extends TestQueryRewrite {
     cubeql = rewriteCtx(query, conf);
     hQL = cubeql.toHQL();
     expectedQL =
-      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, sum(testCube.msr2) as `sum(testCube.msr2)` " +
-          "from ", null, "group by testcube.cityid", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
+      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, sum(testCube.msr2) as `sum(testCube.msr2)` "
+          + "from ", null, "group by testcube.cityid", getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
     compareQueries(hQL, expectedQL);
 
     query = "SELECT cityid, sum(testCube.msr2) m2 FROM testCube WHERE " + TWO_DAYS_RANGE + " order by m2";
@@ -271,8 +272,8 @@ public class TestAggregateResolver extends TestQueryRewrite {
     cubeql = rewriteCtx(query, conf);
     hQL = cubeql.toHQL();
     expectedQL =
-      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, sum(testCube.msr2) as `sum(testCube.msr2)` " +
-          "from ", null, "group by testcube.cityid having max(testcube.msr3) > 100",
+      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, sum(testCube.msr2) as `sum(testCube.msr2)` "
+          + "from ", null, "group by testcube.cityid having max(testcube.msr3) > 100",
         getWhereForDailyAndHourly2days(cubeName, "C2_testfact"));
     compareQueries(hQL, expectedQL);
   }
@@ -287,8 +288,8 @@ public class TestAggregateResolver extends TestQueryRewrite {
     Assert.assertTrue(candidate instanceof StorageCandidate);
     Assert.assertEquals("c1_testFact2_raw".toLowerCase(), ((StorageCandidate) candidate).getName().toLowerCase());
     String expectedQL =
-      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, avg(testCube.msr2) as `avg(testCube.msr2)` " +
-          "from ", null, "group by testcube.cityid", getWhereForHourly2days("c1_testfact2_raw"));
+      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, avg(testCube.msr2) as `avg(testCube.msr2)` "
+          + "from ", null, "group by testcube.cityid", getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(hQL, expectedQL);
 
     // query with measure in a where clause
@@ -412,8 +413,8 @@ public class TestAggregateResolver extends TestQueryRewrite {
     Assert.assertEquals("c1_testFact2_raw".toLowerCase(), ((StorageCandidate) candidate).getName().toLowerCase());
     hQL = cubeql.toHQL();
     expectedQL =
-      getExpectedQuery(cubeName, "SELECT distinct testcube.cityid as `cityid`, round(testCube.msr1) " +
-          "as `round(testCube.msr1)` from ", null, null, getWhereForHourly2days("c1_testfact2_raw"));
+      getExpectedQuery(cubeName, "SELECT distinct testcube.cityid as `cityid`, round(testCube.msr1) "
+          + "as `round(testCube.msr1)` from ", null, null, getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(hQL, expectedQL);
 
     query = "SELECT cityid, count(distinct(testCube.msr1)) from testCube where " + TWO_DAYS_RANGE;
@@ -424,8 +425,8 @@ public class TestAggregateResolver extends TestQueryRewrite {
     Assert.assertEquals("c1_testFact2_raw".toLowerCase(), ((StorageCandidate) candidate).getName().toLowerCase());
     hQL = cubeql.toHQL();
     expectedQL =
-      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, count(distinct testCube.msr1) " +
-          "as ` count(distinct testCube.msr1)` from ", null, "group by testcube.cityid",
+      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, count(distinct testCube.msr1) "
+          + "as ` count(distinct testCube.msr1)` from ", null, "group by testcube.cityid",
           getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(hQL, expectedQL);
 
@@ -437,16 +438,16 @@ public class TestAggregateResolver extends TestQueryRewrite {
     Assert.assertEquals("c1_testFact2_raw".toLowerCase(), ((StorageCandidate) candidate).getName().toLowerCase());
     hQL = cubeql.toHQL();
     expectedQL =
-      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, sum(testCube.msr1) as `sum(testCube.msr1)` " +
-          "from ", null, "group by testcube.cityid",
+      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, sum(testCube.msr1) as `sum(testCube.msr1)` "
+          + "from ", null, "group by testcube.cityid",
           getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(hQL, expectedQL);
     query = "SELECT cityid, sum(testCube.msr2) FROM testCube WHERE " + TWO_DAYS_RANGE + " having max(msr1) > 100";
     cubeql = rewriteCtx(query, conf);
     hQL = cubeql.toHQL();
     expectedQL =
-      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, sum(testCube.msr2) as `sum(testCube.msr2)` " +
-          "from ", null, "group by testcube.cityid having max(testcube.msr1) > 100",
+      getExpectedQuery(cubeName, "SELECT testcube.cityid as `cityid`, sum(testCube.msr2) as `sum(testCube.msr2)` "
+          + "from ", null, "group by testcube.cityid having max(testcube.msr1) > 100",
           getWhereForHourly2days("c1_testfact2_raw"));
     compareQueries(hQL, expectedQL);
   }

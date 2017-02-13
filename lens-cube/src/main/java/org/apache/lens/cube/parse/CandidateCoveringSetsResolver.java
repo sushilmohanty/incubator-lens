@@ -1,8 +1,25 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.lens.cube.parse;
 
 import java.util.*;
 
-import org.apache.lens.cube.error.LensCubeErrorCode;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
@@ -50,7 +67,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   }
 
   private void updateFinalCandidates(List<List<Candidate>> joinCandidates, CubeQueryContext cubeql) {
-    for (Iterator<List<Candidate>> itr = joinCandidates.iterator(); itr.hasNext(); ) {
+    for (Iterator<List<Candidate>> itr = joinCandidates.iterator(); itr.hasNext();) {
       List<Candidate> joinCandidate = itr.next();
       if (joinCandidate.size() == 1) {
         finalCandidates.add(joinCandidate.iterator().next());
@@ -61,7 +78,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   }
 
   private boolean isCandidateCoveringTimeRanges(UnionCandidate uc, List<TimeRange> ranges) {
-    for (Iterator<TimeRange> itr = ranges.iterator(); itr.hasNext(); ) {
+    for (Iterator<TimeRange> itr = ranges.iterator(); itr.hasNext();) {
       TimeRange range = itr.next();
       if (!CandidateUtil.isTimeRangeCovered(uc.getChildren(), range.getFromDate(), range.getToDate())) {
         return false;
@@ -71,7 +88,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   }
 
   private void pruneUnionCandidatesNotCoveringAllRanges(List<UnionCandidate> ucs, List<TimeRange> ranges) {
-    for (Iterator<UnionCandidate> itr = ucs.iterator(); itr.hasNext(); ) {
+    for (Iterator<UnionCandidate> itr = ucs.iterator(); itr.hasNext();) {
       UnionCandidate uc = itr.next();
       if (!isCandidateCoveringTimeRanges(uc, ranges)) {
         itr.remove();
@@ -116,7 +133,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     // pruing done in the previous steps, now create union candidates
     candidateSet.addAll(unionCoveringSet);
     updateQueriableMeasures(candidateSet, qpcList, cubeql);
-    return candidateSet ;
+    return candidateSet;
   }
 
   private boolean isMeasureAnswerablebyUnionCandidate(QueriedPhraseContext msr, Candidate uc,
@@ -137,7 +154,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
   private void pruneUnionCoveringSetWithoutAnyCommonMeasure(List<UnionCandidate> ucs,
       Set<QueriedPhraseContext> queriedMsrs,
       CubeQueryContext cubeql) throws LensException {
-    for (ListIterator<UnionCandidate> itr = ucs.listIterator(); itr.hasNext(); ) {
+    for (ListIterator<UnionCandidate> itr = ucs.listIterator(); itr.hasNext();) {
       boolean toRemove = true;
       UnionCandidate uc = itr.next();
       for (QueriedPhraseContext msr : queriedMsrs) {
@@ -156,7 +173,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     for (int i = 0; i < candidates.size(); i++) {
       UnionCandidate current = candidates.get(i);
       int j = i + 1;
-      for (ListIterator<UnionCandidate> itr = candidates.listIterator(j); itr.hasNext(); ) {
+      for (ListIterator<UnionCandidate> itr = candidates.listIterator(j); itr.hasNext();) {
         UnionCandidate next = itr.next();
         if (next.getChildren().containsAll(current.getChildren())) {
           itr.remove();
@@ -182,7 +199,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
         clonedI = clonedI >>> 1;
         --count;
       }
-      combinations.add(new UnionCandidate(individualCombinationList, cubeql ));
+      combinations.add(new UnionCandidate(individualCombinationList, cubeql));
     }
     return combinations;
   }
@@ -192,7 +209,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     List<List<Candidate>> msrCoveringSets = new ArrayList<>();
     List<Candidate> ucSet = new ArrayList<>(unionCandidates);
     // Check if a single set can answer all the measures and exprsWithMeasures
-    for (Iterator<Candidate> i = ucSet.iterator(); i.hasNext(); ) {
+    for (Iterator<Candidate> i = ucSet.iterator(); i.hasNext();) {
       boolean evaluable = false;
       Candidate uc = i.next();
       for (QueriedPhraseContext msr : msrs) {
@@ -211,7 +228,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     }
     // Sets that contain all measures or no measures are removed from iteration.
     // find other facts
-    for (Iterator<Candidate> i = ucSet.iterator(); i.hasNext(); ) {
+    for (Iterator<Candidate> i = ucSet.iterator(); i.hasNext();) {
       Candidate uc = i.next();
       i.remove();
       // find the remaining measures in other facts
@@ -238,7 +255,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
 
   private void updateQueriableMeasures(List<Candidate> cands,
       List<QueriedPhraseContext> qpcList, CubeQueryContext cubeql) throws LensException {
-    for (Candidate cand : cands ) {
+    for (Candidate cand : cands) {
       updateStorageCandidateQueriableMeasures(cand, qpcList, cubeql);
     }
   }
