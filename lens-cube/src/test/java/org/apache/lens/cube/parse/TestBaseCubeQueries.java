@@ -69,14 +69,14 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
 
   @Test
   public void testNoCandidateFactAvailableExceptionCompareTo() throws Exception {
-    //maxCause : COLUMN_NOT_FOUND, Ordinal : 9
+    //maxCause : COLUMN_NOT_FOUND
     NoCandidateFactAvailableException ne1 =(NoCandidateFactAvailableException)
-            getLensExceptionInRewrite("select dim1, test_time_dim, msr3, msr13 from basecube where "
-            + TWO_DAYS_RANGE, conf);
-    //maxCause : FACT_NOT_AVAILABLE_IN_RANGE, Ordinal : 1
+      getLensExceptionInRewrite("select dim1, test_time_dim, msr3, msr13 from basecube where "
+        + TWO_DAYS_RANGE, conf);
+    //maxCause : COLUMN_NOT_FOUND
     NoCandidateFactAvailableException ne2 = (NoCandidateFactAvailableException)
-            getLensExceptionInRewrite("select dim1 from " + cubeName + " where " + LAST_YEAR_RANGE, getConf());
-    assertEquals(ne1.compareTo(ne2), 8);
+      getLensExceptionInRewrite("select dim1 from " + cubeName + " where " + LAST_YEAR_RANGE, getConf());
+    assertEquals(ne1.compareTo(ne2), 0);
   }
 
   @Test

@@ -18,8 +18,11 @@
  */
 package org.apache.lens.cube.parse;
 
+import static org.apache.lens.cube.parse.CandidateUtil.getColumns;
+
 import java.util.*;
 
+import org.apache.lens.cube.error.NoCandidateFactAvailableException;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
@@ -48,9 +51,22 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       finalCandidates.addAll(cubeql.getCandidates());
     }
     List<Candidate> timeRangeCoveringSet = resolveTimeRangeCoveringFactSet(cubeql, queriedMsrs, qpcList);
+    if (timeRangeCoveringSet.isEmpty()) {
+      throw new NoCandidateFactAvailableException(cubeql.getCube().getName()
+        + " does not have any facts that can cover the requested time range " + cubeql.getTimeRanges().toString()
+        + " and queried measure set " + getColumns(queriedMsrs).toString(),
+        cubeql.getStoragePruningMsgs());
+    }
+    log.info("Time covering candidates :{}", timeRangeCoveringSet);
     List<List<Candidate>> measureCoveringSets = resolveJoinCandidates(timeRangeCoveringSet, queriedMsrs, cubeql);
+    if (measureCoveringSets.isEmpty()) {
+      throw  new NoCandidateFactAvailableException(cubeql.getCube().getName()
+        + " does not have any facts that can cover the queried measure set "
+        + getColumns(queriedMsrs).toString(),
+        cubeql.getStoragePruningMsgs());
+    }
     updateFinalCandidates(measureCoveringSets, cubeql);
-    log.info("Covering candidate sets :{}", finalCandidates);
+    log.info("Final Time and Measure covering candidates :{}", finalCandidates);
     cubeql.getCandidates().clear();
     cubeql.getCandidates().addAll(finalCandidates);
   }
@@ -87,11 +103,12 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     return true;
   }
 
-  private void pruneUnionCandidatesNotCoveringAllRanges(List<UnionCandidate> ucs, List<TimeRange> ranges) {
+  private void pruneUnionCandidatesNotCoveringAllRanges(List<UnionCandidate> ucs, CubeQueryContext cubeql) {
     for (Iterator<UnionCandidate> itr = ucs.iterator(); itr.hasNext();) {
       UnionCandidate uc = itr.next();
-      if (!isCandidateCoveringTimeRanges(uc, ranges)) {
+      if (!isCandidateCoveringTimeRanges(uc, cubeql.getTimeRanges())) {
         itr.remove();
+        cubeql.addCandidatePruningMsg(uc, CandidateTablePruneCause.storageNotAvailableInRange(cubeql.getTimeRanges()));
       }
     }
   }
@@ -112,6 +129,9 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
           continue;
         } else if (CandidateUtil.isPartiallyValidForTimeRanges(sc, cubeql.getTimeRanges())) {
           allCandidatesPartiallyValid.add(CandidateUtil.cloneStorageCandidate(sc));
+        } else {
+          cubeql.addCandidatePruningMsg(sc, CandidateTablePruneCause.storageNotAvailableInRange(
+            cubeql.getTimeRanges()));
         }
       } else {
         throw new LensException("Not a StorageCandidate!!");
@@ -123,7 +143,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     // Sort the Collection based on no of elements
     Collections.sort(unionCoveringSet, new CandidateUtil.ChildrenSizeBasedCandidateComparator<UnionCandidate>());
     // prune non covering sets
-    pruneUnionCandidatesNotCoveringAllRanges(unionCoveringSet, cubeql.getTimeRanges());
+    pruneUnionCandidatesNotCoveringAllRanges(unionCoveringSet, cubeql);
     // prune candidate set which doesn't contain any common measure i
     pruneUnionCoveringSetWithoutAnyCommonMeasure(unionCoveringSet, queriedMsrs, cubeql);
     // prune redundant covering sets
@@ -290,5 +310,13 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
         }
       }
     }
+  }
+
+  private static Set<String> getColumns(Collection<QueriedPhraseContext> queriedPhraseContexts) {
+    Set<String> cols = new HashSet<>();
+    for (QueriedPhraseContext qur : queriedPhraseContexts) {
+      cols.addAll(qur.getColumns());
+    }
+    return cols;
   }
 }

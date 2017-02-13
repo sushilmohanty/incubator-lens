@@ -98,7 +98,11 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Getter
   private CubeInterface cube;
   @Getter
-  Map<Dimension, CandidateDim> dimsToQuery;
+  private Map<Dimension, CandidateDim> dimsToQuery;
+  @Getter
+  private Date startTime;
+  @Getter
+  private Date endTime;
   /**
    * Cached fact columns
    */
@@ -117,7 +121,8 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Getter
   private int numQueriedParts = 0;
 
-  public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName, CubeQueryContext cubeql) {
+  public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName, CubeQueryContext cubeql)
+    throws LensException {
     if ((cube == null) || (fact == null) || (storageName == null)) {
       throw new IllegalArgumentException("Cube,fact and storageName should be non null");
     }
@@ -136,12 +141,14 @@ public class StorageCandidate implements Candidate, CandidateTable {
       this.partWhereClauseFormat = new SimpleDateFormat(formatStr);
     }
     completenessPartCol = conf.get(CubeQueryConfUtil.COMPLETENESS_CHECK_PART_COL);
-    client = cubeql.getMetastoreClient();
     completenessThreshold = conf
       .getFloat(CubeQueryConfUtil.COMPLETENESS_THRESHOLD, CubeQueryConfUtil.DEFAULT_COMPLETENESS_THRESHOLD);
+    client = cubeql.getMetastoreClient();
+    startTime = client.getStorageTableStartDate(name, fact.getName());
+    endTime = client.getStorageTableEndDate(name, fact.getName());
   }
 
-  public StorageCandidate(StorageCandidate sc) {
+  public StorageCandidate(StorageCandidate sc) throws LensException {
     this(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getCubeql());
     // Copy update periods.
     for (UpdatePeriod updatePeriod : sc.getValidUpdatePeriods()) {
@@ -244,17 +251,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
       }
     }
     return factColumns;
-  }
-
-  @Override
-  public Date getStartTime() {
-    // TODO union : get storage stat time and take max out of it
-    return fact.getStartTime();
-  }
-
-  @Override
-  public Date getEndTime() {
-    return fact.getEndTime();
   }
 
   @Override

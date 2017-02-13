@@ -219,7 +219,7 @@ public class CandidateUtil {
     }
   }
 
-  public static StorageCandidate cloneStorageCandidate(StorageCandidate sc) {
+  public static StorageCandidate cloneStorageCandidate(StorageCandidate sc) throws LensException{
     return new StorageCandidate(sc);
   }
 

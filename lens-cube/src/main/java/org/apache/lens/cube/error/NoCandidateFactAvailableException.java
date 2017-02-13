@@ -28,7 +28,11 @@ public class NoCandidateFactAvailableException extends LensException {
   private final PruneCauses<StorageCandidate> briefAndDetailedError;
 
   public NoCandidateFactAvailableException(PruneCauses<StorageCandidate> briefAndDetailedError) {
-    super(LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE.getLensErrorInfo(), briefAndDetailedError.getBriefCause());
+    this(briefAndDetailedError.getBriefCause(), briefAndDetailedError);
+  }
+
+  public NoCandidateFactAvailableException(String errMsg, PruneCauses<StorageCandidate> briefAndDetailedError) {
+    super(LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE.getLensErrorInfo(), errMsg);
     this.briefAndDetailedError = briefAndDetailedError;
   }
 

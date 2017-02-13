@@ -43,18 +43,6 @@ public class CandidateTablePruneCause {
   public enum CandidateTablePruneCode {
     // other fact set element is removed
     ELEMENT_IN_SET_PRUNED("Other candidate from measure covering set is pruned"),
-    FACT_NOT_AVAILABLE_IN_RANGE("No facts available for all of these time ranges: %s") {
-      @Override
-      Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
-        Set<TimeRange> allRanges = Sets.newHashSet();
-        for (CandidateTablePruneCause cause : causes) {
-          allRanges.addAll(cause.getInvalidRanges());
-        }
-        return new Object[]{
-          allRanges.toString(),
-        };
-      }
-    },
 
     COLUMN_NOT_FOUND("%s are not %s") {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
@@ -86,9 +74,7 @@ public class CandidateTablePruneCause {
     // STOARGE_TABLE_DOES_NOT_EXIST("Storage table does not exist"),
     // storage has no update periods queried. Commented as its not being used anywhere in master.
     // MISSING_UPDATE_PERIODS("Storage has no update periods"),
-    // no candidate update periods, update period cause will have why each
-    // update period is not a candidate
-    NO_CANDIDATE_UPDATE_PERIODS("Storage update periods are not candidate"),
+
     // storage table has no partitions queried
     NO_PARTITIONS("Storage table has no partitions"),
     // partition column does not exist
@@ -97,6 +83,19 @@ public class CandidateTablePruneCause {
     TIME_RANGE_NOT_ANSWERABLE("Range not answerable"),
     // storage is not supported by execution engine/driver
     UNSUPPORTED_STORAGE("Unsupported Storage"),
+
+    STORAGE_NOT_AVAILABLE_IN_RANGE("No storages available for all of these time ranges: %s") {
+      @Override
+      Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
+        Set<TimeRange> allRanges = Sets.newHashSet();
+        for (CandidateTablePruneCause cause : causes) {
+          allRanges.addAll(cause.getInvalidRanges());
+        }
+        return new Object[]{
+          allRanges.toString(),
+        };
+      }
+    },
 
     // least weight not satisfied
     MORE_WEIGHT("Picked table had more weight than minimum."),
@@ -156,7 +155,13 @@ public class CandidateTablePruneCause {
         };
       }
     },
-    NO_FACT_UPDATE_PERIODS_FOR_GIVEN_RANGE("No fact update periods for given range"),
+    //Commented as its not used anymore.
+    //NO_FACT_UPDATE_PERIODS_FOR_GIVEN_RANGE("No fact update periods for given range"),
+
+    // no candidate update periods, update period cause will have why each
+    // update period is not a candidate
+    NO_CANDIDATE_UPDATE_PERIODS("Storage update periods are not valid for given time range"),
+
     NO_COLUMN_PART_OF_A_JOIN_PATH("No column part of a join path. Join columns: [%s]") {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
         List<String> columns = new ArrayList<String>();
@@ -263,8 +268,8 @@ public class CandidateTablePruneCause {
   }
 
   // Different static constructors for different causes.
-  public static CandidateTablePruneCause factNotAvailableInRange(List<TimeRange> ranges) {
-    CandidateTablePruneCause cause = new CandidateTablePruneCause(FACT_NOT_AVAILABLE_IN_RANGE);
+  public static CandidateTablePruneCause storageNotAvailableInRange(List<TimeRange> ranges) {
+    CandidateTablePruneCause cause = new CandidateTablePruneCause(STORAGE_NOT_AVAILABLE_IN_RANGE);
     cause.invalidRanges = ranges;
     return cause;
   }
