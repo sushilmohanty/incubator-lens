@@ -58,6 +58,10 @@ public class CandidateUtil {
     return true;
   }
 
+  static boolean isPartiallyValidForTimeRange(Candidate cand, TimeRange timeRange) {
+    return isPartiallyValidForTimeRanges(cand, Arrays.asList(timeRange));
+  }
+
   static boolean isPartiallyValidForTimeRanges(Candidate cand, List<TimeRange> timeRanges) {
     return timeRanges.stream().anyMatch(timeRange ->
       (cand.getStartTime().before(timeRange.getFromDate()) && cand.getEndTime().after(timeRange.getFromDate()))

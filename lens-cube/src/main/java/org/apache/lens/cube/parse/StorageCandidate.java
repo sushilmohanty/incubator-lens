@@ -18,6 +18,7 @@
  */
 package org.apache.lens.cube.parse;
 
+import static java.util.stream.Collectors.toSet;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.SkipUpdatePeriodCode;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.timeDimNotSupported;
@@ -28,17 +29,7 @@ import static org.apache.lens.cube.parse.StorageUtil.processExpressionsForComple
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.apache.lens.cube.metadata.AbstractCubeTable;
 import org.apache.lens.cube.metadata.CubeFactTable;
@@ -171,8 +162,31 @@ public class StorageCandidate implements Candidate, CandidateTable {
     completenessThreshold = conf
       .getFloat(CubeQueryConfUtil.COMPLETENESS_THRESHOLD, CubeQueryConfUtil.DEFAULT_COMPLETENESS_THRESHOLD);
     client = cubeql.getMetastoreClient();
-    startTime = client.getStorageTableStartDate(name, fact.getName());
-    endTime = client.getStorageTableEndDate(name, fact.getName());
+    setStorageStartAndEndDate();
+  }
+
+  public void setStorageStartAndEndDate() throws LensException {
+    List<Date> startDates = new ArrayList<>();
+    List<Date> endDates = new ArrayList<>();
+    for (String storageTablePrefix : getStorageTableNames()) {
+      startDates.add(client.getStorageTableStartDate(storageTablePrefix, fact.getName()));
+      endDates.add(client.getStorageTableEndDate(storageTablePrefix, fact.getName()));
+    }
+    this.startTime = Collections.min(startDates);
+    this.endTime = Collections.max(endDates);
+  }
+
+  private Set<String> getStorageTableNames() throws LensException {
+    if (validUpdatePeriods.isEmpty()) {
+      // In this case skip invalid update periods
+      Set<String> uniqueStorageTables = new HashSet<>();
+      for (UpdatePeriod updatePeriod : fact.getUpdatePeriods().get(storageName)) {
+        uniqueStorageTables.add(client.getStorageTableName(fact.getName(), storageName, updatePeriod));
+      }
+      return uniqueStorageTables;
+    } else {
+      return client.getStorageTables(fact.getName(), storageName);
+    }
   }
 
   public StorageCandidate(StorageCandidate sc) throws LensException {
@@ -381,7 +395,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
       cubeql.addStoragePruningMsg(this,
         new CandidateTablePruneCause(CandidateTablePruneCause.CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE));
       return false;
-    } else if (!client.partColExists(name, partCol)) {
+    } else if (!client.partColExists(fact.getName(), storageName, partCol)) {
       log.info("{} does not exist in {}", partCol, name);
       List<String> missingCols = new ArrayList<>();
       missingCols.add(partCol);

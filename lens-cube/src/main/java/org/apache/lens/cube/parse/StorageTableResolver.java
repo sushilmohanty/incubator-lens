@@ -301,27 +301,29 @@ class StorageTableResolver implements ContextRewriter {
         }
         it.remove();
       } else {
+        //set the dates again as they can change based on ValidUpdatePeriod
+        sc.setStorageStartAndEndDate();
         Set<CandidateTablePruneCause> allPruningCauses = new HashSet<>(2);
         for (TimeRange range : cubeql.getTimeRanges()) {
           CandidateTablePruneCause pruningCauseForThisTimeRange = null;
-          if (!client.isStorageTableCandidateForRange(storageTable, range.getFromDate(), range.getToDate())) {
+          if (!CandidateUtil.isPartiallyValidForTimeRange(sc, range)) {
             //This is the prune cause
             pruningCauseForThisTimeRange =
               new CandidateTablePruneCause(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE);
           }
           //Check partition (or fallback) column existence
           else if (cubeql.shouldReplaceTimeDimWithPart()) {
-            if (!client.partColExists(storageTable, range.getPartitionColumn())) {
+            if (!client.partColExists(sc.getFact().getName(), sc.getStorageName(), range.getPartitionColumn())) {
               pruningCauseForThisTimeRange = partitionColumnsMissing(range.getPartitionColumn());
               TimeRange fallBackRange = StorageUtil.getFallbackRange(range, sc.getFact().getName(), cubeql);
               while (fallBackRange != null) {
                 pruningCauseForThisTimeRange = null;
-                if (!client.partColExists(storageTable, fallBackRange.getPartitionColumn())) {
+                if (!client.partColExists(sc.getFact().getName(), sc.getStorageName(),
+                  fallBackRange.getPartitionColumn())) {
                   pruningCauseForThisTimeRange = partitionColumnsMissing(fallBackRange.getPartitionColumn());
                   fallBackRange = StorageUtil.getFallbackRange(fallBackRange, sc.getFact().getName(), cubeql);
                 } else {
-                  if (!client.isStorageTableCandidateForRange(storageTable, fallBackRange.getFromDate(),
-                    fallBackRange.getToDate())) {
+                  if (!CandidateUtil.isPartiallyValidForTimeRange(sc, fallBackRange)) {
                     pruningCauseForThisTimeRange =
                       new CandidateTablePruneCause(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE);
                   }

@@ -458,4 +458,36 @@ public class TestUnionQueries extends TestQueryRewrite {
     );
     compareQueries(hqlQuery, expected);
   }
+
+
+  @Test
+  public void testSingleFactSingleStorageWithMultipleTableDescriptions() throws Exception {
+    Configuration conf = LensServerAPITestUtil.getConfigurationWithParams(getConf(),
+      CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C6",
+      getValidFactTablesKey("testcube"), "testfact",
+      FAIL_QUERY_ON_PARTIAL_DATA, false);
+
+    String hqlQuery = rewrite("select count(msr4) from testCube where " + TWO_MONTHS_RANGE_UPTO_DAYS, conf);
+    System.out.println(hqlQuery);
+
+   /* // No time_range_in should be remaining
+    assertFalse(hqlQuery.contains("time_range_in"));
+    ArrayList<String> storages = Lists.newArrayList("c3_testfact", "c5_testfact");
+    StoragePartitionProvider provider = new StoragePartitionProvider() {
+      @Override
+      public Map<String, String> providePartitionsForStorage(String storage) {
+        if (storage.contains("c3")) {
+          return getWhereForDays(storage, TWO_MONTHS_BACK, getDateWithOffset(DAILY, -10));
+        } else if (storage.contains("c5")) {
+          return getWhereForDays(storage, getDateWithOffset(DAILY, -10), NOW);
+        }
+        return null;
+      }
+    };
+    String expected = getExpectedUnionQuery(TEST_CUBE_NAME, storages, provider,
+      "select count(testcube.alias0)", null, null,
+      "select count(testcube.msr4) as `alias0` from ", null, null
+    );
+    compareQueries(hqlQuery, expected);*/
+  }
 }
