@@ -159,6 +159,7 @@ public class DateFactory {
   public static final String TWO_MONTHS_RANGE_UPTO_DAYS;
   public static final String TWO_MONTHS_RANGE_UPTO_HOURS;
   public static final String TWO_DAYS_RANGE_BEFORE_4_DAYS;
+  public static final String THREE_MONTHS_RANGE_UPTO_DAYS;
   private static boolean zerothHour;
 
 
@@ -196,6 +197,7 @@ public class DateFactory {
     TWO_MONTHS_RANGE_UPTO_MONTH = getTimeRangeString(MONTHLY, -2, 0);
     TWO_MONTHS_RANGE_UPTO_DAYS = getTimeRangeString(MONTHLY, -2, 0, DAILY);
     TWO_MONTHS_RANGE_UPTO_HOURS = getTimeRangeString(MONTHLY, -2, 0, HOURLY);
+    THREE_MONTHS_RANGE_UPTO_DAYS = getTimeRangeString(MONTHLY, -3, 0, DAILY);
 
     // calculate LAST_HOUR_TIME_RANGE
     LAST_HOUR_TIME_RANGE = getTimeRangeString(HOURLY, -1, 0);

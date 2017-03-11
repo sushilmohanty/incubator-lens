@@ -1793,7 +1793,7 @@ public class CubeTestSetup {
     s6Daily.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getCanonicalName());
     s6Daily.setPartCols(partCols);
     s6Daily.setTimePartCols(timePartCols);
-    s6Daily.getTblProps().put(MetastoreUtil.getStoragetableStartTimesKey(), "now.day - 120 days");
+    s6Daily.getTblProps().put(MetastoreUtil.getStoragetableStartTimesKey(), "now.month - 1 months"); // Current month and last one month daily data
     s6Daily.getTblProps().put(MetastoreUtil.getStoragetableEndTimesKey(), "now.day");
 
     StorageTableDesc s6Monthly = new StorageTableDesc();
@@ -1801,9 +1801,8 @@ public class CubeTestSetup {
     s6Monthly.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getCanonicalName());
     s6Monthly.setPartCols(partCols);
     s6Monthly.setTimePartCols(timePartCols);
-    s6Monthly.getTblProps().put(MetastoreUtil.getStoragetableStartTimesKey(), "now.day - 365 days");
-    s6Monthly.getTblProps().put(MetastoreUtil.getStoragetableEndTimesKey(), "now.day - 10 days");
-
+    s6Monthly.getTblProps().put(MetastoreUtil.getStoragetableStartTimesKey(), "now.month - 12 months"); //Last 12 months monthly data barring current month and last one month
+    s6Monthly.getTblProps().put(MetastoreUtil.getStoragetableEndTimesKey(), "now.month - 1 months");
     storageAggregatePeriods.put(c1, updates);
     storageAggregatePeriods.put(c2, updates);
     storageAggregatePeriods.put(c3, updates);
@@ -1819,7 +1818,7 @@ public class CubeTestSetup {
     storageTables.put(c3, s3);
     storageTables.put(c5, s5);
     storageTables.put(c6Daily, s6Daily);
-    storageTables.put(c6Monthly, s6Daily);
+    storageTables.put(c6Monthly, s6Monthly);
 
     //add storage with continuous update period
     updates.add(CONTINUOUS);

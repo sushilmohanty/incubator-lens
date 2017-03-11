@@ -58,14 +58,21 @@ public class CandidateUtil {
     return true;
   }
 
+  static boolean isCandidatePartiallyValidForTimeRange(Date candidateStartTime, Date candidateEndTime,
+    Date timeRangeStart, Date timeRangeEnd) {
+    return (candidateStartTime.before(timeRangeStart) && candidateEndTime.after(timeRangeStart))
+      || (candidateStartTime.before(timeRangeEnd) && candidateEndTime.after(timeRangeEnd));
+  }
+
+
   static boolean isPartiallyValidForTimeRange(Candidate cand, TimeRange timeRange) {
     return isPartiallyValidForTimeRanges(cand, Arrays.asList(timeRange));
   }
 
   static boolean isPartiallyValidForTimeRanges(Candidate cand, List<TimeRange> timeRanges) {
     return timeRanges.stream().anyMatch(timeRange ->
-      (cand.getStartTime().before(timeRange.getFromDate()) && cand.getEndTime().after(timeRange.getFromDate()))
-      || (cand.getStartTime().before(timeRange.getToDate()) && cand.getEndTime().after(timeRange.getToDate())));
+      isCandidatePartiallyValidForTimeRange(cand.getStartTime(), cand.getEndTime(),
+        timeRange.getFromDate(), timeRange.getToDate()));
   }
 
   /**
@@ -277,5 +284,8 @@ public class CandidateUtil {
       }
     }
   }
+
+
+
 
 }

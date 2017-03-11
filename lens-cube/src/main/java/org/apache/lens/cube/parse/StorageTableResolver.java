@@ -341,6 +341,15 @@ class StorageTableResolver implements ContextRewriter {
           it.remove();
           cubeql.addStoragePruningMsg(sc, allPruningCauses.toArray(new CandidateTablePruneCause[0]));
         }
+
+        for (TimeRange timeRange : cubeql.getTimeRanges()) {
+          if (!sc.isTimeRangeCoverable(timeRange)) {
+            it.remove();
+            cubeql.addStoragePruningMsg(sc,
+              new CandidateTablePruneCause(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE));
+            break;
+          }
+        }
       }
     }
   }

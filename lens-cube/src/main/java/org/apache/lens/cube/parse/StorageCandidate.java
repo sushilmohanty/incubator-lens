@@ -18,7 +18,6 @@
  */
 package org.apache.lens.cube.parse;
 
-import static java.util.stream.Collectors.toSet;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.SkipUpdatePeriodCode;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.timeDimNotSupported;
@@ -139,6 +138,16 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Getter
   private int numQueriedParts = 0;
 
+  //TODDO check if required.
+  @Getter
+  private boolean hasStorageTblsAtUpdatePeriodLevel;
+
+  public StorageCandidate(StorageCandidate sc) throws LensException {
+    this(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getCubeql());
+    // Copy update periods.
+    this.validUpdatePeriods.addAll(sc.getValidUpdatePeriods());
+  }
+
   public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName, CubeQueryContext cubeql)
     throws LensException {
     if ((cube == null) || (fact == null) || (storageName == null)) {
@@ -162,13 +171,23 @@ public class StorageCandidate implements Candidate, CandidateTable {
     completenessThreshold = conf
       .getFloat(CubeQueryConfUtil.COMPLETENESS_THRESHOLD, CubeQueryConfUtil.DEFAULT_COMPLETENESS_THRESHOLD);
     client = cubeql.getMetastoreClient();
+    Set<String> storageTblNames = client.getStorageTables(fact.getName(), storageName);
+    if (storageTblNames.size() > 1) {
+      hasStorageTblsAtUpdatePeriodLevel = true; // see LENS-1386 for more details on this feature
+    } else {
+      hasStorageTblsAtUpdatePeriodLevel = !storageTblNames.iterator().next().equalsIgnoreCase(name);
+    }
     setStorageStartAndEndDate();
   }
 
   public void setStorageStartAndEndDate() throws LensException {
+    if (this.startTime != null && !this.hasStorageTblsAtUpdatePeriodLevel) {
+      //If the times are already set and are not dependent of update period, no point in setting times again.
+      return;
+    }
     List<Date> startDates = new ArrayList<>();
     List<Date> endDates = new ArrayList<>();
-    for (String storageTablePrefix : getStorageTableNames()) {
+    for (String storageTablePrefix : getValidStorageTableNames()) {
       startDates.add(client.getStorageTableStartDate(storageTablePrefix, fact.getName()));
       endDates.add(client.getStorageTableEndDate(storageTablePrefix, fact.getName()));
     }
@@ -176,23 +195,18 @@ public class StorageCandidate implements Candidate, CandidateTable {
     this.endTime = Collections.max(endDates);
   }
 
-  private Set<String> getStorageTableNames() throws LensException {
-    if (validUpdatePeriods.isEmpty()) {
-      // In this case skip invalid update periods
+  private Set<String> getValidStorageTableNames() throws LensException {
+    if (!validUpdatePeriods.isEmpty()) {
+      // In this case skip invalid update periods and get storage tables only for valid ones.
       Set<String> uniqueStorageTables = new HashSet<>();
-      for (UpdatePeriod updatePeriod : fact.getUpdatePeriods().get(storageName)) {
+      for (UpdatePeriod updatePeriod : validUpdatePeriods) {
         uniqueStorageTables.add(client.getStorageTableName(fact.getName(), storageName, updatePeriod));
       }
       return uniqueStorageTables;
     } else {
+      //Get all storage tables.
       return client.getStorageTables(fact.getName(), storageName);
     }
-  }
-
-  public StorageCandidate(StorageCandidate sc) throws LensException {
-    this(sc.getCube(), sc.getFact(), sc.getStorageName(), sc.getCubeql());
-    // Copy update periods.
-    this.validUpdatePeriods.addAll(sc.getValidUpdatePeriods());
   }
 
   private void setMissingExpressions(Set<Dimension> queriedDims) throws LensException {
@@ -336,8 +350,9 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   private void updatePartitionStorage(FactPartition part) throws LensException {
     try {
-      if (client.isStorageTablePartitionACandidate(name, part.getPartSpec()) && (client
-        .factPartitionExists(fact, part, name))) {
+      //client.isStorageTablePartitionACandidate(
+      //client.getStorageTableName(fact.getName(), storageName, part.getPeriod()), part.getPartSpec())
+      if (client.factPartitionExists(fact, part, name)) {
         part.getStorageTables().add(name);
         part.setFound(true);
       }
@@ -374,47 +389,55 @@ public class StorageCandidate implements Candidate, CandidateTable {
     if (fromDate.equals(toDate) || fromDate.after(toDate)) {
       return true;
     }
-    UpdatePeriod interval = CubeFactTable.maxIntervalInRange(fromDate, toDate, updatePeriods);
-    if (interval == null) {
+    if (updatePeriods == null | updatePeriods.isEmpty()) {
+      return false;
+    }
+    UpdatePeriod maxInterval = CubeFactTable.maxIntervalInRange(fromDate, toDate, updatePeriods);
+    if (maxInterval == null) {
       log.info("No max interval for range: {} to {}", fromDate, toDate);
       return false;
     }
 
-    if (interval == UpdatePeriod.CONTINUOUS && rangeWriter.getClass().equals(BetweenTimeRangeWriter.class)) {
-      FactPartition part = new FactPartition(partCol, fromDate, interval, null, partWhereClauseFormat);
+    if (maxInterval == UpdatePeriod.CONTINUOUS && rangeWriter.getClass().equals(BetweenTimeRangeWriter.class)) {
+      FactPartition part = new FactPartition(partCol, fromDate, maxInterval, null, partWhereClauseFormat);
       partitions.add(part);
       part.getStorageTables().add(storageName);
-      part = new FactPartition(partCol, toDate, interval, null, partWhereClauseFormat);
+      part = new FactPartition(partCol, toDate, maxInterval, null, partWhereClauseFormat);
       partitions.add(part);
       part.getStorageTables().add(storageName);
       log.info("Added continuous fact partition for storage table {}", storageName);
       return true;
     }
 
-    if (!client.isStorageTableCandidateForRange(name, fromDate, toDate)) {
-      cubeql.addStoragePruningMsg(this,
-        new CandidateTablePruneCause(CandidateTablePruneCause.CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE));
-      return false;
-    } else if (!client.partColExists(fact.getName(), storageName, partCol)) {
-      log.info("{} does not exist in {}", partCol, name);
-      List<String> missingCols = new ArrayList<>();
-      missingCols.add(partCol);
-      //      cubeql.addStoragePruningMsg(this, partitionColumnsMissing(missingCols));
-      return false;
+    Date maxIntervalStorageTblStartDate = getStorageTableStartDate(maxInterval);
+    Date maxIntervalStorageTblEndDate = getStorageTableEndDate(maxInterval);
+
+    TreeSet<UpdatePeriod> remainingIntervals =  new TreeSet<>(updatePeriods);
+    remainingIntervals.remove(maxInterval);
+    if (!CandidateUtil.isCandidatePartiallyValidForTimeRange(
+      maxIntervalStorageTblStartDate, maxIntervalStorageTblEndDate,fromDate, toDate)) {
+      //Check the time range in remainingIntervals as maxInterval is not useful
+      return getPartitions(fromDate, toDate, partCol, partitions, remainingIntervals,
+        addNonExistingParts, failOnPartialData, missingPartitions);
     }
 
-    Date ceilFromDate = DateUtil.getCeilDate(fromDate, interval);
-    Date floorToDate = DateUtil.getFloorDate(toDate, interval);
+    Date ceilFromDate = DateUtil.getCeilDate(fromDate.after(maxIntervalStorageTblStartDate)
+      ? fromDate : maxIntervalStorageTblStartDate, maxInterval);
+    Date floorToDate = DateUtil.getFloorDate(toDate.before(maxIntervalStorageTblEndDate)
+      ? toDate : maxIntervalStorageTblEndDate, maxInterval);
+    if(ceilFromDate.equals(floorToDate) || floorToDate.before(ceilFromDate)) {
+      return getPartitions(fromDate, toDate, partCol, partitions, remainingIntervals,
+        addNonExistingParts, failOnPartialData, missingPartitions);
+    }
 
     int lookAheadNumParts = conf
-      .getInt(CubeQueryConfUtil.getLookAheadPTPartsKey(interval), CubeQueryConfUtil.DEFAULT_LOOK_AHEAD_PT_PARTS);
-
-    TimeRange.Iterable.Iterator iter = TimeRange.iterable(ceilFromDate, floorToDate, interval, 1).iterator();
+      .getInt(CubeQueryConfUtil.getLookAheadPTPartsKey(maxInterval), CubeQueryConfUtil.DEFAULT_LOOK_AHEAD_PT_PARTS);
+    TimeRange.Iterable.Iterator iter = TimeRange.iterable(ceilFromDate, floorToDate, maxInterval, 1).iterator();
     // add partitions from ceilFrom to floorTo
     while (iter.hasNext()) {
       Date dt = iter.next();
       Date nextDt = iter.peekNext();
-      FactPartition part = new FactPartition(partCol, dt, interval, null, partWhereClauseFormat);
+      FactPartition part = new FactPartition(partCol, dt, maxInterval, null, partWhereClauseFormat);
       updatePartitionStorage(part);
       log.debug("Storage tables containing Partition {} are: {}", part, part.getStorageTables());
       if (part.isFound()) {
@@ -425,7 +448,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
           log.debug("processTimePartCol is null");
         } else if (partCol.equals(processTimePartCol)) {
           log.debug("part column is process time col");
-        } else if (updatePeriods.first().equals(interval)) {
+        } else if (updatePeriods.first().equals(maxInterval)) {
           log.debug("Update period is the least update period");
         } else if ((iter.getNumIters() - iter.getCounter()) > lookAheadNumParts) {
           // see if this is the part of the last-n look ahead partitions
@@ -436,12 +459,12 @@ public class StorageCandidate implements Candidate, CandidateTable {
           // final partitions are required if no partitions from
           // look-ahead
           // process time are present
-          TimeRange.Iterable.Iterator processTimeIter = TimeRange.iterable(nextDt, lookAheadNumParts, interval, 1)
+          TimeRange.Iterable.Iterator processTimeIter = TimeRange.iterable(nextDt, lookAheadNumParts, maxInterval, 1)
             .iterator();
           while (processTimeIter.hasNext()) {
             Date pdt = processTimeIter.next();
             Date nextPdt = processTimeIter.peekNext();
-            FactPartition processTimePartition = new FactPartition(processTimePartCol, pdt, interval, null,
+            FactPartition processTimePartition = new FactPartition(processTimePartCol, pdt, maxInterval, null,
               partWhereClauseFormat);
             updatePartitionStorage(processTimePartition);
             if (processTimePartition.isFound()) {
@@ -450,7 +473,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
               log.debug("Looked ahead process time partition {} is not found", processTimePartition);
               TreeSet<UpdatePeriod> newset = new TreeSet<UpdatePeriod>();
               newset.addAll(updatePeriods);
-              newset.remove(interval);
+              newset.remove(maxInterval);
               log.debug("newset of update periods:{}", newset);
               if (!newset.isEmpty()) {
                 // Get partitions for look ahead process time
@@ -479,38 +502,33 @@ public class StorageCandidate implements Candidate, CandidateTable {
         }
       } else {
         log.info("Partition:{} does not exist in any storage table", part);
-        TreeSet<UpdatePeriod> newset = new TreeSet<>();
-        newset.addAll(updatePeriods);
-        newset.remove(interval);
-        if (!getPartitions(dt, nextDt, partCol, partitions, newset, false, failOnPartialData, missingPartitions)) {
+        if (!getPartitions(dt, nextDt, partCol, partitions, remainingIntervals, false, failOnPartialData,
+          missingPartitions)) {
           log.debug("Adding non existing partition {}", part);
           if (addNonExistingParts) {
             // Add non existing partitions for all cases of whether we populate all non existing or not.
             missingPartitions.add(part);
             if (!failOnPartialData) {
-              if (!client.isStorageTablePartitionACandidate(name, part.getPartSpec())) {
-                log.info("Storage tables not eligible");
-                return false;
-              }
               partitions.add(part);
               part.getStorageTables().add(storageName);
             }
           } else {
-            log.info("No finer granual partitions exist for {}", part);
+            log.info("No finer granualar partitions exist for {}", part);
             return false;
           }
         } else {
-          log.debug("Finer granual partitions added for {}", part);
+          log.debug("Finer granualar partitions added for {}", part);
         }
       }
     }
-    return
-      getPartitions(fromDate, ceilFromDate, partCol, partitions, updatePeriods,
+
+    return getPartitions(fromDate, ceilFromDate, partCol, partitions, remainingIntervals,
         addNonExistingParts, failOnPartialData, missingPartitions)
-        && getPartitions(floorToDate, toDate, partCol, partitions, updatePeriods,
+        && getPartitions(floorToDate, toDate, partCol, partitions, remainingIntervals,
         addNonExistingParts, failOnPartialData, missingPartitions);
   }
 
+  /**
   /**
    * Finds all the partitions for a storage table with a particular time range.
    *
@@ -663,16 +681,16 @@ public class StorageCandidate implements Candidate, CandidateTable {
     return isDataComplete;
   }
 
-  private Set<FactPartition> getPartitions(TimeRange timeRange, TreeSet<UpdatePeriod> updatePeriods,
+    private Set<FactPartition> getPartitions(TimeRange timeRange, TreeSet<UpdatePeriod> updatePeriods,
     boolean addNonExistingParts, boolean failOnPartialData, PartitionRangesForPartitionColumns missingParts)
     throws LensException {
-    Set<FactPartition> partitions = new TreeSet<>();
-    if (timeRange != null && timeRange.isCoverableBy(updatePeriods) && getPartitions(timeRange.getFromDate(),
-      timeRange.getToDate(), timeRange.getPartitionColumn(), partitions, updatePeriods, addNonExistingParts,
-      failOnPartialData, missingParts)) {
+      Set<FactPartition> partitions = new TreeSet<>();
+      if (timeRange != null && timeRange.isCoverableBy(updatePeriods)){
+        getPartitions(timeRange.getFromDate(),
+          timeRange.getToDate(), timeRange.getPartitionColumn(), partitions, updatePeriods, addNonExistingParts,
+          failOnPartialData, missingParts);
+      }
       return partitions;
-    }
-    return new TreeSet<>();
   }
 
   @Override
@@ -782,39 +800,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
     return ret;
   }
 
-  Set<UpdatePeriod> getAllUpdatePeriods() {
-    return getFact().getUpdatePeriods().get(getStorageName());
-  }
-  // TODO: move them to upper interfaces for complex candidates. Right now it's unused, so keeping it just here
-  public boolean isTimeRangeCoverable(TimeRange timeRange) {
-    return isTimeRangeCoverable(timeRange.getFromDate(), timeRange.getToDate(), getValidUpdatePeriods());
-  }
-
-  /**
-   * Is the time range coverable by given update periods.
-   * Extracts the max update period, then extracts maximum amount of range from the middle that this update
-   * period can cover. Then recurses on the ramaining ranges on the left and right side of the extracted chunk
-   * using one less update period.
-   * //TODO: add tests if the function is useful. Till then it's untested and unverified.
-   * @param fromDate  From date
-   * @param toDate    To date
-   * @param periods   Update periods to check
-   * @return          Whether time range is coverable by provided update periods or not.
-   */
-  private boolean isTimeRangeCoverable(Date fromDate, Date toDate, Set<UpdatePeriod> periods) {
-    UpdatePeriod interval = CubeFactTable.maxIntervalInRange(fromDate, toDate, periods);
-    if (fromDate.equals(toDate)) {
-      return true;
-    } else if (periods.isEmpty()) {
-      return false;
-    } else {
-      Set<UpdatePeriod> remaining = Sets.difference(periods, Sets.newHashSet(interval));
-      return interval != null
-        && isTimeRangeCoverable(fromDate, DateUtil.getCeilDate(fromDate, interval), remaining)
-        && isTimeRangeCoverable(DateUtil.getFloorDate(toDate, interval), toDate, remaining);
-    }
-  }
-
   boolean isUpdatePeriodUseful(UpdatePeriod updatePeriod) {
     return cubeql.getTimeRanges().stream().anyMatch(timeRange -> isUpdatePeriodUseful(timeRange, updatePeriod));
   }
@@ -828,10 +813,103 @@ public class StorageCandidate implements Candidate, CandidateTable {
    */
   private boolean isUpdatePeriodUseful(TimeRange timeRange, UpdatePeriod updatePeriod) {
     try {
-      timeRange.truncate(updatePeriod);
+      if (CandidateUtil.isCandidatePartiallyValidForTimeRange(getStorageTableStartDate(updatePeriod),
+        getStorageTableEndDate(updatePeriod), timeRange.getFromDate(), timeRange.getToDate()))
+      {
+        return false;
+      }
+      Date storageTblStartDate  = getStorageTableStartDate(updatePeriod);
+      Date storageTblEndDate  = getStorageTableStartDate(updatePeriod);
+      TimeRange.getBuilder()
+        .fromDate(timeRange.getFromDate().after(storageTblStartDate) ? timeRange.getFromDate() : storageTblStartDate)
+        .toDate(timeRange.getToDate().before(storageTblEndDate) ? timeRange.getToDate() : storageTblEndDate)
+        .build()
+        .truncate(updatePeriod);
       return true;
     } catch (LensException e) {
       return false;
     }
+  }
+
+  /**
+   * Is time range coverable based on valid update periods of this storage candidate
+   *
+   * @param timeRange
+   * @return
+   * @throws LensException
+   */
+  public boolean isTimeRangeCoverable(TimeRange timeRange) throws LensException {
+    return isTimeRangeCoverable(timeRange.getFromDate(), timeRange.getToDate(), validUpdatePeriods);
+  }
+
+  /**
+   * Is the time range coverable by given update periods.
+   * Extracts the max update period, then extracts maximum amount of range from the middle that this update
+   * period can cover. Then recurses on the remaining ranges on the left and right side of the extracted chunk
+   * using one less update period.
+   *
+   * @param timeRangeStart
+   * @param timeRangeEnd
+   * @param intervals   Update periods to check
+   * @return          Whether time range is coverable by provided update periods or not.
+   */
+  private boolean isTimeRangeCoverable(Date timeRangeStart, Date timeRangeEnd,
+    Set<UpdatePeriod> intervals) throws LensException {
+    if (timeRangeStart.equals(timeRangeEnd) || timeRangeStart.after(timeRangeEnd)) {
+      return true;
+    }
+    if (intervals == null || intervals.isEmpty()) {
+      return false;
+    }
+
+    UpdatePeriod maxInterval = CubeFactTable.maxIntervalInRange(timeRangeStart, timeRangeEnd, intervals);
+    if (maxInterval == null) {
+      return false;
+    }
+
+    if (maxInterval == UpdatePeriod.CONTINUOUS && rangeWriter.getClass().equals(BetweenTimeRangeWriter.class)) {
+      return true;
+    }
+
+    Date maxIntervalStorageTableStartDate = getStorageTableStartDate(maxInterval);
+    Date maxIntervalStorageTableEndDate = getStorageTableEndDate(maxInterval);
+    Set<UpdatePeriod> remainingIntervals = Sets.difference(intervals, Sets.newHashSet(maxInterval));
+
+    if (!CandidateUtil.isCandidatePartiallyValidForTimeRange(
+      maxIntervalStorageTableStartDate, maxIntervalStorageTableEndDate,timeRangeStart, timeRangeEnd)) {
+      //Check the time range in remainingIntervals as maxInterval is not useful
+      return isTimeRangeCoverable(timeRangeStart, timeRangeEnd, remainingIntervals);
+    }
+
+    Date ceilFromDate = DateUtil.getCeilDate(timeRangeStart.after(maxIntervalStorageTableStartDate)
+      ? timeRangeStart :maxIntervalStorageTableStartDate, maxInterval);
+    Date floorToDate = DateUtil.getFloorDate(timeRangeEnd.before(maxIntervalStorageTableEndDate)
+      ? timeRangeEnd : maxIntervalStorageTableEndDate, maxInterval);
+    if(ceilFromDate.equals(floorToDate) || floorToDate.before(ceilFromDate)) {
+      return isTimeRangeCoverable(timeRangeStart, timeRangeEnd, remainingIntervals);
+    }
+
+    //ceilFromDate to floorToDate time range is covered by maxInterval (though there may be holes.. but that's ok)
+    //Check the remaining part of time range in remainingIntervals
+    return isTimeRangeCoverable(timeRangeStart, ceilFromDate, remainingIntervals)
+      && isTimeRangeCoverable(floorToDate, timeRangeEnd, remainingIntervals);
+  }
+
+  private Date getStorageTableStartDate(UpdatePeriod interval) throws LensException {
+    if (!hasStorageTblsAtUpdatePeriodLevel) {
+      //In this case the start time and end time is at Storage Level and will be same for all update periods.
+      return this.startTime;
+    }
+    return client.getStorageTableStartDate(
+      client.getStorageTableName(fact.getName(), storageName, interval), fact.getName());
+  }
+
+  private Date getStorageTableEndDate(UpdatePeriod interval) throws LensException {
+    if (!hasStorageTblsAtUpdatePeriodLevel) {
+      //In this case the start time and end time is at Storage Level and will be same for all update periods.
+      return this.endTime;
+    }
+    return client.getStorageTableEndDate(
+      client.getStorageTableName(fact.getName(), storageName, interval), fact.getName());
   }
 }

@@ -467,7 +467,7 @@ public class TestUnionQueries extends TestQueryRewrite {
       getValidFactTablesKey("testcube"), "testfact",
       FAIL_QUERY_ON_PARTIAL_DATA, false);
 
-    String hqlQuery = rewrite("select count(msr4) from testCube where " + TWO_MONTHS_RANGE_UPTO_DAYS, conf);
+    String hqlQuery = rewrite("select count(msr4) from testCube where " + THREE_MONTHS_RANGE_UPTO_DAYS, conf);
     System.out.println(hqlQuery);
 
    /* // No time_range_in should be remaining
