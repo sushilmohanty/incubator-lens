@@ -970,19 +970,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     pickedDimTables = dimsToQuery.values();
     pickedCandidate = cand;
 
-    //update dim filter with fact filter
-    if (scSet.size() > 0) {
-      for (StorageCandidate sc : scSet) {
-        if (!sc.getStorageName().isEmpty()) {
-          String qualifiedStorageTable = sc.getStorageName();
-          String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1); //TODO this looks useless
-          String where = getWhere(sc, autoJoinCtx,
-              sc.getQueryAst().getWhereAST(), getAliasForTableName(sc.getBaseTable().getName()),
-              shouldReplaceDimFilterWithFactFilter(), storageTable, dimsToQuery);
-          sc.setWhereString(where);
-        }
-      }
-    }
 
     //Get update period specific storage candidates if required.
     if (!scSet.isEmpty()) {
@@ -997,11 +984,22 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
       scSet = expandedScSet;
     }
 
+    //add range clause , update dim filter with fact filter, set where string in sc
+    if (scSet.size() > 0) {
+      for (StorageCandidate sc : scSet) {
+        addRangeClauses(sc);
+        String qualifiedStorageTable = sc.getStorageName();
+        String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1); //TODO this looks useless
+        String where = getWhere(sc, autoJoinCtx,
+          sc.getQueryAst().getWhereAST(), getAliasForTableName(sc.getBaseTable().getName()),
+          shouldReplaceDimFilterWithFactFilter(), storageTable, dimsToQuery);
+        sc.setWhereString(where);
+      }
+    }
 
     //Set From string and time range clause
     if (!scSet.isEmpty()) {
       for (StorageCandidate sc : scSet) {
-        addRangeClauses(sc);
         sc.updateFromString(this, scDimMap.get(sc), dimsToQuery);
       }
     } else {
