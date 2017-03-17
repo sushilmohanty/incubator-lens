@@ -83,6 +83,7 @@ public class CandidateUtil {
    * @throws LensException
    */
   static void copyASTs(QueryAST sourceAst, QueryAST targetAst) throws LensException {
+
     targetAst.setSelectAST(MetastoreUtil.copyAST(sourceAst.getSelectAST()));
     targetAst.setWhereAST(MetastoreUtil.copyAST(sourceAst.getWhereAST()));
     if (sourceAst.getJoinAST() != null) {
@@ -94,6 +95,13 @@ public class CandidateUtil {
     if (sourceAst.getHavingAST() != null) {
       targetAst.setHavingAST(MetastoreUtil.copyAST(sourceAst.getHavingAST()));
     }
+    if (sourceAst.getOrderByAST() != null) {
+      targetAst.setOrderByAST(MetastoreUtil.copyAST(sourceAst.getOrderByAST()));
+    }
+
+    targetAst.setLimitValue(sourceAst.getLimitValue());
+    targetAst.setFromString(sourceAst.getFromString());
+    targetAst.setWhereString(sourceAst.getWhereString());
   }
 
   public static Set<StorageCandidate> getStorageCandidates(final Candidate candidate) {
@@ -203,6 +211,15 @@ public class CandidateUtil {
       }
     }
     return false;
+  }
+
+  public static String getTimeRangeWhereClasue(TimeRangeWriter rangeWriter, StorageCandidate sc, TimeRange range) throws LensException {
+    String rangeWhere = rangeWriter.getTimeRangeWhereClause(sc.getCubeql(), sc.getCubeql().getAliasForTableName(sc.getCube().getName()),
+      sc.getRangeToPartitions().get(range));
+    if(sc.getRangeToExtraWhereFallBack().containsKey(range)){
+      rangeWhere =  "((" + rangeWhere + ") and  (" + sc.getRangeToExtraWhereFallBack().get(range) + "))";
+    }
+    return rangeWhere;
   }
 
   public static class ChildrenSizeBasedCandidateComparator<T> implements Comparator<Candidate> {
