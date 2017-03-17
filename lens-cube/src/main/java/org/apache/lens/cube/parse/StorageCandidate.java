@@ -156,8 +156,10 @@ public class StorageCandidate implements Candidate, CandidateTable {
     this.dimsToQuery = sc.dimsToQuery;
     this.factColumns = sc.factColumns;
     this.answerableMeasurePhraseIndices.addAll(sc.answerableMeasurePhraseIndices);
-    this.queryAst = new DefaultQueryAST() ;
-    CandidateUtil.copyASTs(sc.getQueryAst(), new DefaultQueryAST());
+    if (sc.getQueryAst() != null) {
+      this.queryAst = new DefaultQueryAST();
+      CandidateUtil.copyASTs(sc.getQueryAst(), new DefaultQueryAST());
+    }
   }
 
   public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName, CubeQueryContext cubeql)
@@ -831,16 +833,17 @@ public class StorageCandidate implements Candidate, CandidateTable {
    */
   private boolean isUpdatePeriodUseful(TimeRange timeRange, UpdatePeriod updatePeriod) {
     try {
-      if (CandidateUtil.isCandidatePartiallyValidForTimeRange(getStorageTableStartDate(updatePeriod),
+      if (!CandidateUtil.isCandidatePartiallyValidForTimeRange(getStorageTableStartDate(updatePeriod),
         getStorageTableEndDate(updatePeriod), timeRange.getFromDate(), timeRange.getToDate()))
       {
         return false;
       }
       Date storageTblStartDate  = getStorageTableStartDate(updatePeriod);
-      Date storageTblEndDate  = getStorageTableStartDate(updatePeriod);
+      Date storageTblEndDate  = getStorageTableEndDate(updatePeriod);
       TimeRange.getBuilder()
         .fromDate(timeRange.getFromDate().after(storageTblStartDate) ? timeRange.getFromDate() : storageTblStartDate)
         .toDate(timeRange.getToDate().before(storageTblEndDate) ? timeRange.getToDate() : storageTblEndDate)
+        .partitionColumn(timeRange.getPartitionColumn())
         .build()
         .truncate(updatePeriod);
       return true;
