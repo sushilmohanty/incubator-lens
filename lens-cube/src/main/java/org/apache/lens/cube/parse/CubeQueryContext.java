@@ -21,9 +21,7 @@ package org.apache.lens.cube.parse;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.stream.Collectors.toSet;
-import static org.apache.hadoop.hive.ql.parse.HiveParser.Identifier;
-import static org.apache.hadoop.hive.ql.parse.HiveParser.TOK_TABLE_OR_COL;
-import static org.apache.hadoop.hive.ql.parse.HiveParser.TOK_TMP_FILE;
+import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
 import static org.apache.lens.cube.parse.CubeQueryConfUtil.DEFAULT_REPLACE_TIMEDIM_WITH_PART_COL;
 import static org.apache.lens.cube.parse.CubeQueryConfUtil.DEFAULT_REWRITE_DIM_FILTER_TO_FACT_FILTER;
 import static org.apache.lens.cube.parse.CubeQueryConfUtil.NON_EXISTING_PARTITIONS;
@@ -59,6 +57,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.Context;
+import org.apache.hadoop.hive.ql.lib.Node;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
@@ -887,13 +886,51 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
       for (TimeRange range : getTimeRanges()) {
         String rangeWhere = CandidateUtil.getTimeRangeWhereClasue(rangeWriter, sc, range);
         if (!StringUtils.isBlank(rangeWhere)) {
-          ASTNode rangeAST = HQLParser.parseExpr(rangeWhere, conf);
-          range.getParent().setChild(range.getChildIndex(), rangeAST);
+          ASTNode updatedRangeAST = HQLParser.parseExpr(rangeWhere, conf);
+          updateTimeRangeNode(sc.getQueryAst().getWhereAST(), range.getAstNode(), updatedRangeAST);
         }
-        sc.getQueryAst().setWhereAST(HQLParser.parseExpr(getWhereString(), conf));
       }
     }
   }
+
+
+  /**
+   * Find the appropriate time range node in the AST and update it with "updatedTimeRange".
+   * Time Range node looks like this
+   * time_range_in(dt, '2017', '2018') ->
+   * TOK_FUNCTION [TOK_FUNCTION] (l5c2p37) {
+   * time_range_in [Identifier] (l6c1p37)$
+   * TOK_TABLE_OR_COL [TOK_TABLE_OR_COL] (l6c2p51) {
+   * dt [Identifier] (l7c1p51)$
+   * }
+   * '2017' [StringLiteral] (l6c3p55)$
+   * '2018' [StringLiteral] (l6c4p63)$
+   }
+   * @param root
+   * @param timeRangeFuncNode
+   * @param updatedTimeRange
+   */
+  private void updateTimeRangeNode(ASTNode root, ASTNode timeRangeFuncNode, ASTNode updatedTimeRange) {
+    ASTNode childNode;
+    if (root.getChildCount() == 0) {
+      return;
+    }
+    for (Node child : root.getChildren()) {
+      childNode = (ASTNode) child;
+      if (childNode.getType() == timeRangeFuncNode.getType()
+        && childNode.getChildCount() == timeRangeFuncNode.getChildCount()
+        && childNode.getChild(0).getText().equalsIgnoreCase(timeRangeFuncNode.getChild(0).getText())) {
+        //Found the "time_range_in" function node. Check the details further as there can be more than one time ranges
+        if (HQLParser.getString(timeRangeFuncNode).equalsIgnoreCase(HQLParser.getString(childNode))) {
+          //This is the correct time range node . Replace it with "updatedTimeRange"
+          childNode.getParent().setChild(childNode.getChildIndex(), updatedTimeRange);
+          return;
+        }
+      }
+      updateTimeRangeNode(childNode, timeRangeFuncNode, updatedTimeRange);
+    }
+  }
+
 
   public String toHQL() throws LensException {
     Candidate cand = pickCandidateToQuery();
