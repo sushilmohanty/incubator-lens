@@ -880,13 +880,14 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
   @Getter
   private Collection<CandidateDim> pickedDimTables;
 
-  private void addRangeClauses(StorageCandidate sc) throws LensException {
+  private void addRangeClauses(StorageCandidate sc, Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
     if (sc != null) {
       // resolve timerange positions and replace it by corresponding where clause
       for (TimeRange range : getTimeRanges()) {
         String rangeWhere = CandidateUtil.getTimeRangeWhereClasue(rangeWriter, sc, range);
         if (!StringUtils.isBlank(rangeWhere)) {
           ASTNode updatedRangeAST = HQLParser.parseExpr(rangeWhere, conf);
+          this.getDeNormCtx().rewriteDenormctxInExpression(this, sc, dimsToQuery, updatedRangeAST);
           updateTimeRangeNode(sc.getQueryAst().getWhereAST(), range.getAstNode(), updatedRangeAST);
         }
       }
@@ -1008,7 +1009,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     pickedCandidate = cand;
 
 
-    //Get update period specific storage candidates if required.
+    //Expand and get update period specific storage candidates if required.
     if (!scSet.isEmpty()) {
       Set<StorageCandidate> expandedScSet = new HashSet<>();
       for (StorageCandidate sc : scSet) {
@@ -1024,7 +1025,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     //add range clause , update dim filter with fact filter, set where string in sc
     if (scSet.size() > 0) {
       for (StorageCandidate sc : scSet) {
-        addRangeClauses(sc);
+        addRangeClauses(sc, dimsToQuery);
         String qualifiedStorageTable = sc.getStorageName();
         String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1); //TODO this looks useless
         String where = getWhere(sc, autoJoinCtx,

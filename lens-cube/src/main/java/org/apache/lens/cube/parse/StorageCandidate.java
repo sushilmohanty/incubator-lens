@@ -76,6 +76,9 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Getter
   @Setter
   private String name;
+
+  @Getter
+  private String resolvedName;
   /**
    * Valid udpate periods populated by Phase 1.
    */
@@ -959,5 +962,12 @@ public class StorageCandidate implements Candidate, CandidateTable {
         rangeItr.remove();
       }
     }
+  }
+
+  public String getResolvedName() {
+    if (resolvedName == null) {
+      return name;
+    }
+    return resolvedName;
   }
 }
