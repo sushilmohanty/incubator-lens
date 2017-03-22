@@ -20,6 +20,7 @@ package org.apache.lens.cube.parse;
 
 import static org.apache.hadoop.hive.ql.parse.HiveParser.Identifier;
 import static org.apache.hadoop.hive.ql.parse.HiveParser.TOK_TABLE_OR_COL;
+import static org.apache.hadoop.hive.ql.parse.HiveParser_SelectClauseParser.TOK_FUNCTION;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.denormColumnNotFound;
 
 import java.util.*;
@@ -282,6 +283,11 @@ public class DenormalizationResolver implements ContextRewriter {
     private void resolveClause(ASTNode node) throws LensException {
       if (node == null) {
         return;
+      }
+
+      if (node.getType() == HiveParser.TOK_FUNCTION
+        && node.getChild(0).getText().equalsIgnoreCase("time_range_in")) {
+        return; //don't update time_range_in functioon.
       }
 
       int nodeType = node.getToken().getType();
