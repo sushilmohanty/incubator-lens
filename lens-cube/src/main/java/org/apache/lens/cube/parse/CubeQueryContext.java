@@ -1022,16 +1022,11 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
       scSet = expandedScSet;
     }
 
-    //add range clause , update dim filter with fact filter, set where string in sc
+
+    // add range clause after expanding the scSet.
     if (scSet.size() > 0) {
       for (StorageCandidate sc : scSet) {
         addRangeClauses(sc, dimsToQuery);
-        String qualifiedStorageTable = sc.getStorageName();
-        String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1); //TODO this looks useless
-        String where = getWhere(sc, autoJoinCtx,
-          sc.getQueryAst().getWhereAST(), getAliasForTableName(sc.getBaseTable().getName()),
-          shouldReplaceDimFilterWithFactFilter(), storageTable, dimsToQuery);
-        sc.setWhereString(where);
       }
     }
 
@@ -1043,6 +1038,19 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     } else {
       updateFromString(null, dimsToQuery);
     }
+
+    //update dim filter with fact filter, set where string in sc
+    if (scSet.size() > 0) {
+      for (StorageCandidate sc : scSet) {
+        String qualifiedStorageTable = sc.getStorageName();
+        String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1); //TODO this looks useless
+        String where = getWhere(sc, autoJoinCtx,
+          sc.getQueryAst().getWhereAST(), getAliasForTableName(sc.getBaseTable().getName()),
+          shouldReplaceDimFilterWithFactFilter(), storageTable, dimsToQuery);
+        sc.setWhereString(where);
+      }
+    }
+
 
     if (cand == null) {
       hqlContext = new DimOnlyHQLContext(dimsToQuery, this, this);
