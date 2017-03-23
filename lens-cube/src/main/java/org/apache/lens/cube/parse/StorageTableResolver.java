@@ -135,7 +135,7 @@ class StorageTableResolver implements ContextRewriter {
       if (!isTimeRangeAnswerableByThisCandidate) {
         candidateIterator.remove();
       }
-      if (failOnPartialData && !isComplete) {
+      else if (failOnPartialData && !isComplete) {
         candidateIterator.remove();
         log.info("Not considering candidate:{} as its data is not is not complete", candidate);
         Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(candidate);
