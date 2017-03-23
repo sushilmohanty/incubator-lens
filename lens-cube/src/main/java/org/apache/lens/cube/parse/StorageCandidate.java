@@ -73,14 +73,21 @@ public class StorageCandidate implements Candidate, CandidateTable {
   private final CubeMetastoreClient client;
   private final String completenessPartCol;
   private final float completenessThreshold;
+
+  /**
+   * Name of this storage candidate  = storageName_factName
+   */
   @Getter
   @Setter
   private String name;
 
+  /**
+   * This is the storage table specific name. It is used while generating query from this candidate
+   */
   @Setter
   private String resolvedName;
   /**
-   * Valid udpate periods populated by Phase 1.
+   * Valid update periods populated by Phase 1.
    */
   @Getter
   private TreeSet<UpdatePeriod> validUpdatePeriods = new TreeSet<>();
@@ -122,7 +129,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Setter
   private String whereString;
   @Getter
-  private final Set<Integer> answerableMeasurePhraseIndices = Sets.newHashSet();
+  private Set<Integer> answerableMeasurePhraseIndices = Sets.newHashSet();
   @Getter
   @Setter
   private String fromString;
@@ -163,6 +170,11 @@ public class StorageCandidate implements Candidate, CandidateTable {
       this.queryAst = new DefaultQueryAST();
       CandidateUtil.copyASTs(sc.getQueryAst(), new DefaultQueryAST());
     }
+    for (Map.Entry<TimeRange, Set<FactPartition>> entry : sc.getRangeToPartitions().entrySet()) {
+      rangeToPartitions.put(entry.getKey(), new LinkedHashSet<>(entry.getValue()));
+    }
+    this.rangeToExtraWhereFallBack = sc.rangeToExtraWhereFallBack;
+    this.answerableMeasurePhraseIndices = sc.answerableMeasurePhraseIndices;
   }
 
   public StorageCandidate(CubeInterface cube, CubeFactTable fact, String storageName, CubeQueryContext cubeql)
@@ -535,6 +547,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
           log.debug("Adding non existing partition {}", part);
           if (addNonExistingParts) {
             // Add non existing partitions for all cases of whether we populate all non existing or not.
+            this.participatingUpdatePeriods.add(maxInterval);
             missingPartitions.add(part);
             if (!failOnPartialData) {
               partitions.add(part);
@@ -790,7 +803,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   @Override
   public String toString() {
-    return getName();
+    return getResolvedName();
   }
 
   void addValidUpdatePeriod(UpdatePeriod updatePeriod) {
@@ -849,7 +862,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
       }
       Date storageTblStartDate  = getStorageTableStartDate(updatePeriod);
       Date storageTblEndDate  = getStorageTableEndDate(updatePeriod);
-      TimeRange.getBuilder()
+      TimeRange.getBuilder() //TODO date calculation to move to util method and resued
         .fromDate(timeRange.getFromDate().after(storageTblStartDate) ? timeRange.getFromDate() : storageTblStartDate)
         .toDate(timeRange.getToDate().before(storageTblEndDate) ? timeRange.getToDate() : storageTblEndDate)
         .partitionColumn(timeRange.getPartitionColumn())
@@ -949,16 +962,17 @@ public class StorageCandidate implements Candidate, CandidateTable {
    * the passed undatePeriod are retained.
    * @param updatePeriod
    */
-  public void truncatePartitions(UpdatePeriod updatePeriod){
+  public void truncatePartitions(UpdatePeriod updatePeriod) {
     Iterator<Map.Entry<TimeRange, Set<FactPartition>>> rangeItr = rangeToPartitions.entrySet().iterator();
-   while (rangeItr.hasNext()) {
-      Iterator<FactPartition> partitionItr = rangeItr.next().getValue().iterator();
+    while (rangeItr.hasNext()) {
+      Map.Entry<TimeRange, Set<FactPartition>> rangeEntry = rangeItr.next();
+      Iterator<FactPartition> partitionItr = rangeEntry.getValue().iterator();
       while (partitionItr.hasNext()) {
-        if (partitionItr.next().getPeriod().equals(updatePeriod)) {
+        if (!partitionItr.next().getPeriod().equals(updatePeriod)) {
           partitionItr.remove();
         }
       }
-      if (rangeItr.next().getValue().isEmpty()) {
+      if (rangeEntry.getValue().isEmpty()) {
         rangeItr.remove();
       }
     }

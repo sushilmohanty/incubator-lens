@@ -101,7 +101,7 @@ public class CandidateTablePruneCause {
     // cube table has more partitions
     MORE_PARTITIONS("Picked table has more partitions than minimum"),
     // invalid cube table
-    INVALID("Invalid cube table provided in query"),
+    INVALID("Invalid cube table provided in query"), //TODO move up. This does not make sense here.
     // expression is not evaluable in the candidate
     EXPRESSION_NOT_EVALUABLE("%s expressions not evaluable") {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {

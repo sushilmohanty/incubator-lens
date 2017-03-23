@@ -285,10 +285,12 @@ public class DenormalizationResolver implements ContextRewriter {
         return;
       }
 
+
+      /* TODO remove this commented code
       if (node.getType() == HiveParser.TOK_FUNCTION
         && node.getChild(0).getText().equalsIgnoreCase("time_range_in")) {
         return; //don't update time_range_in functioon.
-      }
+      }*/
 
       int nodeType = node.getToken().getType();
       if (nodeType == HiveParser.DOT) {

@@ -444,6 +444,15 @@ public class CubeTestSetup {
     return storageTableToWhereClause;
   }
 
+  public static Map<String, String> getWhereForMonthly(String monthlyTable, Date startMonth, Date endMonth) {
+    Map<String, String> storageTableToWhereClause = new LinkedHashMap<String, String>();
+    List<String> parts = new ArrayList<String>();
+    addParts(parts, MONTHLY, startMonth, endMonth);
+    storageTableToWhereClause.put(getDbName() + monthlyTable,
+      StorageUtil.getWherePartClause("dt", TEST_CUBE_NAME, parts));
+    return storageTableToWhereClause;
+  }
+
   public static Map<String, String> getWhereForDays(String dailyTable, Date startDay, Date endDay) {
     Map<String, String> storageTableToWhereClause = new LinkedHashMap<>();
     List<String> parts = new ArrayList<>();
@@ -452,6 +461,7 @@ public class CubeTestSetup {
       StorageUtil.getWherePartClause("dt", TEST_CUBE_NAME, parts));
     return storageTableToWhereClause;
   }
+
   public static Map<String, String> getWhereForHourly2days(String hourlyTable) {
     return getWhereForHourly2days(TEST_CUBE_NAME, hourlyTable);
   }
@@ -1793,7 +1803,7 @@ public class CubeTestSetup {
     s6Daily.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getCanonicalName());
     s6Daily.setPartCols(partCols);
     s6Daily.setTimePartCols(timePartCols);
-    s6Daily.getTblProps().put(MetastoreUtil.getStoragetableStartTimesKey(), "now.month - 1 months"); // Current month and last one month daily data
+    s6Daily.getTblProps().put(MetastoreUtil.getStoragetableStartTimesKey(), "now.month - 2 months");
     s6Daily.getTblProps().put(MetastoreUtil.getStoragetableEndTimesKey(), "now.day");
 
     StorageTableDesc s6Monthly = new StorageTableDesc();
@@ -1801,7 +1811,7 @@ public class CubeTestSetup {
     s6Monthly.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getCanonicalName());
     s6Monthly.setPartCols(partCols);
     s6Monthly.setTimePartCols(timePartCols);
-    s6Monthly.getTblProps().put(MetastoreUtil.getStoragetableStartTimesKey(), "now.month - 12 months"); //Last 12 months monthly data barring current month and last one month
+    s6Monthly.getTblProps().put(MetastoreUtil.getStoragetableStartTimesKey(), "now.month - 12 months");
     s6Monthly.getTblProps().put(MetastoreUtil.getStoragetableEndTimesKey(), "now.month - 1 months");
     storageAggregatePeriods.put(c1, updates);
     storageAggregatePeriods.put(c2, updates);
