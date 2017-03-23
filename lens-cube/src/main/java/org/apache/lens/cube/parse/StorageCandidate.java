@@ -77,7 +77,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Setter
   private String name;
 
-  @Getter
+  @Setter
   private String resolvedName;
   /**
    * Valid udpate periods populated by Phase 1.

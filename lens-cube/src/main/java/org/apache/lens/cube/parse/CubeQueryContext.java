@@ -880,14 +880,13 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
   @Getter
   private Collection<CandidateDim> pickedDimTables;
 
-  private void addRangeClauses(StorageCandidate sc, Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
+  private void addRangeClauses(StorageCandidate sc) throws LensException {
     if (sc != null) {
       // resolve timerange positions and replace it by corresponding where clause
       for (TimeRange range : getTimeRanges()) {
         String rangeWhere = CandidateUtil.getTimeRangeWhereClasue(rangeWriter, sc, range);
         if (!StringUtils.isBlank(rangeWhere)) {
           ASTNode updatedRangeAST = HQLParser.parseExpr(rangeWhere, conf);
-          this.getDeNormCtx().rewriteDenormctxInExpression(this, sc, dimsToQuery, updatedRangeAST);
           updateTimeRangeNode(sc.getQueryAst().getWhereAST(), range.getAstNode(), updatedRangeAST);
         }
       }
@@ -940,6 +939,20 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     if (cand != null) {
       scSet.addAll(CandidateUtil.getStorageCandidates(cand));
     }
+
+    //Expand and get update period specific storage candidates if required.
+    if (!scSet.isEmpty()) {
+      Set<StorageCandidate> expandedScSet = new HashSet<>();
+      for (StorageCandidate sc : scSet) {
+        if (sc.isStorageTblsAtUpdatePeriodLevel() && sc.getParticipatingUpdatePeriods().size() > 1) {
+          expandedScSet.addAll(getPeriodSpecificStorageCandidates(sc));
+        } else {
+          expandedScSet.add(sc);
+        }
+      }
+      scSet = expandedScSet;
+    }
+
     log.info("Candidate: {}, DimsToQuery: {}", cand, dimsToQuery);
     if (autoJoinCtx != null) {
       // prune join paths for picked fact and dimensions
@@ -954,6 +967,9 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
         sc.setQueryAst(DefaultQueryAST.fromStorageCandidate(sc, this));
         CandidateUtil.copyASTs(this, sc.getQueryAst());
         scDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
+      }
+      for (StorageCandidate sc : scSet) {
+        addRangeClauses(sc);
       }
     }
 
@@ -1008,28 +1024,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     pickedDimTables = dimsToQuery.values();
     pickedCandidate = cand;
 
-
-    //Expand and get update period specific storage candidates if required.
-    if (!scSet.isEmpty()) {
-      Set<StorageCandidate> expandedScSet = new HashSet<>();
-      for (StorageCandidate sc : scSet) {
-        if (sc.isStorageTblsAtUpdatePeriodLevel() && sc.getParticipatingUpdatePeriods().size() > 1) {
-          expandedScSet.addAll(getPeriodSpecificStorageCandidates(sc));
-        } else {
-          expandedScSet.add(sc);
-        }
-      }
-      scSet = expandedScSet;
-    }
-
-
-    // add range clause after expanding the scSet.
-    if (scSet.size() > 0) {
-      for (StorageCandidate sc : scSet) {
-        addRangeClauses(sc, dimsToQuery);
-      }
-    }
-
     //Set From string and time range clause
     if (!scSet.isEmpty()) {
       for (StorageCandidate sc : scSet) {
@@ -1051,7 +1045,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
       }
     }
 
-
     if (cand == null) {
       hqlContext = new DimOnlyHQLContext(dimsToQuery, this, this);
       return hqlContext.toHQL();
@@ -1070,7 +1063,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     StorageCandidate updatePeriodSpecificSc;
     for (UpdatePeriod period : sc.getParticipatingUpdatePeriods()) {
       updatePeriodSpecificSc = CandidateUtil.cloneStorageCandidate(sc);
-      updatePeriodSpecificSc.setName(getMetastoreClient().getStorageTableName(sc.getFact().getName(),
+      updatePeriodSpecificSc.setResolvedName(getMetastoreClient().getStorageTableName(sc.getFact().getName(),
         sc.getStorageName(), period));
       updatePeriodSpecificSc.truncatePartitions(period);
       periodSpecificSet.add(updatePeriodSpecificSc);
