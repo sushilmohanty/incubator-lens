@@ -121,15 +121,19 @@ class StorageTableResolver implements ContextRewriter {
     while (candidateIterator.hasNext()) {
       Candidate candidate = candidateIterator.next();
       boolean isComplete = true;
+      boolean isTimeRangeAnswerableByThisCandidate = true;
       for (TimeRange range : cubeql.getTimeRanges()) {
         if (!candidate.isTimeRangeCoverable(range)) {
           log.info("Not considering candidate:{} as it can not cover time range {}", candidate, range);
-          candidateIterator.remove();
-          cubeql.addCandidatePruningMsg(candidate,
-            CandidateTablePruneCause.storageNotAvailableInRange(Lists.newArrayList(range)));
-          continue;
+          isTimeRangeAnswerableByThisCandidate = false;
+          break;
         }
         isComplete &= candidate.evaluateCompleteness(range, range, failOnPartialData);
+      }
+      if (!isTimeRangeAnswerableByThisCandidate) {
+        candidateIterator.remove();
+        cubeql.addCandidatePruningMsg(candidate,
+          CandidateTablePruneCause.storageNotAvailableInRange(Lists.newArrayList(range)));
       }
       if (failOnPartialData && !isComplete) {
         candidateIterator.remove();
