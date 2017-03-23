@@ -31,6 +31,7 @@ import org.apache.lens.server.api.error.LensException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 /**
  * Resolve storages and partitions of all candidate tables and prunes candidate tables with missing storages or
@@ -121,6 +122,13 @@ class StorageTableResolver implements ContextRewriter {
       Candidate candidate = candidateIterator.next();
       boolean isComplete = true;
       for (TimeRange range : cubeql.getTimeRanges()) {
+        if (!candidate.isTimeRangeCoverable(range)) {
+          log.info("Not considering candidate:{} as it can not cover time range {}", candidate, range);
+          candidateIterator.remove();
+          cubeql.addCandidatePruningMsg(candidate,
+            CandidateTablePruneCause.storageNotAvailableInRange(Lists.newArrayList(range)));
+          continue;
+        }
         isComplete &= candidate.evaluateCompleteness(range, range, failOnPartialData);
       }
       if (failOnPartialData && !isComplete) {
@@ -143,7 +151,6 @@ class StorageTableResolver implements ContextRewriter {
       }
     }
   }
-
 
   private void resolveDimStorageTablesAndPartitions(CubeQueryContext cubeql) throws LensException {
     Set<Dimension> allDims = new HashSet<>(cubeql.getDimensions());
@@ -340,15 +347,6 @@ class StorageTableResolver implements ContextRewriter {
         if (!allPruningCauses.isEmpty()) {
           it.remove();
           cubeql.addStoragePruningMsg(sc, allPruningCauses.toArray(new CandidateTablePruneCause[0]));
-        }
-
-        for (TimeRange timeRange : cubeql.getTimeRanges()) {
-          if (!sc.isTimeRangeCoverable(timeRange)) {
-            it.remove();
-            cubeql.addStoragePruningMsg(sc,
-              new CandidateTablePruneCause(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE));
-            break;
-          }
         }
       }
     }

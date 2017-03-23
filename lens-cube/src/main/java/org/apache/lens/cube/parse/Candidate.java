@@ -121,4 +121,12 @@ public interface Candidate {
    */
   Set<Integer> getAnswerableMeasurePhraseIndices();
 
+  /**
+   * Is time range coverable based on valid update periods
+   * @param timeRange
+   * @return
+   * @throws LensException
+   */
+  boolean isTimeRangeCoverable(TimeRange timeRange) throws LensException;
+
 }
