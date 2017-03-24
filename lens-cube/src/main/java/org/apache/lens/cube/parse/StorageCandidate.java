@@ -424,11 +424,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
       return false;
     }
 
-    else if (!client.partColExists(this.getFact().getName(), storageName, partCol)) {
-      log.info("{} does not exist in {}", partCol, name);
-      return false;
-    }
-
     UpdatePeriod maxInterval = CubeFactTable.maxIntervalInRange(fromDate, toDate, updatePeriods);
     if (maxInterval == null) {
       log.info("No max interval for range: {} to {}", fromDate, toDate);
