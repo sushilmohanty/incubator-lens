@@ -277,7 +277,7 @@ public class DenormalizationResolver implements ContextRewriter {
       }
       resolveClause(ast.getGroupByAST());
       resolveClause(ast.getHavingAST());
-      resolveClause(cubeql.getOrderByAST());
+      resolveClause(ast.getOrderByAST());
     }
 
     private void resolveClause(ASTNode node) throws LensException {
