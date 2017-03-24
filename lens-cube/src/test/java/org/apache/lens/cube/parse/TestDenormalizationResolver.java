@@ -206,8 +206,8 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
     expected.put(newHashSet("c0_testfact_continuous"), newArrayList(columnNotFound(
       "msr2", "msr3")));
     expected.put(newHashSet("c2_summary2","c2_summary3","c2_summary4","c4_testfact","c2_summary1",
-      "c3_testfact","c3_testfact2_raw","c4_testfact2","c5_testfact","c99_cheapfact","c2_testfact","c0_cheapfact",
-      "c2_testfactmonthly","c0_testfact"),
+      "c3_testfact","c3_testfact2_raw","c6_testfact","c4_testfact2","c5_testfact","c99_cheapfact",
+      "c2_testfact","c0_cheapfact","c2_testfactmonthly","c0_testfact"),
       newArrayList(new CandidateTablePruneCause(CandidateTablePruneCode.UNSUPPORTED_STORAGE)));
 
     Assert.assertEquals(enhanced, expected);
