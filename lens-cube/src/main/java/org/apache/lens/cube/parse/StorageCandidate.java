@@ -848,7 +848,9 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   /**
    * Is the update period useful for this time range. e.g. for a time range of hours and days, monthly
-   * and yearly update periods are useless. DAILY and HOURLY are useful
+   * and yearly update periods are useless. DAILY and HOURLY are useful. It further checks if the update
+   * period answers the range at least partially based on start and end times configured at update period
+   * level or at storage or fact level.
    * @param timeRange       The time range
    * @param updatePeriod    Update period
    * @return                Whether it's useless

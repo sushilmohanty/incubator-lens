@@ -210,7 +210,7 @@ public class CandidateTablePruneCause {
     INVALID,
     //this update period is greater than the Query max interval as provided by user with lens.cube.query.max.interval
     UPDATE_PERIOD_BIGGER_THAN_MAX,
-    QUERY_INTERVAL_SMALLER_THAN_UPDATE_PERIOD
+    TIME_RANGE_NOT_ANSWERABLE_BY_UPDATE_PERIOD
   }
 
   // Used for Test cases only.

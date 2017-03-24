@@ -272,10 +272,17 @@ class StorageTableResolver implements ContextRewriter {
       }
       List<String> validUpdatePeriods = CubeQueryConfUtil
         .getStringList(conf, CubeQueryConfUtil.getValidUpdatePeriodsKey(sc.getFact().getName(), sc.getStorageName()));
-      boolean isStorageAdded = false;
+      boolean isUpdatePeriodForStorageAdded = false;
       Map<String, SkipUpdatePeriodCode> skipUpdatePeriodCauses = new HashMap<>();
 
-      // Populate valid update periods.
+      if (cubeql.getTimeRanges().stream().noneMatch(range -> CandidateUtil.isPartiallyValidForTimeRange(sc, range))) {
+        cubeql.addStoragePruningMsg(sc,
+          new CandidateTablePruneCause(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE));
+        it.remove();
+        continue;
+      }
+
+      // Populate valid update periods abd check validity at update period level
       for (UpdatePeriod updatePeriod : sc.getFact().getUpdatePeriods().get(sc.getStorageName())) {
         if (maxInterval != null && updatePeriod.compareTo(maxInterval) > 0) {
           // if user supplied max interval, all intervals larger than that are useless.
@@ -290,20 +297,20 @@ class StorageTableResolver implements ContextRewriter {
         } else if (!sc.isUpdatePeriodUseful(updatePeriod)) {
           // if the storage candidate finds this update useful to keep looking at the time ranges queried
           skipUpdatePeriodCauses.put(updatePeriod.toString(),
-            SkipUpdatePeriodCode.QUERY_INTERVAL_SMALLER_THAN_UPDATE_PERIOD);
+            SkipUpdatePeriodCode.TIME_RANGE_NOT_ANSWERABLE_BY_UPDATE_PERIOD);
         } else {
-          isStorageAdded = true;
+          isUpdatePeriodForStorageAdded = true;
           sc.addValidUpdatePeriod(updatePeriod);
         }
       }
-      // this is just for documentation/debugging, so we can see why some update periods are skipped.
+      // For DEBUG purpose only to see why some update periods are skipped.
       if (!skipUpdatePeriodCauses.isEmpty()) {
         sc.setUpdatePeriodRejectionCause(skipUpdatePeriodCauses);
       }
       // if no update periods were added in previous section, we skip this storage candidate
-      if (!isStorageAdded) {
+      if (!isUpdatePeriodForStorageAdded) {
         if (skipUpdatePeriodCauses.values().stream().allMatch(
-          SkipUpdatePeriodCode.QUERY_INTERVAL_SMALLER_THAN_UPDATE_PERIOD::equals)) {
+          SkipUpdatePeriodCode.TIME_RANGE_NOT_ANSWERABLE_BY_UPDATE_PERIOD::equals)) {
           // all update periods bigger than query range, it means time range not answerable.
           cubeql.addStoragePruningMsg(sc,
             new CandidateTablePruneCause(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE));
@@ -314,7 +321,7 @@ class StorageTableResolver implements ContextRewriter {
       } else {
         //set the dates again as they can change based on ValidUpdatePeriod
         sc.setStorageStartAndEndDate();
-        Set<CandidateTablePruneCause> allPruningCauses = new HashSet<>(2);
+        Set<CandidateTablePruneCause> allPruningCauses = new HashSet<>(cubeql.getTimeRanges().size());
         for (TimeRange range : cubeql.getTimeRanges()) {
           CandidateTablePruneCause pruningCauseForThisTimeRange = null;
           if (!CandidateUtil.isPartiallyValidForTimeRange(sc, range)) {
@@ -349,6 +356,12 @@ class StorageTableResolver implements ContextRewriter {
           }
         }
         if (!allPruningCauses.isEmpty()) {
+          // TODO is this storage can answer atleast one time range , why prune it ?
+          // One case where we can prune it is if each Time range is on different time column. In this case
+          // I expect storage to answer all time ranges.
+          // Another case is where two time ranges are sperated by OR clause (and not AND clause)
+          // We are not optimizing for above cases as of now. Storage is supposed to answer all time ranges.. or
+          // more like there are many (other) places in code that wouldn't work for multiple time ranges
           it.remove();
           cubeql.addStoragePruningMsg(sc, allPruningCauses.toArray(new CandidateTablePruneCause[0]));
         }
