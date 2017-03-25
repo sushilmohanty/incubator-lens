@@ -443,6 +443,11 @@ public class StorageCandidate implements Candidate, CandidateTable {
       return true;
     }
 
+    if (!client.partColExists(this.getFact().getName(), storageName, partCol)) {
+      log.info("{} does not exist in {}", partCol, name);
+      return false;
+    }
+
     Date maxIntervalStorageTblStartDate = getStorageTableStartDate(maxInterval);
     Date maxIntervalStorageTblEndDate = getStorageTableEndDate(maxInterval);
 
