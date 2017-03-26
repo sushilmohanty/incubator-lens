@@ -38,7 +38,6 @@ import org.apache.lens.cube.metadata.timeline.StoreAllPartitionTimeline;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -1818,7 +1817,10 @@ public class CubeTestSetup {
     storageAggregatePeriods.put(c3, updates);
     storageAggregatePeriods.put(c4, updates);
     storageAggregatePeriods.put(c5, updates);
-    storageAggregatePeriods.put(c6, new HashSet<UpdatePeriod>(2){{add(DAILY);add(MONTHLY);}});
+    storageAggregatePeriods.put(c6, new HashSet<UpdatePeriod>(2) {{
+      add(DAILY);
+      add(MONTHLY);
+    }});
 
 
     Map<String, StorageTableDesc> storageTables = new HashMap<String, StorageTableDesc>();
@@ -3152,7 +3154,7 @@ public class CubeTestSetup {
       client.createStorage(new HDFSStorage(c3));
       client.createStorage(new HDFSStorage(c4));
       client.createStorage(new HDFSStorage(c5));
-      client.createStorage(new HDFSStorage(c6));// This storage  will have mutiple table descriptions(one per update period)
+      client.createStorage(new HDFSStorage(c6)); // This storage hs mutiple table descriptions(one per update period)
       client.createStorage(new HDFSStorage(c99));
 
       createCube(client);
