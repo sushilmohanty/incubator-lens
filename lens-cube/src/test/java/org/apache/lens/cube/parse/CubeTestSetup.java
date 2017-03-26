@@ -3154,7 +3154,7 @@ public class CubeTestSetup {
       client.createStorage(new HDFSStorage(c3));
       client.createStorage(new HDFSStorage(c4));
       client.createStorage(new HDFSStorage(c5));
-      client.createStorage(new HDFSStorage(c6)); // This storage hs mutiple table descriptions(one per update period)
+      client.createStorage(new HDFSStorage(c6)); // This storage hs multiple table descriptions(one per update period)
       client.createStorage(new HDFSStorage(c99));
 
       createCube(client);
