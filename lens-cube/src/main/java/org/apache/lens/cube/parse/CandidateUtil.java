@@ -67,7 +67,7 @@ public class CandidateUtil {
 
     return (candStartMillis <= rangeStartMillis && candEndMillis > rangeStartMillis)
       || (candStartMillis < rangeEndMillis && candEndMillis >= rangeEndMillis)
-      || (candEndMillis >= rangeStartMillis && candEndMillis < rangeEndMillis);
+      || (candEndMillis > rangeStartMillis && candEndMillis < rangeEndMillis);
   }
 
 
