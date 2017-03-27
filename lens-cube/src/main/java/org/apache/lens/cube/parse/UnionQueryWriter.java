@@ -191,7 +191,7 @@ public class UnionQueryWriter {
       ASTNode outerOrderby = new ASTNode(child);
       ASTNode tokNullsChild = (ASTNode) child.getChild(0);
       ASTNode outerTokNullsChild = new ASTNode(tokNullsChild);
-      outerTokNullsChild.addChild(getOuterAST((ASTNode) tokNullsChild.getChild(0), null, aliasDecider, null, true));
+      outerTokNullsChild.addChild(getOuterAST((ASTNode) tokNullsChild.getChild(0), null, aliasDecider, null, true, cubeql.getBaseCube().getDimAttributeNames()));
       outerOrderby.addChild(outerTokNullsChild);
       outerExpression.addChild(outerOrderby);
     }
@@ -492,7 +492,7 @@ public class UnionQueryWriter {
       ASTNode child = (ASTNode) selectAST.getChild(i);
       ASTNode outerSelect = new ASTNode(child);
       ASTNode selectExprAST = (ASTNode) child.getChild(0);
-      ASTNode outerAST = getOuterAST(selectExprAST, innerSelectAST, aliasDecider, sc, true);
+      ASTNode outerAST = getOuterAST(selectExprAST, innerSelectAST, aliasDecider, sc, true, cubeql.getBaseCube().getDimAttributeNames());
       outerSelect.addChild(outerAST);
       // has an alias? add it
       if (child.getChildCount() > 1) {
@@ -527,12 +527,13 @@ public class UnionQueryWriter {
    5. If given ast is memorized as mentioned in the above cases, return the mapping.
  */
   private ASTNode getOuterAST(ASTNode astNode, ASTNode innerSelectAST,
-      AliasDecider aliasDecider, StorageCandidate sc, boolean isSelectAst) throws LensException {
+      AliasDecider aliasDecider, StorageCandidate sc, boolean isSelectAst, Set<String> dimensionSet) throws LensException {
     if (astNode == null) {
       return null;
     }
     Set<String> msrCols = new HashSet<>();
     getAllColumnsOfNode(astNode, msrCols);
+    msrCols.removeAll(dimensionSet);
     if (isAggregateAST(astNode) && sc.getColumns().containsAll(msrCols)) {
       return processAggregate(astNode, innerSelectAST, aliasDecider, isSelectAst);
     } else if (isAggregateAST(astNode) && !sc.getColumns().containsAll(msrCols)) {
@@ -540,7 +541,7 @@ public class UnionQueryWriter {
       ASTNode exprCopy = MetastoreUtil.copyAST(astNode);
       setDefaultValueInExprForAggregateNodes(exprCopy, sc);
       outerAST.addChild(getOuterAST(getSelectExpr(exprCopy, null, true),
-          innerSelectAST, aliasDecider, sc, isSelectAst));
+          innerSelectAST, aliasDecider, sc, isSelectAst, dimensionSet));
       return outerAST;
     } else {
       if (hasAggregate(astNode)) {
@@ -548,10 +549,10 @@ public class UnionQueryWriter {
         for (Node child : astNode.getChildren()) {
           ASTNode childAST = (ASTNode) child;
           if (hasAggregate(childAST) && sc.getColumns().containsAll(msrCols)) {
-            outerAST.addChild(getOuterAST(childAST, innerSelectAST, aliasDecider, sc, isSelectAst));
+            outerAST.addChild(getOuterAST(childAST, innerSelectAST, aliasDecider, sc, isSelectAst, dimensionSet));
           } else if (hasAggregate(childAST) && !sc.getColumns().containsAll(msrCols)) {
             childAST.replaceChildren(1, 1,  getSelectExpr(null, null, true));
-            outerAST.addChild(getOuterAST(childAST, innerSelectAST, aliasDecider, sc, isSelectAst));
+            outerAST.addChild(getOuterAST(childAST, innerSelectAST, aliasDecider, sc, isSelectAst, dimensionSet));
           } else {
             outerAST.addChild(childAST);
           }
@@ -641,7 +642,7 @@ public class UnionQueryWriter {
     // iterate over all children of the ast and get outer ast corresponding to it.
     for (ASTNode child : havingAggASTs) {
       if (!innerToOuterSelectASTs.containsKey(new HQLParser.HashableASTNode(child))) {
-        getOuterAST(child, innerSelectAst, aliasDecider, sc, false);
+        getOuterAST(child, innerSelectAst, aliasDecider, sc, false, cubeql.getBaseCube().getDimAttributeNames());
       }
     }
   }
