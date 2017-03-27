@@ -60,21 +60,14 @@ public class CandidateUtil {
 
   static boolean isCandidatePartiallyValidForTimeRange(Date candidateStartTime, Date candidateEndTime,
     Date timeRangeStart, Date timeRangeEnd) {
-/*    long candStartMillis = candidateStartTime.getTime();
+    long candStartMillis = candidateStartTime.getTime();
     long candEndMillis = candidateEndTime.getTime();
     long rangeStartMillis = timeRangeStart.getTime();
-    long rangeEndMillis = timeRangeEnd.getTime();*/
+    long rangeEndMillis = timeRangeEnd.getTime();
 
-    //Note Start time is inclusive and end time in not
-    return (!candidateStartTime.before(timeRangeStart) && candidateStartTime.before(timeRangeEnd))
-      || (!candidateEndTime.before(timeRangeStart) && candidateEndTime.before(timeRangeEnd));
-
-    /*return (candStartMillis >= rangeStartMillis && candStartMillis < rangeEndMillis)
-      || (candEndMillis > rangeStartMillis && candEndMillis < rangeEndMillis);*/
-
-    /*return (candStartMillis <= rangeStartMillis && candEndMillis > rangeStartMillis)
+    return (candStartMillis <= rangeStartMillis && candEndMillis > rangeStartMillis)
       || (candStartMillis < rangeEndMillis && candEndMillis >= rangeEndMillis)
-      || (candEndMillis >= rangeStartMillis && candEndMillis < rangeEndMillis);*/
+      || (candEndMillis >= rangeStartMillis && candEndMillis < rangeEndMillis);
   }
 
 

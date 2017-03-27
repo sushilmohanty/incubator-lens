@@ -154,7 +154,10 @@ public class StorageCandidate implements Candidate, CandidateTable {
   @Getter
   private int numQueriedParts = 0;
 
-  //TODDO check if required.
+  /**
+   * This will be true if this storage candidate has multiple storage tables (one per update period)
+   * https://issues.apache.org/jira/browse/LENS-1386
+   */
   @Getter
   private boolean isStorageTblsAtUpdatePeriodLevel;
 
@@ -199,7 +202,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
     client = cubeql.getMetastoreClient();
     Set<String> storageTblNames = client.getStorageTables(fact.getName(), storageName);
     if (storageTblNames.size() > 1) {
-      isStorageTblsAtUpdatePeriodLevel = true; // see LENS-1386 for more details on this feature
+      isStorageTblsAtUpdatePeriodLevel = true;
     } else {
       //if this.name is equal to the storage table name it implies isStorageTblsAtUpdatePeriodLevel is false
       isStorageTblsAtUpdatePeriodLevel = !storageTblNames.iterator().next().equalsIgnoreCase(name);
@@ -381,8 +384,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   private void updatePartitionStorage(FactPartition part) throws LensException {
     try {
-      //client.isStorageTablePartitionACandidate(
-      //client.getStorageTableName(fact.getName(), storageName, part.getPeriod()), part.getPartSpec())
       if (client.factPartitionExists(fact, part, name)) {
         part.getStorageTables().add(name);
         part.setFound(true);
@@ -646,14 +647,6 @@ public class StorageCandidate implements Candidate, CandidateTable {
     if (!StringUtils.isEmpty(extraWhere)) {
       rangeToExtraWhereFallBack.put(queriedTimeRange, extraWhere);
     }
-
-//      rangeToWhere.put(queriedTimeRange, "((" + rangeWriter
-//        .getTimeRangeWhereClause(cubeql, cubeql.getAliasForTableName(cubeql.getCube().getName()), rangeParts)
-//        + ") and  (" + extraWhere + "))");
-//    } else {
-//      rangeToWhere.put(queriedTimeRange, rangeWriter
-//        .getTimeRangeWhereClause(cubeql, cubeql.getAliasForTableName(cubeql.getCube().getName()), rangeParts));
-//    }
     return true;
   }
 
@@ -723,16 +716,15 @@ public class StorageCandidate implements Candidate, CandidateTable {
     return isDataComplete;
   }
 
-    private Set<FactPartition> getPartitions(TimeRange timeRange, TreeSet<UpdatePeriod> updatePeriods,
+  private Set<FactPartition> getPartitions(TimeRange timeRange, TreeSet<UpdatePeriod> updatePeriods,
     boolean addNonExistingParts, boolean failOnPartialData, PartitionRangesForPartitionColumns missingParts)
     throws LensException {
-      Set<FactPartition> partitions = new TreeSet<>();
-      if (timeRange != null && timeRange.isCoverableBy(updatePeriods)){
-        getPartitions(timeRange.getFromDate(),
-          timeRange.getToDate(), timeRange.getPartitionColumn(), partitions, updatePeriods, addNonExistingParts,
-          failOnPartialData, missingParts);
-      }
-      return partitions;
+    Set<FactPartition> partitions = new TreeSet<>();
+    if (timeRange != null && timeRange.isCoverableBy(updatePeriods)) {
+      getPartitions(timeRange.getFromDate(), timeRange.getToDate(), timeRange.getPartitionColumn(),
+        partitions, updatePeriods, addNonExistingParts, failOnPartialData, missingParts);
+    }
+    return partitions;
   }
 
   @Override

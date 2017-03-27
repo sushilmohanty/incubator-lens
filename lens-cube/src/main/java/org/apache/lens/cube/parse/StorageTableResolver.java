@@ -330,7 +330,8 @@ class StorageTableResolver implements ContextRewriter {
               new CandidateTablePruneCause(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE);
           }
           //Check partition (or fallback) column existence
-          else if (cubeql.shouldReplaceTimeDimWithPart()) { //TODO Shouldn't we check atleast once the existence of part column
+          //TODO Shouldn't we check atleast once for the existence of part column
+          else if (cubeql.shouldReplaceTimeDimWithPart()) {
             if (!client.partColExists(sc.getFact().getName(), sc.getStorageName(), range.getPartitionColumn())) {
               pruningCauseForThisTimeRange = partitionColumnsMissing(range.getPartitionColumn());
               TimeRange fallBackRange = StorageUtil.getFallbackRange(range, sc.getFact().getName(), cubeql);
