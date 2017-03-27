@@ -60,27 +60,12 @@ public class CandidateUtil {
 
   static boolean isCandidatePartiallyValidForTimeRange(Date candidateStartTime, Date candidateEndTime,
     Date timeRangeStart, Date timeRangeEnd) {
-    long candStartMillis = candidateStartTime.getTime();
-    long candEndMillis = candidateEndTime.getTime();
-    long rangeStartMillis = timeRangeStart.getTime();
-    long rangeEndMillis = timeRangeEnd.getTime();
-
-    boolean partiallyValid = (candStartMillis <= rangeStartMillis && candEndMillis > rangeStartMillis)
-      || (candStartMillis < rangeEndMillis && candEndMillis >= rangeEndMillis)
-      || (candEndMillis > rangeStartMillis && candEndMillis < rangeEndMillis);
-
-    boolean partiallyValid2 = (candStartMillis >= rangeStartMillis && candStartMillis < rangeEndMillis)
-      || (candEndMillis > rangeStartMillis && candEndMillis <= rangeEndMillis);
-
-    assert (partiallyValid == partiallyValid2);
-
-    boolean partaillyValid3 = (!candidateStartTime.before(timeRangeStart) && candidateStartTime.before(timeRangeEnd))
-      || (candidateEndTime.after(timeRangeStart) && !candidateEndTime.after(timeRangeEnd));
-
-    assert(partiallyValid2 == partaillyValid3);
-    assert(partiallyValid == partaillyValid3);
-
-    return partiallyValid;
+    Date start  = candidateStartTime.after(timeRangeStart) ? candidateStartTime : timeRangeStart;
+    Date end = candidateEndTime.before(timeRangeEnd) ? candidateEndTime : timeRangeEnd;
+    if (end.after(start)) {
+      return true;
+    }
+    return false;
   }
 
 
