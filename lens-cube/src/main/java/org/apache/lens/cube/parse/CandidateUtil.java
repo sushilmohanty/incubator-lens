@@ -77,8 +77,8 @@ public class CandidateUtil {
     boolean partaillyValid3 = (!candidateStartTime.before(timeRangeStart) && candidateStartTime.before(timeRangeEnd))
       || (candidateEndTime.after(timeRangeStart) && !candidateEndTime.after(timeRangeEnd));
 
-    assert(partiallyValid2 = partaillyValid3);
-    assert(partiallyValid = partaillyValid3);
+    assert(partiallyValid2 == partaillyValid3);
+    assert(partiallyValid == partaillyValid3);
 
     return partiallyValid;
   }
