@@ -357,12 +357,7 @@ class StorageTableResolver implements ContextRewriter {
           }
         }
         if (!allPruningCauses.isEmpty()) {
-          // TODO is this storage can answer atleast one time range , why prune it ?
-          // One case where we can prune it is if each Time range is on different time column. In this case
-          // I expect storage to answer all time ranges.
-          // Another case is where two time ranges are sperated by OR clause (and not AND clause)
-          // We are not optimizing for above cases as of now. Storage is supposed to answer all time ranges.. or
-          // more like there are many (other) places in code that wouldn't work for multiple time ranges
+          // TODO if this storage can answer atleast one time range , why prune it ?
           it.remove();
           cubeql.addStoragePruningMsg(sc, allPruningCauses.toArray(new CandidateTablePruneCause[0]));
         }

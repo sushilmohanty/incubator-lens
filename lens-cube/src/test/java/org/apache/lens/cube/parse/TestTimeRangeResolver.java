@@ -86,8 +86,8 @@ public class TestTimeRangeResolver extends TestQueryRewrite {
 
   @Test
   public void testAbsoluteValidity() throws ParseException, HiveException, LensException {
-    CubeQueryContext ctx = null;
-    ctx = rewriteCtx("select msr12 from basecube where " + TWO_DAYS_RANGE + " or " + TWO_DAYS_RANGE_BEFORE_4_DAYS,
+    CubeQueryContext ctx =
+      rewriteCtx("select msr12 from basecube where " + TWO_DAYS_RANGE + " or " + TWO_DAYS_RANGE_BEFORE_4_DAYS,
         getConf());
     List<CandidateTablePruneCause> causes = findPruningMessagesForStorage("c3_testfact_deprecated",
       ctx.getStoragePruningMsgs());
