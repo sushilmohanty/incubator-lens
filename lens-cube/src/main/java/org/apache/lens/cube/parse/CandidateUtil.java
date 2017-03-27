@@ -65,9 +65,22 @@ public class CandidateUtil {
     long rangeStartMillis = timeRangeStart.getTime();
     long rangeEndMillis = timeRangeEnd.getTime();
 
-    return (candStartMillis <= rangeStartMillis && candEndMillis > rangeStartMillis)
+    boolean partiallyValid = (candStartMillis <= rangeStartMillis && candEndMillis > rangeStartMillis)
       || (candStartMillis < rangeEndMillis && candEndMillis >= rangeEndMillis)
       || (candEndMillis > rangeStartMillis && candEndMillis < rangeEndMillis);
+
+    boolean partiallyValid2 = (candStartMillis >= rangeStartMillis && candStartMillis < rangeEndMillis)
+      || (candEndMillis > rangeStartMillis && candEndMillis <= rangeEndMillis);
+
+    assert (partiallyValid == partiallyValid2);
+
+    boolean partaillyValid3 = (!candidateStartTime.before(timeRangeStart) && candidateStartTime.before(timeRangeEnd))
+      || (candidateEndTime.after(timeRangeStart) && !candidateEndTime.after(timeRangeEnd));
+
+    assert(partiallyValid2 = partaillyValid3);
+    assert(partiallyValid = partaillyValid3);
+
+    return partiallyValid;
   }
 
 
