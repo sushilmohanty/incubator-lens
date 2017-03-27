@@ -102,6 +102,9 @@ public class CubeTestSetup {
   private static String c3 = "C3";
   private static String c4 = "C4";
   private static String c5 = "C5";
+  private static String c6 = "C6";
+  private static String c6Daily = "DAILY_C6";
+  private static String c6Monthly = "MONTHLY_C6";
   private static String c99 = "C99";
   private static Map<String, String> factValidityProperties = Maps.newHashMap();
   @Getter
@@ -440,6 +443,15 @@ public class CubeTestSetup {
     return storageTableToWhereClause;
   }
 
+  public static Map<String, String> getWhereForMonthly(String monthlyTable, Date startMonth, Date endMonth) {
+    Map<String, String> storageTableToWhereClause = new LinkedHashMap<String, String>();
+    List<String> parts = new ArrayList<String>();
+    addParts(parts, MONTHLY, startMonth, endMonth);
+    storageTableToWhereClause.put(getDbName() + monthlyTable,
+      StorageUtil.getWherePartClause("dt", TEST_CUBE_NAME, parts));
+    return storageTableToWhereClause;
+  }
+
   public static Map<String, String> getWhereForDays(String dailyTable, Date startDay, Date endDay) {
     Map<String, String> storageTableToWhereClause = new LinkedHashMap<>();
     List<String> parts = new ArrayList<>();
@@ -448,6 +460,7 @@ public class CubeTestSetup {
       StorageUtil.getWherePartClause("dt", TEST_CUBE_NAME, parts));
     return storageTableToWhereClause;
   }
+
   public static Map<String, String> getWhereForHourly2days(String hourlyTable) {
     return getWhereForHourly2days(TEST_CUBE_NAME, hourlyTable);
   }
@@ -1783,11 +1796,32 @@ public class CubeTestSetup {
     s5.setTimePartCols(timePartCols);
     s5.getTblProps().put(MetastoreUtil.getStoragetableStartTimesKey(), "now.day - 10 days");
 
+
+    StorageTableDesc s6Daily = new StorageTableDesc();
+    s6Daily.setInputFormat(TextInputFormat.class.getCanonicalName());
+    s6Daily.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getCanonicalName());
+    s6Daily.setPartCols(partCols);
+    s6Daily.setTimePartCols(timePartCols);
+    s6Daily.getTblProps().put(MetastoreUtil.getStoragetableStartTimesKey(), "now.month - 2 months");
+    s6Daily.getTblProps().put(MetastoreUtil.getStoragetableEndTimesKey(), "now.day");
+
+    StorageTableDesc s6Monthly = new StorageTableDesc();
+    s6Monthly.setInputFormat(TextInputFormat.class.getCanonicalName());
+    s6Monthly.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getCanonicalName());
+    s6Monthly.setPartCols(partCols);
+    s6Monthly.setTimePartCols(timePartCols);
+    s6Monthly.getTblProps().put(MetastoreUtil.getStoragetableStartTimesKey(), "now.month - 12 months");
+    s6Monthly.getTblProps().put(MetastoreUtil.getStoragetableEndTimesKey(), "now.month - 1 months");
     storageAggregatePeriods.put(c1, updates);
     storageAggregatePeriods.put(c2, updates);
     storageAggregatePeriods.put(c3, updates);
     storageAggregatePeriods.put(c4, updates);
     storageAggregatePeriods.put(c5, updates);
+    storageAggregatePeriods.put(c6, new HashSet<UpdatePeriod>(2) {{
+      add(DAILY);
+      add(MONTHLY);
+    }});
+
 
     Map<String, StorageTableDesc> storageTables = new HashMap<String, StorageTableDesc>();
     storageTables.put(c1, s1);
@@ -1795,6 +1829,8 @@ public class CubeTestSetup {
     storageTables.put(c2, s1);
     storageTables.put(c3, s3);
     storageTables.put(c5, s5);
+    storageTables.put(c6Daily, s6Daily);
+    storageTables.put(c6Monthly, s6Monthly);
 
     //add storage with continuous update period
     updates.add(CONTINUOUS);
@@ -1804,9 +1840,28 @@ public class CubeTestSetup {
     s0.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getCanonicalName());
     storageTables.put(c0, s0);
 
+    Map<String, Map<UpdatePeriod, String>> storageUpdatePeriodMap = new HashMap<>();
+    Map<UpdatePeriod, String> updatePeriodToStorageTableMap;
+    for (Map.Entry<String, Set<UpdatePeriod>> e : storageAggregatePeriods.entrySet()) {
+      updatePeriodToStorageTableMap = new HashMap<>();
+      storageUpdatePeriodMap.put(e.getKey(), updatePeriodToStorageTableMap);
+      if (e.getKey().equals(c6)) { //Storage == c6
+        //Storage C6 has a separate table description for each of its update periods and
+        //hence a different storage table on meta store
+        for (UpdatePeriod u : e.getValue()) {
+          updatePeriodToStorageTableMap.put(u, u.getName() + "_" + e.getKey());
+        }
+      } else {
+        //All update periods share same table.
+        for (UpdatePeriod u : e.getValue()) {
+          updatePeriodToStorageTableMap.put(u, e.getKey());
+        }
+      }
+    }
+
     // create cube fact
     client.createCubeFactTable(TEST_CUBE_NAME, factName, factColumns, storageAggregatePeriods, 5L,
-      factValidityProperties, storageTables);
+      factValidityProperties, storageTables, storageUpdatePeriodMap);
     client.getTimelines(factName, c1, null, null);
     client.getTimelines(factName, c4, null, null);
     client.clearHiveTableCache();
@@ -3099,7 +3154,9 @@ public class CubeTestSetup {
       client.createStorage(new HDFSStorage(c3));
       client.createStorage(new HDFSStorage(c4));
       client.createStorage(new HDFSStorage(c5));
+      client.createStorage(new HDFSStorage(c6)); // This storage hs multiple table descriptions(one per update period)
       client.createStorage(new HDFSStorage(c99));
+
       createCube(client);
       createBaseAndDerivedCubes(client);
       createCubeFact(client);

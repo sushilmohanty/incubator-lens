@@ -86,8 +86,8 @@ public class TestTimeRangeResolver extends TestQueryRewrite {
 
   @Test
   public void testAbsoluteValidity() throws ParseException, HiveException, LensException {
-    CubeQueryContext ctx =
-      rewriteCtx("select msr12 from basecube where " + TWO_DAYS_RANGE + " or " + TWO_DAYS_RANGE_BEFORE_4_DAYS,
+    CubeQueryContext ctx = null;
+    ctx = rewriteCtx("select msr12 from basecube where " + TWO_DAYS_RANGE + " or " + TWO_DAYS_RANGE_BEFORE_4_DAYS,
         getConf());
     List<CandidateTablePruneCause> causes = findPruningMessagesForStorage("c3_testfact_deprecated",
       ctx.getStoragePruningMsgs());
@@ -105,14 +105,12 @@ public class TestTimeRangeResolver extends TestQueryRewrite {
     causes = findPruningMessagesForStorage("c1_testfact_deprecated",
       ctx.getStoragePruningMsgs());
     assertEquals(causes.size(), 1);
-    assertEquals(causes.get(0).getCause(), STORAGE_NOT_AVAILABLE_IN_RANGE);
-    assertTrue(causes.get(0).getInvalidRanges().containsAll(ctx.getTimeRanges()));
+    assertEquals(causes.get(0).getCause(), TIME_RANGE_NOT_ANSWERABLE);
 
     causes = findPruningMessagesForStorage("c2_testfact_deprecated",
       ctx.getStoragePruningMsgs());
     assertEquals(causes.size(), 1);
-    assertEquals(causes.get(0).getCause(), STORAGE_NOT_AVAILABLE_IN_RANGE);
-    assertTrue(causes.get(0).getInvalidRanges().containsAll(ctx.getTimeRanges()));
+    assertEquals(causes.get(0).getCause(), TIME_RANGE_NOT_ANSWERABLE);
   }
 
   @Test
