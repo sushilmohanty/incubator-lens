@@ -67,7 +67,7 @@ public class CandidateUtil {
 
     //Note Start time is inclusive and end time in not
     return (!candidateStartTime.before(timeRangeStart) && candidateStartTime.before(timeRangeEnd))
-      || (candidateEndTime.after(timeRangeStart) && candidateEndTime.before(timeRangeEnd));
+      || (!candidateEndTime.before(timeRangeStart) && candidateEndTime.before(timeRangeEnd));
 
     /*return (candStartMillis >= rangeStartMillis && candStartMillis < rangeEndMillis)
       || (candEndMillis > rangeStartMillis && candEndMillis < rangeEndMillis);*/

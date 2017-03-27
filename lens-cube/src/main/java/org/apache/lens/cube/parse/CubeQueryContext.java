@@ -1071,10 +1071,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     return periodSpecificList;
   }
 
-  private Map<UpdatePeriod,Set<FactPartition>> getPartitionsPerUpdatePeriod(StorageCandidate sc, TimeRange range) {
-    return null;
-  }
-
   public ASTNode toAST(Context ctx) throws LensException {
     String hql = toHQL();
     ParseDriver pd = new ParseDriver();
