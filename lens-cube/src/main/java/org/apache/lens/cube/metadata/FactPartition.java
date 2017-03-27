@@ -48,7 +48,6 @@ public class FactPartition implements Comparable<FactPartition> {
   @Setter
   private boolean found = false;
 
-
   public FactPartition(String partCol, Date partSpec, UpdatePeriod period,
     FactPartition containingPart, DateFormat partFormat) {
     this.partCol = partCol;

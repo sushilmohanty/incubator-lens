@@ -327,7 +327,7 @@ public final class DateUtil {
   private static CoveringInfo getMilliSecondCoveringInfo(Date from, Date to, long millisInInterval, UpdatePeriod interval) {
     long diff = to.getTime() - from.getTime();
     return new CoveringInfo((int) (diff / millisInInterval),
-      Stream.of(from, to).allMatch(a -> interval.truncate(a).equals(a)));
+      Stream.of(from, to).allMatch(a->interval.truncate(a).equals(a)));
     // start date and end date should lie on boundaries.
   }
 

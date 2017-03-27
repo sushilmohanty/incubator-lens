@@ -922,16 +922,16 @@ public class StorageCandidate implements Candidate, CandidateTable {
     Set<UpdatePeriod> remainingIntervals = Sets.difference(intervals, Sets.newHashSet(maxInterval));
 
     if (!CandidateUtil.isCandidatePartiallyValidForTimeRange(
-      maxIntervalStorageTableStartDate, maxIntervalStorageTableEndDate,timeRangeStart, timeRangeEnd)) {
+      maxIntervalStorageTableStartDate, maxIntervalStorageTableEndDate, timeRangeStart, timeRangeEnd)) {
       //Check the time range in remainingIntervals as maxInterval is not useful
       return isTimeRangeCoverable(timeRangeStart, timeRangeEnd, remainingIntervals);
     }
 
     Date ceilFromDate = DateUtil.getCeilDate(timeRangeStart.after(maxIntervalStorageTableStartDate)
-      ? timeRangeStart :maxIntervalStorageTableStartDate, maxInterval);
+      ? timeRangeStart : maxIntervalStorageTableStartDate, maxInterval);
     Date floorToDate = DateUtil.getFloorDate(timeRangeEnd.before(maxIntervalStorageTableEndDate)
       ? timeRangeEnd : maxIntervalStorageTableEndDate, maxInterval);
-    if(ceilFromDate.equals(floorToDate) || floorToDate.before(ceilFromDate)) {
+    if (ceilFromDate.equals(floorToDate) || floorToDate.before(ceilFromDate)) {
       return isTimeRangeCoverable(timeRangeStart, timeRangeEnd, remainingIntervals);
     }
 
