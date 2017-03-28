@@ -994,7 +994,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
    * @throws LensException
    */
   public Collection<StorageCandidate> splitAtUpdatePeriodLevelIfReq() throws LensException {
-    if (isStorageTblsAtUpdatePeriodLevel) {
+    if (!isStorageTblsAtUpdatePeriodLevel) {
       return Lists.newArrayList(this); // No need to explode in this case
     }
     return getPeriodSpecificStorageCandidates();
