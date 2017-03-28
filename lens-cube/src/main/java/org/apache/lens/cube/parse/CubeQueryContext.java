@@ -935,84 +935,74 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
   public String toHQL() throws LensException {
     Candidate cand = pickCandidateToQuery();
     Map<Dimension, CandidateDim> dimsToQuery = pickCandidateDimsToQuery(dimensions);
-    Collection<StorageCandidate> scList = new HashSet<>();
+    Collection<StorageCandidate> scSet = new HashSet<>();
     if (cand != null) {
-      scList.addAll(CandidateUtil.getStorageCandidates(cand));
+      scSet.addAll(CandidateUtil.getStorageCandidates(cand));
     }
 
     //Expand and get update period specific storage candidates if required.
-    if (!scList.isEmpty()) {
-      Collection<StorageCandidate> expandedScList = new ArrayList<>();
-      for (StorageCandidate sc : scList) {
-        if (sc.isStorageTblsAtUpdatePeriodLevel() && sc.getParticipatingUpdatePeriods().size() > 1) {
-          expandedScList.addAll(getPeriodSpecificStorageCandidates(sc));
-        } else {
-          expandedScList.add(sc);
-        }
-      }
-      scList = expandedScList;
-    }
+    scSet = expandStorageCandidates(scSet);
 
     log.info("Candidate: {}, DimsToQuery: {}", cand, dimsToQuery);
     if (autoJoinCtx != null) {
       // prune join paths for picked fact and dimensions
-      autoJoinCtx.pruneAllPaths(cube, scList, dimsToQuery);
+      autoJoinCtx.pruneAllPaths(cube, scSet, dimsToQuery);
     }
 
-    Map<StorageCandidate, Set<Dimension>> scDimMap = new HashMap<>();
+    Map<StorageCandidate, Set<Dimension>> factDimMap = new HashMap<>();
     if (cand != null) {
       // Set the default queryAST for StorageCandidate and copy child ASTs from cubeql.
       // Later in the rewrite flow each Storage candidate will modify them accordingly.
-      for (StorageCandidate sc : scList) {
+      for (StorageCandidate sc : scSet) {
         sc.setQueryAst(DefaultQueryAST.fromStorageCandidate(sc, this));
         CandidateUtil.copyASTs(this, sc.getQueryAst());
-        scDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
+        factDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
       }
-      for (StorageCandidate sc : scList) {
+      for (StorageCandidate sc : scSet) {
         addRangeClauses(sc);
       }
     }
 
     // pick dimension tables required during expression expansion for the picked fact and dimensions
     Set<Dimension> exprDimensions = new HashSet<>();
-    if (!scList.isEmpty()) {
-      for (StorageCandidate sc : scList) {
+    if (!scSet.isEmpty()) {
+      for (StorageCandidate sc : scSet) {
         Set<Dimension> scExprDimTables = exprCtx.rewriteExprCtx(this, sc, dimsToQuery, sc.getQueryAst());
         exprDimensions.addAll(scExprDimTables);
-        scDimMap.get(sc).addAll(scExprDimTables);
+        factDimMap.get(sc).addAll(scExprDimTables);
       }
     } else {
       // dim only query
       exprDimensions.addAll(exprCtx.rewriteExprCtx(this, null, dimsToQuery, this));
     }
     dimsToQuery.putAll(pickCandidateDimsToQuery(exprDimensions));
-    log.info("StorageCandidates: {}, DimsToQuery: {}", scList, dimsToQuery);
+    log.info("StorageCandidates: {}, DimsToQuery: {}", scSet, dimsToQuery);
 
     // pick denorm tables for the picked fact and dimensions
     Set<Dimension> denormTables = new HashSet<>();
-    if (!scList.isEmpty()) {
-      for (StorageCandidate sc : scList) {
-        Set<Dimension> scDenormTables = deNormCtx.rewriteDenormctx(this, sc, dimsToQuery, !scList.isEmpty());
+    if (!scSet.isEmpty()) {
+      for (StorageCandidate sc : scSet) {
+        Set<Dimension> scDenormTables = deNormCtx.rewriteDenormctx(this, sc, dimsToQuery, !scSet.isEmpty());
         denormTables.addAll(scDenormTables);
-        scDimMap.get(sc).addAll(scDenormTables);
+        factDimMap.get(sc).addAll(scDenormTables);
       }
     } else {
       denormTables.addAll(deNormCtx.rewriteDenormctx(this, null, dimsToQuery, false));
     }
     dimsToQuery.putAll(pickCandidateDimsToQuery(denormTables));
-    log.info("StorageCandidates: {}, DimsToQuery: {}", scList, dimsToQuery);
+    log.info("StorageCandidates: {}, DimsToQuery: {}", scSet, dimsToQuery);
     // Prune join paths once denorm tables are picked
     if (autoJoinCtx != null) {
       // prune join paths for picked fact and dimensions
-      autoJoinCtx.pruneAllPaths(cube, scList, dimsToQuery);
+      autoJoinCtx.pruneAllPaths(cube, scSet, dimsToQuery);
     }
     if (autoJoinCtx != null) {
       // add optional dims from Join resolver
       Set<Dimension> joiningTables = new HashSet<>();
-      if (scList != null && scList.size() > 1) {
-        for (StorageCandidate sc : scList) {
-          Set<Dimension> scJoiningTables = autoJoinCtx.pickOptionalTables(sc, scDimMap.get(sc), this);
-          scDimMap.get(sc).addAll(scJoiningTables);
+      if (scSet != null && scSet.size() > 1) {
+        for (StorageCandidate sc : scSet) {
+          Set<Dimension> scJoiningTables = autoJoinCtx.pickOptionalTables(sc, factDimMap.get(sc), this);
+          factDimMap.get(sc).addAll(scJoiningTables);
           joiningTables.addAll(scJoiningTables);
         }
       } else {
@@ -1020,22 +1010,22 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
       }
       dimsToQuery.putAll(pickCandidateDimsToQuery(joiningTables));
     }
-    log.info("Picked StorageCandidates: {} DimsToQuery: {}", scList, dimsToQuery);
+    log.info("Picked StorageCandidates: {} DimsToQuery: {}", scSet, dimsToQuery);
     pickedDimTables = dimsToQuery.values();
     pickedCandidate = cand;
 
     //Set From string and time range clause
-    if (!scList.isEmpty()) {
-      for (StorageCandidate sc : scList) {
-        sc.updateFromString(this, scDimMap.get(sc), dimsToQuery);
+    if (!scSet.isEmpty()) {
+      for (StorageCandidate sc : scSet) {
+        sc.updateFromString(this, factDimMap.get(sc), dimsToQuery);
       }
     } else {
       updateFromString(null, dimsToQuery);
     }
 
     //update dim filter with fact filter, set where string in sc
-    if (scList.size() > 0) {
-      for (StorageCandidate sc : scList) {
+    if (scSet.size() > 0) {
+      for (StorageCandidate sc : scSet) {
         String qualifiedStorageTable = sc.getStorageName();
         String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1); //TODO this looks useless
         String where = getWhere(sc, autoJoinCtx,
@@ -1048,27 +1038,23 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     if (cand == null) {
       hqlContext = new DimOnlyHQLContext(dimsToQuery, this, this);
       return hqlContext.toHQL();
-    } else if (scList.size() == 1) {
-      StorageCandidate sc = (StorageCandidate) scList.iterator().next();
+    } else if (scSet.size() == 1) {
+      StorageCandidate sc = (StorageCandidate) scSet.iterator().next();
       sc.updateAnswerableSelectColumns(this);
-      return getInsertClause() + sc.toHQL(scDimMap.get(sc));
+      return getInsertClause() + sc.toHQL(factDimMap.get(sc));
     } else {
-      UnionQueryWriter uqc = new UnionQueryWriter(scList, this);
-      return getInsertClause() + uqc.toHQL(scDimMap);
+      UnionQueryWriter uqc = new UnionQueryWriter(scSet, this);
+      return getInsertClause() + uqc.toHQL(factDimMap);
     }
   }
 
-  private Collection<StorageCandidate> getPeriodSpecificStorageCandidates(StorageCandidate sc) throws LensException {
-    List<StorageCandidate> periodSpecificList = new ArrayList<>(sc.getParticipatingUpdatePeriods().size());
-    StorageCandidate updatePeriodSpecificSc;
-    for (UpdatePeriod period : sc.getParticipatingUpdatePeriods()) {
-      updatePeriodSpecificSc = CandidateUtil.cloneStorageCandidate(sc);
-      updatePeriodSpecificSc.setResolvedName(getMetastoreClient().getStorageTableName(sc.getFact().getName(),
-        sc.getStorageName(), period));
-      updatePeriodSpecificSc.truncatePartitions(period);
-      periodSpecificList.add(updatePeriodSpecificSc);
+  private Collection<StorageCandidate> expandStorageCandidates(Collection<StorageCandidate> scSet)
+    throws LensException {
+    Collection<StorageCandidate> expandedList = new ArrayList<StorageCandidate>();
+    for (StorageCandidate sc : scSet) {
+      expandedList.addAll(sc.splitAtUpdatePeriodLevelIfReq());
     }
-    return periodSpecificList;
+    return  expandedList;
   }
 
   public ASTNode toAST(Context ctx) throws LensException {
