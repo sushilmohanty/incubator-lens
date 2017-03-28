@@ -55,6 +55,7 @@ import org.apache.hadoop.util.ReflectionUtils;
 
 import org.antlr.runtime.CommonToken;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.Setter;
@@ -212,6 +213,36 @@ public class StorageCandidate implements Candidate, CandidateTable {
 
   /**
    * Sets Storage candidates start and end time based on underlying storage-tables
+   *
+   * CASE 1
+   * If has Storage has single storage table*
+   * Storage start time = max(storage start time , fact start time)
+   * Storage end time = min(storage end time , fact start time)
+   *
+   * CASE 2
+   * If the Storage has multiple Storage Tables (one per update period)*
+   * update Period start Time = Max(update start time, fact start time)
+   * update Period end Time = Min(update end time, fact end time)
+   * Stoarge start and end time is derived form the underlying update period start and end times.
+   * Storage start time = min(update1 start time ,...., updateN start time)
+   * Storage end time = max(update1 end time ,...., updateN end time)
+   *
+   * Note in Case 2 its assumed that the time range supported by different update periods are either
+   * overlapping(Example 2) or form a non overlapping but continuous chain(Example 1) as illustrated
+   * in examples below
+   *
+   * Example 1
+   * A Storage has 2 Non Oevralpping but continuous Update Periods.
+   * MONTHLY with start time as now.month -13 months and end time as now.month -2months  and
+   * DAILY with start time as now.day and end time as now.month -2months
+   * Then this Sorage will have an implied start time as now.month -13 month and end time as now.day
+   *
+   * Example 2
+   * A Storage has 2 Overlapping Update Periods.
+   * MONTHLY with start time as now.month -13 months and end time as now.month -1months  and
+   * DAILY with start time as now.day and end time as now.month -2months
+   * Then this Sorage will have an implied start time as now.month -13 month and end time as now.day
+   *
    * @throws LensException
    */
   public void setStorageStartAndEndDate() throws LensException {
@@ -949,12 +980,47 @@ public class StorageCandidate implements Candidate, CandidateTable {
       client.getStorageTableName(fact.getName(), storageName, interval), fact.getName());
   }
 
+
+  public String getResolvedName() {
+    if (resolvedName == null) {
+      return name;
+    }
+    return resolvedName;
+  }
+
+  /**
+   * Splits the Storage Candidates into multiple Storage Candidates if storage candidate has multiple
+   * storage tables (one per update period)
+   *
+   * @return
+   * @throws LensException
+   */
+  public Collection<StorageCandidate> splitAtUpdatePeriodLevelIfReq() throws LensException {
+    if (!isStorageTblsAtUpdatePeriodLevel) {
+      return Lists.newArrayList(this); // No need to explode in this case
+    }
+    return getPeriodSpecificStorageCandidates();
+  }
+
+  private Collection<StorageCandidate> getPeriodSpecificStorageCandidates() throws LensException {
+    List<StorageCandidate> periodSpecificScList = new ArrayList<>(participatingUpdatePeriods.size());
+    StorageCandidate updatePeriodSpecificSc;
+    for (UpdatePeriod period : participatingUpdatePeriods) {
+      updatePeriodSpecificSc = new StorageCandidate(this);
+      updatePeriodSpecificSc.truncatePartitions(period);
+      updatePeriodSpecificSc.setResolvedName(client.getStorageTableName(fact.getName(),
+        storageName, period));
+      periodSpecificScList.add(updatePeriodSpecificSc);
+    }
+    return periodSpecificScList;
+  }
+
   /**
    * Truncates partitions in {@link #rangeToPartitions} such that only partitions belonging to
    * the passed undatePeriod are retained.
    * @param updatePeriod
    */
-  public void truncatePartitions(UpdatePeriod updatePeriod) {
+  private void truncatePartitions(UpdatePeriod updatePeriod) {
     Iterator<Map.Entry<TimeRange, Set<FactPartition>>> rangeItr = rangeToPartitions.entrySet().iterator();
     while (rangeItr.hasNext()) {
       Map.Entry<TimeRange, Set<FactPartition>> rangeEntry = rangeItr.next();
@@ -970,10 +1036,5 @@ public class StorageCandidate implements Candidate, CandidateTable {
     }
   }
 
-  public String getResolvedName() {
-    if (resolvedName == null) {
-      return name;
-    }
-    return resolvedName;
-  }
+
 }
