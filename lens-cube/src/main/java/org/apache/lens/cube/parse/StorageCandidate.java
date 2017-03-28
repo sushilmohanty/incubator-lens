@@ -1004,10 +1004,10 @@ public class StorageCandidate implements Candidate, CandidateTable {
     List<StorageCandidate> periodSpecificScList = new ArrayList<>(participatingUpdatePeriods.size());
     StorageCandidate updatePeriodSpecificSc;
     for (UpdatePeriod period : participatingUpdatePeriods) {
-      updatePeriodSpecificSc = CandidateUtil.cloneStorageCandidate(this);
+      updatePeriodSpecificSc = new StorageCandidate(this);
+      updatePeriodSpecificSc.truncatePartitions(period);
       updatePeriodSpecificSc.setResolvedName(client.getStorageTableName(fact.getName(),
         storageName, period));
-      updatePeriodSpecificSc.truncatePartitions(period);
       periodSpecificScList.add(updatePeriodSpecificSc);
     }
     return periodSpecificScList;
