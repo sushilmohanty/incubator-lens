@@ -134,8 +134,7 @@ class StorageTableResolver implements ContextRewriter {
       }
       if (!isTimeRangeAnswerableByThisCandidate) {
         candidateIterator.remove();
-      }
-      else if (failOnPartialData && !isComplete) {
+      } else if (failOnPartialData && !isComplete) {
         candidateIterator.remove();
         log.info("Not considering candidate:{} as its data is not is not complete", candidate);
         Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(candidate);
@@ -328,10 +327,7 @@ class StorageTableResolver implements ContextRewriter {
             //This is the prune cause
             pruningCauseForThisTimeRange =
               new CandidateTablePruneCause(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE);
-          }
-          //Check partition (or fallback) column existence
-          //TODO Shouldn't we check atleast once for the existence of part column
-          else if (cubeql.shouldReplaceTimeDimWithPart()) {
+          } else if (cubeql.shouldReplaceTimeDimWithPart()) {
             if (!client.partColExists(sc.getFact().getName(), sc.getStorageName(), range.getPartitionColumn())) {
               pruningCauseForThisTimeRange = partitionColumnsMissing(range.getPartitionColumn());
               TimeRange fallBackRange = StorageUtil.getFallbackRange(range, sc.getFact().getName(), cubeql);
@@ -352,7 +348,7 @@ class StorageTableResolver implements ContextRewriter {
             }
           }
 
-          if(pruningCauseForThisTimeRange != null) {
+          if (pruningCauseForThisTimeRange != null) {
             allPruningCauses.add(pruningCauseForThisTimeRange);
           }
         }

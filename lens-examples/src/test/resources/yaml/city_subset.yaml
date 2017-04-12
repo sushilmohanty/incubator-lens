@@ -16,7 +16,7 @@
 columns:
   id: type: INT, comment: ID
   name: type: STRING, comment: name
-storageName:
+storageTables:
   mydb:
     tableDesc:
       tableParameters:

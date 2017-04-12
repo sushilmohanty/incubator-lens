@@ -20,7 +20,7 @@ columns:
   d2id: type: INT, comment: d2 ID
 properties:
   dim1.prop: d1
-storageName:
+storageTables:
   local:
     updatePeriods:
       updatePeriod: HOURLY

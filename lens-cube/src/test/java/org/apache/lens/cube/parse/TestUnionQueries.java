@@ -30,14 +30,11 @@ import static org.testng.Assert.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.lens.cube.error.LensCubeErrorCode;
-import org.apache.lens.cube.error.NoCandidateDimAvailableException;
 import org.apache.lens.cube.error.NoCandidateFactAvailableException;
 import org.apache.lens.server.api.LensServerAPITestUtil;
 import org.apache.lens.server.api.error.LensException;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.ql.parse.ParseException;
 
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -99,7 +96,8 @@ public class TestUnionQueries extends TestQueryRewrite {
           "SELECT (cubecity1.name) as `alias0`, sum((testcube.msr2)) as `alias1`, max((testcube.msr3)) "
               + "as `alias2`, sum(case  when ((testcube.cityid) = 'x') then (testcube.msr21) "
               + "else (testcube.msr22) end) as `alias4` ", " join "
-              + getDbName() + "c6_citytable cubecity1 on testcube.cityid1 = cubecity1.id and (cubecity1.dt = 'latest') ",
+              + getDbName() + "c6_citytable cubecity1 on testcube.cityid1 = cubecity1.id "
+              + "and (cubecity1.dt = 'latest') ",
           "((cubecity1.name) = 'a') and ((testcube.zipcode) = 'b')",
           "group by (cubecity1.name)");
       compareQueries(hqlQuery, expected);
@@ -217,7 +215,7 @@ public class TestUnionQueries extends TestQueryRewrite {
         + getDbName() + "c6_statetable cubestate on testcube.stateid = cubestate.id and (cubestate.dt = 'latest')";
 
     String expected1 = getExpectedQueryForDimAttrExpressionQuery(joinExpr1);
-    String expected2 = getExpectedQueryForDimAttrExpressionQuery(joinExpr2);// not equals
+    String expected2 = getExpectedQueryForDimAttrExpressionQuery(joinExpr2);
     assertTrue(new TestQuery(hqlQuery).equals(new TestQuery(expected1))
             || new TestQuery(hqlQuery).equals(new TestQuery(expected2)),
         "Actual :" + hqlQuery + " Expected1:" + expected1 + " Expected2 : "+ expected2);
@@ -284,7 +282,8 @@ public class TestUnionQueries extends TestQueryRewrite {
           "SELECT (testcube.alias0) as `City ID`, max((testcube.alias1)) as `Measure 3`, round(sum((testcube.alias2))) "
               + "as `Measure 2` ", null, "GROUP BY (testcube.alias0) HAVING (max((testcube.alias1)) > 10) "
               + "ORDER BY testcube.alias0 desc LIMIT 5",
-          "SELECT (testcube.cityid) as `alias0`, max((testcube.msr3)) as `alias1`, sum((testcube.msr2)) as `alias2` FROM ",
+          "SELECT (testcube.cityid) as `alias0`, max((testcube.msr3)) as `alias1`, "
+              + "sum((testcube.msr2)) as `alias2` FROM ",
           null, "GROUP BY testcube.cityid");
       compareQueries(hqlQuery, expected);
     } finally {
@@ -365,7 +364,10 @@ public class TestUnionQueries extends TestQueryRewrite {
       LensException e = getLensExceptionInRewrite("select count(msr4) from testCube where "
           + THREE_MONTHS_RANGE_UPTO_DAYS, conf);
       assertTrue(e instanceof NoCandidateFactAvailableException);
-      Set<Map.Entry<StorageCandidate, List<CandidateTablePruneCause>>> causes = ((NoCandidateFactAvailableException) e).getBriefAndDetailedError().entrySet().stream().filter(x -> x.getKey().getStorageTable().equalsIgnoreCase("c6_testfact")).collect(Collectors.toSet());
+      Set<Map.Entry<StorageCandidate, List<CandidateTablePruneCause>>> causes =
+          ((NoCandidateFactAvailableException) e).getBriefAndDetailedError()
+              .entrySet().stream().filter(x -> x.getKey().getStorageTable()
+              .equalsIgnoreCase("c6_testfact")).collect(Collectors.toSet());
       assertEquals(causes.size(), 1);
       List<CandidateTablePruneCause> pruneCauses = causes.iterator().next().getValue();
       assertEquals(pruneCauses.size(), 1);

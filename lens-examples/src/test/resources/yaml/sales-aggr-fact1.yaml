@@ -29,7 +29,7 @@ columns:
   max_line_item_discount: type: FLOAT
 properties:
   cube.fact.is.aggregated: true
-storageName:
+storageTables:
   local:
     updatePeriods:
       updatePeriod: HOURLY, DAILY

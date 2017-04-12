@@ -30,7 +30,7 @@ columns:
 properties:
   cube.fact.is.aggregated: true
   cube.fact.relative.start.time: now.second - 2 days
-storageName:
+storageTables:
   mydb:
     updatePeriods:
       updatePeriod: CONTINUOUS

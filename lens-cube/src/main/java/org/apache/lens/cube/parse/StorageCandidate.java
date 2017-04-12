@@ -489,7 +489,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
     TreeSet<UpdatePeriod> remainingIntervals =  new TreeSet<>(updatePeriods);
     remainingIntervals.remove(maxInterval);
     if (!CandidateUtil.isCandidatePartiallyValidForTimeRange(
-      maxIntervalStorageTblStartDate, maxIntervalStorageTblEndDate,fromDate, toDate)) {
+      maxIntervalStorageTblStartDate, maxIntervalStorageTblEndDate, fromDate, toDate)) {
       //Check the time range in remainingIntervals as maxInterval is not useful
       return getPartitions(fromDate, toDate, partCol, partitions, remainingIntervals,
         addNonExistingParts, failOnPartialData, missingPartitions);
@@ -499,7 +499,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
       ? fromDate : maxIntervalStorageTblStartDate, maxInterval);
     Date floorToDate = DateUtil.getFloorDate(toDate.before(maxIntervalStorageTblEndDate)
       ? toDate : maxIntervalStorageTblEndDate, maxInterval);
-    if(ceilFromDate.equals(floorToDate) || floorToDate.before(ceilFromDate)) {
+    if (ceilFromDate.equals(floorToDate) || floorToDate.before(ceilFromDate)) {
       return getPartitions(fromDate, toDate, partCol, partitions, remainingIntervals,
         addNonExistingParts, failOnPartialData, missingPartitions);
     }
@@ -880,8 +880,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
   private boolean isUpdatePeriodUseful(TimeRange timeRange, UpdatePeriod updatePeriod) {
     try {
       if (!CandidateUtil.isCandidatePartiallyValidForTimeRange(getStorageTableStartDate(updatePeriod),
-        getStorageTableEndDate(updatePeriod), timeRange.getFromDate(), timeRange.getToDate()))
-      {
+        getStorageTableEndDate(updatePeriod), timeRange.getFromDate(), timeRange.getToDate())) {
         return false;
       }
       Date storageTblStartDate  = getStorageTableStartDate(updatePeriod);

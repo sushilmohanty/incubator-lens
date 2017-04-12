@@ -18,10 +18,10 @@
  */
 package org.apache.lens.cube.parse;
 
+import static org.apache.lens.cube.parse.CandidateTablePruneCause.denormColumnNotFound;
+
 import static org.apache.hadoop.hive.ql.parse.HiveParser.Identifier;
 import static org.apache.hadoop.hive.ql.parse.HiveParser.TOK_TABLE_OR_COL;
-import static org.apache.hadoop.hive.ql.parse.HiveParser_SelectClauseParser.TOK_FUNCTION;
-import static org.apache.lens.cube.parse.CandidateTablePruneCause.denormColumnNotFound;
 
 import java.util.*;
 

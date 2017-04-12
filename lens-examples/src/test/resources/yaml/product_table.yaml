@@ -23,7 +23,7 @@ columns:
 properties:
   dim4.prop: d1
   dimtable.product_table.part.cols: category
-storageName:
+storageTables:
   local:
     updatePeriods:
       updatePeriod: HOURLY

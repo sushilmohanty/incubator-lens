@@ -33,7 +33,7 @@ columns:
   line_item_tax: type: INT
 properties:
   cube.fact.is.aggregated: false
-storageName:
+storageTables:
   local:
     updatePeriods:
       updatePeriod: HOURLY

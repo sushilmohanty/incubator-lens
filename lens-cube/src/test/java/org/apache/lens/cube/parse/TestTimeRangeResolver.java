@@ -19,23 +19,14 @@
 
 package org.apache.lens.cube.parse;
 
-import static com.google.common.collect.Sets.newHashSet;
 import static org.apache.lens.cube.metadata.DateFactory.*;
-import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.COLUMN_NOT_FOUND;
-import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.PART_COL_DOES_NOT_EXIST;
-import static
-  org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.STORAGE_NOT_AVAILABLE_IN_RANGE;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.UNSUPPORTED_STORAGE;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-import org.apache.lens.cube.error.NoCandidateFactAvailableException;
-import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 
@@ -47,7 +38,6 @@ import org.joda.time.DateTime;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.Sets;
 
 public class TestTimeRangeResolver extends TestQueryRewrite {
 
@@ -113,7 +103,7 @@ public class TestTimeRangeResolver extends TestQueryRewrite {
     conf.setLong(LensConfConstants.QUERY_CURRENT_TIME_IN_MILLIS, dt.getMillis());
     String query = "select msr12 from basecube where time_range_in(d_time, 'now.day-275days','now')";
     LensException e = getLensExceptionInRewrite(query, conf);
-    assertEquals(e.getMessage(),"NO_CANDIDATE_FACT_AVAILABLE[Range not answerable]");
+    assertEquals(e.getMessage(), "NO_CANDIDATE_FACT_AVAILABLE[Range not answerable]");
   }
 
   /**

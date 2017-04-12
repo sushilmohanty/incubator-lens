@@ -19,7 +19,7 @@ columns:
   detail2: type: STRING, comment: more details for dim2
 properties:
   dim2.prop: d2
-storageName:
+storageTables:
   local:
     updatePeriods:
       updatePeriod: HOURLY

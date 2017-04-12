@@ -18,15 +18,16 @@
  */
 package org.apache.lens.cube.parse;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Lists.partition;
 import static java.util.stream.Collectors.toSet;
+
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.*;
 
+import static com.google.common.collect.Lists.newArrayList;
+
 import java.util.*;
-import java.util.stream.Stream;
 
 import org.apache.lens.cube.metadata.TimeRange;
+
 
 import org.codehaus.jackson.annotate.JsonWriteNullProperties;
 
@@ -105,7 +106,7 @@ public class CandidateTablePruneCause {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
         return new String[]{
           causes.stream().map(CandidateTablePruneCause::getMissingExpressions).flatMap(Collection::stream)
-            .collect(toSet()).toString()
+            .collect(toSet()).toString(),
         };
       }
     },
@@ -152,7 +153,7 @@ public class CandidateTablePruneCause {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
         return new String[]{
           causes.stream().map(CandidateTablePruneCause::getJoinColumns).flatMap(Collection::stream)
-            .collect(toSet()).toString()
+            .collect(toSet()).toString(),
         };
       }
     },
@@ -162,7 +163,7 @@ public class CandidateTablePruneCause {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
         return new String[]{
           causes.stream().map(CandidateTablePruneCause::getColumnsMissingDefaultAggregate).flatMap(Collection::stream)
-            .collect(toSet()).toString()
+            .collect(toSet()).toString(),
         };
       }
     },
@@ -170,7 +171,7 @@ public class CandidateTablePruneCause {
     MISSING_PARTITIONS("Missing partitions for the cube table: %s") {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
         return new String[]{
-          causes.stream().map(CandidateTablePruneCause::getMissingPartitions).collect(toSet()).toString()
+          causes.stream().map(CandidateTablePruneCause::getMissingPartitions).collect(toSet()).toString(),
         };
       }
     },
@@ -179,7 +180,7 @@ public class CandidateTablePruneCause {
             + " %s. Please try again later or rerun after removing incomplete metrics") {
       Object[] getFormatPlaceholders(Set<CandidateTablePruneCause> causes) {
         return new String[]{
-          causes.stream().map(CandidateTablePruneCause::getIncompletePartitions).collect(toSet()).toString()
+          causes.stream().map(CandidateTablePruneCause::getIncompletePartitions).collect(toSet()).toString(),
         };
       }
     };

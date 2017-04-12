@@ -498,7 +498,8 @@ public class UnionQueryWriter {
       ASTNode child = (ASTNode) selectAST.getChild(i);
       ASTNode outerSelect = new ASTNode(child);
       ASTNode selectExprAST = (ASTNode) child.getChild(0);
-      ASTNode outerAST = getOuterAST(selectExprAST, innerSelectAST, aliasDecider, sc, true, cubeql.getBaseCube().getDimAttributeNames());
+      ASTNode outerAST = getOuterAST(selectExprAST, innerSelectAST, aliasDecider, sc, true,
+          cubeql.getBaseCube().getDimAttributeNames());
       outerSelect.addChild(outerAST);
       // has an alias? add it
       if (child.getChildCount() > 1) {
@@ -533,7 +534,8 @@ public class UnionQueryWriter {
    5. If given ast is memorized as mentioned in the above cases, return the mapping.
  */
   private ASTNode getOuterAST(ASTNode astNode, ASTNode innerSelectAST,
-      AliasDecider aliasDecider, StorageCandidate sc, boolean isSelectAst, Set<String> dimensionSet) throws LensException {
+      AliasDecider aliasDecider, StorageCandidate sc, boolean isSelectAst, Set<String> dimensionSet)
+      throws LensException {
     if (astNode == null) {
       return null;
     }

@@ -25,8 +25,6 @@ import static org.apache.lens.cube.parse.TestCubeRewriter.compareContains;
 
 import static org.testng.Assert.*;
 
-import jodd.util.StringUtil;
-
 import org.apache.lens.server.api.LensServerAPITestUtil;
 import org.apache.lens.server.api.error.LensException;
 
@@ -35,6 +33,8 @@ import org.apache.hadoop.hive.ql.parse.ParseException;
 
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
+
+import jodd.util.StringUtil;
 
 public class TestUnionAndJoinCandidates extends TestQueryRewrite {
 

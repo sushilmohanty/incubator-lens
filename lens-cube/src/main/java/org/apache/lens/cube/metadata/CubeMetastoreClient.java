@@ -1756,7 +1756,8 @@ public class CubeMetastoreClient {
         for (Map.Entry entry : updatePeriodToTableMap.entrySet()) {
           XUpdatePeriodTableDescriptor updatePeriodTableDescriptor = new XUpdatePeriodTableDescriptor();
           updatePeriodTableDescriptor.setTableDesc(getStorageTableDescFromHiveTable(
-            this.getHiveTable(MetastoreUtil.getFactOrDimtableStorageTableName(cft.getName(), (String) entry.getValue()))));
+            this.getHiveTable(MetastoreUtil.getFactOrDimtableStorageTableName(cft.getName(),
+                (String) entry.getValue()))));
           updatePeriodTableDescriptor.setUpdatePeriod(XUpdatePeriod.valueOf(((UpdatePeriod)entry.getKey()).name()));
           xUpdatePeriods.getUpdatePeriodTableDescriptor().add(updatePeriodTableDescriptor);
         }

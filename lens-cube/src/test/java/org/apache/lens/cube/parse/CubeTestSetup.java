@@ -778,28 +778,33 @@ public class CubeTestSetup {
 
   private void dump(CubeMetastoreClient client) throws LensException, IOException {
 //    for (CubeInterface cubeInterface : client.getAllCubes()) {
-//      String path = getClass().getResource("/schema/cubes/" + ((cubeInterface instanceof Cube) ? "base" : "derived")).getPath() + "/" + cubeInterface.getName() + ".xml";
+//      String path = getClass().getResource("/schema/cubes/" + ((cubeInterface instanceof Cube) ? "base"
+// : "derived")).getPath() + "/" + cubeInterface.getName() + ".xml";
 //      try(BufferedWriter bw = new BufferedWriter(new FileWriter(path))) {
 //        bw.write(ToXMLString.toString(JAXBUtils.xCubeFromHiveCube(cubeInterface)));
 //      }
 //    }
     for (CubeFactTable cubeFactTable : client.getAllFacts()) {
-      try(BufferedWriter bw = new BufferedWriter(new FileWriter(getClass().getResource("/schema/facts").getPath()+"/"+cubeFactTable.getName()+".xml"))) {
+      try(BufferedWriter bw = new BufferedWriter(new FileWriter(getClass()
+          .getResource("/schema/facts").getPath()+"/"+cubeFactTable.getName()+".xml"))) {
         bw.write(ToXMLString.toString(client.getXFactTable(cubeFactTable)));
       }
     }
 //    for (Dimension dim : client.getAllDimensions()) {
-//      try(BufferedWriter bw = new BufferedWriter(new FileWriter(getClass().getResource("/schema/dimensions").getPath()+"/"+dim.getName()+".xml"))) {
+//      try(BufferedWriter bw = new BufferedWriter(new FileWriter(getClass()
+// .getResource("/schema/dimensions").getPath()+"/"+dim.getName()+".xml"))) {
 //        bw.write(ToXMLString.toString(JAXBUtils.xdimensionFromDimension(dim)));
 //      }
 //    }
     for (CubeDimensionTable dim : client.getAllDimensionTables()) {
-      try(BufferedWriter bw = new BufferedWriter(new FileWriter(getClass().getResource("/schema/dimtables").getPath()+"/"+dim.getName()+".xml"))) {
+      try(BufferedWriter bw = new BufferedWriter(new FileWriter(getClass()
+          .getResource("/schema/dimtables").getPath()+"/"+dim.getName()+".xml"))) {
         bw.write(ToXMLString.toString(client.getXDimensionTable(dim)));
       }
     }
 //    for (Storage storage : client.getAllStorages()) {
-//      try(BufferedWriter bw = new BufferedWriter(new FileWriter(getClass().getResource("/schema/storages").getPath()+"/"+storage.getName()+".xml"))) {
+//      try(BufferedWriter bw = new BufferedWriter(new FileWriter(getClass()
+// .getResource("/schema/storages").getPath()+"/"+storage.getName()+".xml"))) {
 //        bw.write(ToXMLString.toString(JAXBUtils.xstorageFromStorage(storage)));
 //      }
 //    }

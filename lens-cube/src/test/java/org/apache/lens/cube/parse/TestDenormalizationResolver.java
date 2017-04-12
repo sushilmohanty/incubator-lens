@@ -19,12 +19,12 @@
 
 package org.apache.lens.cube.parse;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Sets.newHashSet;
-
 import static org.apache.lens.cube.metadata.DateFactory.*;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.columnNotFound;
 import static org.apache.lens.cube.parse.CubeTestSetup.*;
+
+import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Sets.newHashSet;
 
 import java.util.*;
 
