@@ -141,7 +141,7 @@ public class CubeTestSetup {
         innerWhere, innerPostWhere, null, provider.providePartitionsForStorage(storage)));
       sep = " UNION ALL ";
     }
-    return sb.append(") ").append(cubeName).append(" ").append(outerWhere == null ? "" : outerWhere)
+    return sb.append(") ").append(" as ").append(cubeName).append(" ").append(outerWhere == null ? "" : outerWhere)
       .append(" ").append(outerPostWhere == null ? "" : outerPostWhere).toString();
   }
   public static String getExpectedUnionQuery(String cubeName, List<String> storages, StoragePartitionProvider provider,

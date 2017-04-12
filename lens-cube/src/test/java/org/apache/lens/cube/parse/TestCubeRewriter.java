@@ -1089,6 +1089,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
             new HashMap<String, CandidateTablePruneCause.CandidateTablePruneCode>() {
               {
                 put("c1_statetable", CandidateTablePruneCause.CandidateTablePruneCode.NO_PARTITIONS);
+                put("c6_statetable", CandidateTablePruneCause.CandidateTablePruneCode.UNSUPPORTED_STORAGE);
               }
             }))
           );

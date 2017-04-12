@@ -72,6 +72,9 @@
     <dim_attribute _type="string" name="cityname" display_string="city name" description="city name">
       <chain_ref_column chain_name="cubecity" ref_col="name" dest_table="citydim"/>
     </dim_attribute>
+    <dim_attribute _type="string" name="cityname1" display_string="city name1" description="city name1">
+      <chain_ref_column chain_name="cubecity1" ref_col="name" dest_table="citydim"/>
+    </dim_attribute>
     <dim_attribute _type="int" name="union_join_ctx_zipcode" description="union_join_ctx_the zipcode">
     </dim_attribute>
     <dim_attribute _type="string" name="unreachablename" display_string="urdim name" description="">
