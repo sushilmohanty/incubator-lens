@@ -20,7 +20,7 @@ columns:
   d2id: type: INT, comment: d2 ID
 properties:
   dim3.prop: d1
-storageTables:
+storageName:
   mydb:
     tableDesc:
       tableParameters:

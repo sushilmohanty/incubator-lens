@@ -20,7 +20,7 @@ columns:
   population: type: BIGINT, comment: city population
 properties:
   city.prop: d1
-storageTables:
+storageName:
   local:
     updatePeriods:
       updatePeriod: HOURLY

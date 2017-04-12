@@ -854,23 +854,37 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     if (hasCubeInQuery()) {
       if (candidates.size() > 0) {
         cand = candidates.iterator().next();
-        log.info("Available Candidates:{}, picking up Candaidate: {} for querying", candidates, cand);
+        log.info("Available Candidates:{}, picking up Candidate: {} for querying", candidates, cand);
       } else {
-        if (!storagePruningMsgs.isEmpty()) {
-          try(ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.writeValue(out, storagePruningMsgs.getJsonObject());
-            log.info("No candidate found because: {}", out.toString("UTF-8"));
-          } catch (Exception e) {
-            throw new LensException("Error writing fact pruning messages", e);
-          }
+          throwNoCandidateFactException();
         }
-        log.error("Query rewrite failed due to NO_CANDIDATE_FACT_AVAILABLE, Cause {}",
-            storagePruningMsgs.toJsonObject());
-        throw new NoCandidateFactAvailableException(this);
-      }
     }
     return cand;
+  }
+
+  void throwNoCandidateFactException() throws LensException {
+    String reason = "";
+    if (!storagePruningMsgs.isEmpty()) {
+      ByteArrayOutputStream out = null;
+      try {
+        ObjectMapper mapper = new ObjectMapper();
+        out = new ByteArrayOutputStream();
+        mapper.writeValue(out, storagePruningMsgs.getJsonObject());
+        reason = out.toString("UTF-8");
+      } catch (Exception e) {
+        throw new LensException("Error writing fact pruning messages", e);
+      } finally {
+        if (out != null) {
+          try {
+            out.close();
+          } catch (IOException e) {
+            throw new LensException(e);
+          }
+        }
+      }
+    }
+    log.error("Query rewrite failed due to NO_CANDIDATE_FACT_AVAILABLE, Cause {}", storagePruningMsgs.toJsonObject());
+    throw new NoCandidateFactAvailableException(this);
   }
 
   private HQLContextInterface hqlContext;
@@ -1026,8 +1040,8 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST, 
     //update dim filter with fact filter, set where string in sc
     if (scSet.size() > 0) {
       for (StorageCandidate sc : scSet) {
-        String qualifiedStorageTable = sc.getStorageName();
-        String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1); //TODO this looks useless
+        String qualifiedStorageTable = sc.getStorageTable();
+        String storageTable = qualifiedStorageTable.substring(qualifiedStorageTable.indexOf(".") + 1);
         String where = getWhere(sc, autoJoinCtx,
           sc.getQueryAst().getWhereAST(), getAliasForTableName(sc.getBaseTable().getName()),
           shouldReplaceDimFilterWithFactFilter(), storageTable, dimsToQuery);

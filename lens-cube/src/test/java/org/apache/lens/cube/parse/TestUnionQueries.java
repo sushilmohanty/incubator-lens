@@ -213,7 +213,6 @@ public class TestUnionQueries extends TestQueryRewrite {
       getStorageToUpdatePeriodMap().clear();
     }
   }
-  //TODO: enable this test after lavkesh's changes
   @Test(enabled = false)
   public void testDimAttrExpressionQuery() throws Exception {
     Configuration conf = getConf();
@@ -474,7 +473,9 @@ public class TestUnionQueries extends TestQueryRewrite {
     if (!THREE_MONTHS_RANGE_UPTO_DAYS.equals(THREE_MONTHS_RANGE_UPTO_MONTH)) {
       LensException e = getLensExceptionInRewrite("select count(msr4) from testCube where " + THREE_MONTHS_RANGE_UPTO_DAYS, conf);
       assertTrue(e instanceof NoCandidateFactAvailableException);
-      Set<Map.Entry<StorageCandidate, List<CandidateTablePruneCause>>> causes = ((NoCandidateFactAvailableException) e).getBriefAndDetailedError().entrySet().stream().filter(x -> x.getKey().getName().equalsIgnoreCase("c6_testfact")).collect(Collectors.toSet());
+      Set<Map.Entry<StorageCandidate, List<CandidateTablePruneCause>>> causes =
+          ((NoCandidateFactAvailableException) e).getBriefAndDetailedError().entrySet().stream().
+              filter(x -> x.getKey().getStorageTable().equalsIgnoreCase("c6_testfact")).collect(Collectors.toSet());
       assertEquals(causes.size(), 1);
       List<CandidateTablePruneCause> pruneCauses = causes.iterator().next().getValue();
       assertEquals(pruneCauses.size(), 1);

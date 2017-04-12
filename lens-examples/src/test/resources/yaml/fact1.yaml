@@ -26,7 +26,7 @@ columns:
     endTime: 2015-01-01
 properties:
   cube.fact.is.aggregated: true
-storageTables:
+storageName:
   local:
     updatePeriods:
       updatePeriod: HOURLY, DAILY

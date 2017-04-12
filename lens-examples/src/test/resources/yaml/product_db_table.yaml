@@ -23,7 +23,7 @@ columns:
   manufacturer: type: STRING
 properties:
   dim4.prop: d1
-storageTables:
+storageName:
   mydb:
     tableDesc:
       tableParameters:

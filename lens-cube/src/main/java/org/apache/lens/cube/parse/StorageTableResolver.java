@@ -228,8 +228,8 @@ class StorageTableResolver implements ContextRewriter {
           continue;
         }
         // pick the first storage table
-        candidate.setStorageName(storageTables.iterator().next());
-        candidate.setWhereClause(whereClauses.get(candidate.getStorageName()));
+        candidate.setStorageTable(storageTables.iterator().next());
+        candidate.setWhereClause(whereClauses.get(candidate.getStorageTable()));
       }
     }
   }
@@ -262,7 +262,7 @@ class StorageTableResolver implements ContextRewriter {
       String str = conf.get(CubeQueryConfUtil.getValidStorageTablesKey(sc.getFact().getName()));
       List<String> validFactStorageTables =
         StringUtils.isBlank(str) ? null : Arrays.asList(StringUtils.split(str.toLowerCase(), ","));
-      storageTable = sc.getName();
+      storageTable = sc.getStorageTable();
       // Check if storagetable is in the list of valid storages.
       if (validFactStorageTables != null && !validFactStorageTables.contains(storageTable)) {
         log.info("Skipping storage table {} as it is not valid", storageTable);
@@ -287,12 +287,12 @@ class StorageTableResolver implements ContextRewriter {
         if (maxInterval != null && updatePeriod.compareTo(maxInterval) > 0) {
           // if user supplied max interval, all intervals larger than that are useless.
           log.info("Skipping update period {} for candidate {} since it's more than max interval supplied({})",
-            updatePeriod, sc.getName(), maxInterval);
+            updatePeriod, sc.getStorageTable(), maxInterval);
           skipUpdatePeriodCauses.put(updatePeriod.toString(), SkipUpdatePeriodCode.UPDATE_PERIOD_BIGGER_THAN_MAX);
         } else if (validUpdatePeriods != null && !validUpdatePeriods.contains(updatePeriod.name().toLowerCase())) {
           // if user supplied valid update periods, other update periods are useless
           log.info("Skipping update period {} for candidate {} for storage {} since it's invalid",
-            updatePeriod, sc.getName(), storageTable);
+            updatePeriod, sc.getStorageTable(), storageTable);
           skipUpdatePeriodCauses.put(updatePeriod.toString(), SkipUpdatePeriodCode.INVALID);
         } else if (!sc.isUpdatePeriodUseful(updatePeriod)) {
           // if the storage candidate finds this update useful to keep looking at the time ranges queried

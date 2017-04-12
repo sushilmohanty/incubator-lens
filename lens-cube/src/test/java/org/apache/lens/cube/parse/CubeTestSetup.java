@@ -333,9 +333,9 @@ public class CubeTestSetup {
     return updatePeriodToWhereMap;
   }
 
-  // storageTables[0] is hourly
-  // storageTables[1] is daily
-  // storageTables[2] is monthly
+  // storageName[0] is hourly
+  // storageName[1] is daily
+  // storageName[2] is monthly
   public static Map<String, String> getWhereForMonthlyDailyAndHourly2months(String... storageTables) {
     Map<String, String> storageTableToWhereClause = new LinkedHashMap<String, String>();
     List<String> hourlyparts = new ArrayList<String>();

@@ -422,7 +422,7 @@ public class CubeMetastoreClient {
     public TreeMap<UpdatePeriod, CaseInsensitiveStringHashMap<PartitionTimeline>> get(String fact, String storage)
       throws HiveException, LensException {
       // SUSPEND CHECKSTYLE CHECK DoubleCheckedLockingCheck
-      // Unique key for the timeline cache, based on storageName and fact.
+      // Unique key for the timeline cache, based on storage and fact.
       String timeLineKey = (Storage.getPrefix(storage)+ fact).toLowerCase();
       synchronized (this) {
         if (get(timeLineKey) == null) {

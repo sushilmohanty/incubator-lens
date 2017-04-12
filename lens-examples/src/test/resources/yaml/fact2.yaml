@@ -21,7 +21,7 @@ columns:
   measure4: type: FLOAT
 properties:
   cube.fact.is.aggregated: true
-storageTables:
+storageName:
   local:
     updatePeriods:
       updatePeriod: HOURLY, DAILY

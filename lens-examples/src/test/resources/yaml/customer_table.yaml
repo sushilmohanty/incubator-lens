@@ -22,7 +22,7 @@ columns:
   customer_credit_status: type: STRING
 properties:
   dim4.prop: d1
-storageTables:
+storageName:
   local:
     updatePeriods:
       updatePeriod: HOURLY

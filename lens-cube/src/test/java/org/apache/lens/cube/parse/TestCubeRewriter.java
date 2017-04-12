@@ -1059,7 +1059,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     pr2.addPruningMsg(new CubeDimensionTable(new Table("test", "citydim")),
             CandidateTablePruneCause.expressionNotEvaluable("testexp1", "testexp2"));
     NoCandidateDimAvailableException ne2 = new NoCandidateDimAvailableException(pr2);
-    assertEquals(ne1.compareTo(ne2), -12);
+    assertEquals(ne1.compareTo(ne2), -7);
   }
 
   @Test
@@ -1391,7 +1391,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
     Date nextToNextDay = DateUtils.addDays(nextDay, 1);
     HashSet<String> storageTables = Sets.newHashSet();
     for (StorageCandidate sc : CandidateUtil.getStorageCandidates(candidate)) {
-      storageTables.add(sc.getName());
+      storageTables.add(sc.getStorageTable());
     }
     TreeSet<FactPartition> expectedPartsQueried = Sets.newTreeSet();
     for (TimePartition p : Iterables.concat(

@@ -31,6 +31,8 @@ import static org.apache.hadoop.hive.ql.parse.HiveParser.KW_AND;
 import static org.testng.Assert.*;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.lens.api.error.ErrorCollectionFactory;
 import org.apache.lens.cube.error.LensCubeErrorCode;
@@ -68,15 +70,12 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
   }
 
   @Test
-  public void testNoCandidateFactAvailableExceptionCompareTo() throws Exception {
-    //maxCause : UNSUPPORTED_STORAGE
-    NoCandidateFactAvailableException ne1 =
-      (NoCandidateFactAvailableException)getLensExceptionInRewrite(
+  public void testNoUnionCandidateAndNoJoinCandidateErrorWeight() throws Exception {
+    LensException e1 = getLensExceptionInRewrite(
         "select dim1, test_time_dim, msr3, msr13 from basecube where " + TWO_DAYS_RANGE, conf);
-    //maxCause : STORAGE_NOT_AVAILABLE_IN_RANGE
-    NoCandidateFactAvailableException ne2 = (NoCandidateFactAvailableException)
-      getLensExceptionInRewrite("select dim1 from " + cubeName + " where " + LAST_YEAR_RANGE, getConf());
-    assertEquals(ne1.compareTo(ne2), -1);
+    LensException e2 = getLensExceptionInRewrite("select dim1 from " + cubeName
+        + " where " + LAST_YEAR_RANGE, getConf());
+    assertEquals(e1.getErrorWeight() - e2.getErrorWeight(), 1);
   }
 
   @Test
@@ -92,53 +91,9 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     e = getLensExceptionInRewrite("select dim1, test_time_dim, msr3, msr13 from basecube where "
       + TWO_DAYS_RANGE, conf);
     assertEquals(e.getErrorCode(),
-        LensCubeErrorCode.NO_CANDIDATE_FACT_AVAILABLE.getLensErrorInfo().getErrorCode());
-    NoCandidateFactAvailableException ne = (NoCandidateFactAvailableException) e;
-    //ne.briefAndDetailedError.getBriefCause()
-    //ne.getJsonMessage().brief
-    assertTrue(CandidateTablePruneCode.UNSUPPORTED_STORAGE.errorFormat.equals(ne.getJsonMessage().getBrief()));
-//    PruneCauses.BriefAndDetailedError pruneCauses = ne.getJsonMessage();
-//    String regexp = String.format(CandidateTablePruneCode.UNSUPPORTED_STORAGE.errorFormat,
-//      "Column Sets: (.*?)", "queriable together");
-//    Matcher matcher = Pattern.compile(regexp).matcher(pruneCauses.getBrief());
-//    assertTrue(matcher.matches(), pruneCauses.getBrief());
-//    assertEquals(matcher.groupCount(), 1);
-//    String columnSetsStr = matcher.group(1);
-//    assertNotEquals(columnSetsStr.indexOf("test_time_dim"), -1, columnSetsStr);
-//    assertNotEquals(columnSetsStr.indexOf("msr3, msr13"), -1);
-//
-//    /**
-//     * Verifying the BriefAndDetailedError:
-//     * 1. Check for missing columns(COLUMN_NOT_FOUND)
-//     *    and check the respective tables for each COLUMN_NOT_FOUND
-//     * 2. check for ELEMENT_IN_SET_PRUNED
-//     *
-//     */
-//    boolean columnNotFound = false;
-//    List<String> testTimeDimFactTables = Arrays.asList("c1_testfact3_raw_base",
-//        "c1_testfact5_base", "c1_testfact6_base", "c1_testfact1_raw_base",
-//        "c1_testfact4_raw_base", "c1_testfact3_base");
-//    List<String> factTablesForMeasures = Arrays.asList(
-//        "c2_testfact2_base","c2_testfact_deprecated","c1_union_join_ctx_fact1","c1_union_join_ctx_fact2",
-//        "c1_union_join_ctx_fact3","c1_union_join_ctx_fact5","c1_testfact2_base",
-//        "c1_union_join_ctx_fact6","c1_testfact2_raw_base","c1_testfact5_raw_base",
-//        "c3_testfact_deprecated","c1_testfact_deprecated","c4_testfact_deprecated",
-//        "c3_testfact2_base","c4_testfact2_base");
-//    for (Map.Entry<String, List<CandidateTablePruneCause>> entry : pruneCauses.getDetails().entrySet()) {
-//      if (entry.getValue().contains(CandidateTablePruneCause.columnNotFound(
-//          CandidateTablePruneCode.COLUMN_NOT_FOUND, "test_time_dim"))) {
-//        columnNotFound = true;
-//        compareStrings(testTimeDimFactTables, entry);
-//      }
-//      if (entry.getValue().contains(CandidateTablePruneCause.columnNotFound(
-//          CandidateTablePruneCode.COLUMN_NOT_FOUND, "msr3", "msr13"))) {
-//        columnNotFound = true;
-//        compareStrings(factTablesForMeasures, entry);
-//      }
-//    }
-//    Assert.assertTrue(columnNotFound);
- //   assertEquals(pruneCauses.getDetails().get("testfact1_base"),
- //     Arrays.asList(new CandidateTablePruneCause(CandidateTablePruneCode.ELEMENT_IN_SET_PRUNED)));
+        LensCubeErrorCode.NO_JOIN_CANDIDATE_AVAILABLE.getLensErrorInfo().getErrorCode());
+    assertTrue(e.getMessage().contains("[msr3, msr13]"));
+
   }
 
   private void compareStrings(List<String> factTablesList, Map.Entry<String, List<CandidateTablePruneCause>> entry) {
@@ -195,7 +150,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     Set<String> storageCandidates = new HashSet<String>();
     Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(ctx.getCandidates());
     for (StorageCandidate sc : scSet) {
-      storageCandidates.add(sc.getName());
+      storageCandidates.add(sc.getStorageTable());
     }
     Assert.assertTrue(storageCandidates.contains("c1_testfact1_base"));
     Assert.assertTrue(storageCandidates.contains("c1_testfact2_base"));
@@ -221,7 +176,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     Set<String> storageCandidates = new HashSet<String>();
     Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(ctx.getCandidates());
     for (StorageCandidate sc : scSet) {
-      storageCandidates.add(sc.getName());
+      storageCandidates.add(sc.getStorageTable());
     }
     Assert.assertEquals(storageCandidates.size(), 3);
     Assert.assertTrue(storageCandidates.contains("c1_testfact1_base"));

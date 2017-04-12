@@ -27,7 +27,7 @@ columns:
 properties:
   cube.fact.is.aggregated: true
   cube.timedim.relation.order_time: delivery_time+[-2 hours,-1hour]
-storageTables:
+storageName:
   local:
     updatePeriods:
       updatePeriod: HOURLY, DAILY

@@ -26,7 +26,7 @@ import static org.apache.lens.cube.parse.TestCubeRewriter.compareContains;
 import static org.testng.Assert.*;
 
 import jodd.util.StringUtil;
-import org.apache.hadoop.util.StringUtils;
+
 import org.apache.lens.server.api.LensServerAPITestUtil;
 import org.apache.lens.server.api.error.LensException;
 
@@ -76,7 +76,7 @@ public class TestUnionAndJoinCandidates extends TestQueryRewrite {
     assertEquals(StringUtil.count(rewrittenQuery, "sum((basecube.union_join_ctx_msr1))"), 2);
   }
 
-    @Test
+  @Test
   public void testFinalCandidateRewrittenQuery() throws ParseException, LensException {
     try {
       // Query with non projected measure in having clause.
