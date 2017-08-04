@@ -1486,6 +1486,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
           } else {
             ctx.setConf(getLensConf(ctx.getLensConf()));
           }
+          for (LensDriver driver : drivers.values()) {
+            if (ctx.getDriverContext() != null) {
+              ctx.getDriverContext().setDriverConf(driver, ctx.getConf());
+            }
+          }
         } catch (LensException e) {
           log.error("Could not set query conf ", e);
         }
