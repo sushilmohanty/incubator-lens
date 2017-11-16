@@ -88,7 +88,7 @@ public class QueryContextComparatorTest {
 
 
   @DataProvider
-  public Object[][] dpSubmitTimeCompare() {
+  public Object[][] dpSubmitTimeComparePriority() {
     return new Object[][] {
       /* Submission Time of query1 is less than Submission Time of query2 */
       {123, 125, -1},
@@ -105,7 +105,7 @@ public class QueryContextComparatorTest {
     };
   }
 
-  @Test(dataProvider = "dpSubmitTimeCompare")
+  @Test(dataProvider = "dpSubmitTimeComparePriority")
   public void testCompareOnQuerySubmitTime(final long submitTimeQuery1, final long submitTimeQuery2,
       final int expectedResult) {
 
@@ -125,7 +125,48 @@ public class QueryContextComparatorTest {
     // Cost and Priority both are same, hence the comparison should happen
     // on query submission time
     assertEquals(priorityAndFifoComparator.compare(query1, query2), expectedResult);
-    assertEquals(costAndFifoComparator.compare(query1, query2), expectedResult);
-
   }
+
+
+  @DataProvider
+  public Object[][] dpSubmitTimeCompareCost() {
+    return new Object[][] {
+      /* Submission Time of query1 is less than Submission Time of query2 */
+        {123, 125, 1},
+      /* Submission Time of query1 is more than Submission Time of query2 */
+        {125, 123, 1},
+      /* Submission Time of query1 is equal to Submission Time of query2 */
+        {123, 123, 1},
+      /* Boundary case: Submission Time of query1 is Long.MIN_VALUE and submission time of query2 Long.MAX_VALUE */
+        {Long.MIN_VALUE, Long.MAX_VALUE, 1},
+      /* Boundary case: Submission Time of query1 is Long.MAX_VALUE and submission time of query2 Long.MIN_VALUE */
+        {Long.MAX_VALUE, Long.MIN_VALUE, 1},
+      /* Submission Time of query1 and query2 is 0 */
+        {0, 0, 1},
+    };
+  }
+
+
+  @Test(dataProvider = "dpSubmitTimeCompareCost")
+  public void testCompareOnQueryCost(final long submitTimeQuery1, final long submitTimeQuery2,
+      final int expectedResult) {
+
+    QueryContext query1 = mock(QueryContext.class);
+    when(query1.getPriority()).thenReturn(Priority.HIGH);
+    QueryCost qcO1 = mock(QueryCost.class);
+    when(query1.getSelectedDriverQueryCost()).thenReturn(qcO1);
+
+    QueryContext query2 = mock(QueryContext.class);
+    when(query2.getPriority()).thenReturn(Priority.HIGH);
+    QueryCost qcO2 = mock(QueryCost.class);
+    when(query2.getSelectedDriverQueryCost()).thenReturn(qcO2);
+
+    when(query1.getSubmissionTime()).thenReturn(submitTimeQuery1);
+    when(query2.getSubmissionTime()).thenReturn(submitTimeQuery2);
+
+    // Cost and Priority both are same, hence the comparison should happen
+    // on query submission time
+    assertEquals(costAndFifoComparator.compare(query1, query2), expectedResult);
+  }
+
 }
