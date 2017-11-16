@@ -91,7 +91,7 @@
     <jaxb2.basics.plugin.version>0.9.5</jaxb2.basics.plugin.version>
     <jaxb2.fluent.plugin.version>3.0</jaxb2.fluent.plugin.version>
     <exec.plugin.version>1.2.1</exec.plugin.version>
-    <enunciate.plugin.version>2.5.0</enunciate.plugin.version>
+    <enunciate.plugin.version>2.6.0</enunciate.plugin.version>
     <reports.plugin.version>2.7</reports.plugin.version>
     <javadoc.plugin.version>2.10.3</javadoc.plugin.version>
     <surefire.plugin.version>2.15</surefire.plugin.version>
